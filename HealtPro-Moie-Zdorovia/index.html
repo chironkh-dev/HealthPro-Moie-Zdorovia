@@ -655,7 +655,7 @@ select.text-input{cursor:pointer;-webkit-appearance:none;background-image:url("d
 
   <div class="bento">
     <div class="bento-card bc-blue tap" onclick="openTrendModal()">
-      <div class="b-lbl" id="t-avg7">Середній тиск 7 дн.</div>
+      <div class="b-lbl" id="t-avg7">Середній тиск (7 вим.)</div>
       <div class="b-val" id="avgBP7">—</div>
       <div class="b-sub" id="avgBP7sub">—</div>
       <div class="b-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
@@ -1052,7 +1052,7 @@ const T={
     't-bp-label':'Тиск (sys / dia) та Пульс','t-note':'Нотатка (необов\'язково)','t-save-meas':'Зберегти вимір',
     't-chart-title':'Графік вимірів','t-chart-all':'Все','t-pulse-toggle':'Пульс',
     't-leg-sys':'Систол.','t-leg-dia':'Діастол.',
-    't-health-index':'Індекс здоров\'я','t-avg7':'Середній тиск 7 дн.','t-trend':'Тенденція','t-tap-graph':'▲ Натисни — графік',
+    't-health-index':'Індекс здоров\'я','t-avg7':'Середній тиск (7 вим.)','t-trend':'Тенденція','t-tap-graph':'▲ Натисни — графік',
     't-who-cat':'Категорія тиску (ВООЗ / МОЗ)','t-total-m':'Всього вимірів','t-adh':'Прийом ліків','t-today':'за сьогодні',
     't-maxmin':'Макс. / Мін.','t-avg-pulse':'Середній пульс','t-bpm2':'уд/хв · норма 60–100','t-pct-norm':'% норм. вимірів','t-of-total':'від загальних',
     't-bmi-title':'ІМТ та вплив на тиск','t-bmi-empty':'Заповніть зріст та вагу в Профілі',
@@ -1088,7 +1088,7 @@ const T={
     't-bp-label':'Давление (sys / dia) и Пульс','t-note':'Заметка (необязательно)','t-save-meas':'Сохранить измерение',
     't-chart-title':'График измерений','t-chart-all':'Всё','t-pulse-toggle':'Пульс',
     't-leg-sys':'Систол.','t-leg-dia':'Диастол.',
-    't-health-index':'Индекс здоровья','t-avg7':'Среднее давление 7 дн.','t-trend':'Тенденция','t-tap-graph':'▲ Нажми — график',
+    't-health-index':'Индекс здоровья','t-avg7':'Среднее давление (7 изм.)','t-trend':'Тенденция','t-tap-graph':'▲ Нажми — график',
     't-who-cat':'Категория давления (ВОЗ)','t-total-m':'Всего измерений','t-adh':'Приём лекарств','t-today':'за сегодня',
     't-maxmin':'Макс. / Мин.','t-avg-pulse':'Средний пульс','t-bpm2':'уд/мин · норма 60–100','t-pct-norm':'% норм. измерений','t-of-total':'от общих',
     't-bmi-title':'ИМТ и влияние на давление','t-bmi-empty':'Заполните рост и вес в Профиле',
@@ -1494,9 +1494,22 @@ function renderAnalytics(){
       <div class="score-bar-row"><div class="score-bar-label">ІМТ</div><div class="score-bar-track"><div class="score-bar-fill" style="width:${(currentDetailedScores.bmi/10)*100}%;background:${currentDetailedScores.bmi>=8?'var(--green)':currentDetailedScores.bmi>=4?'var(--amber)':'var(--red)'}"></div></div><span style="font-size:10px;color:var(--text3);width:28px;text-align:right">${currentDetailedScores.bmi}/10</span></div>
       <div class="score-bar-row"><div class="score-bar-label">Активність</div><div class="score-bar-track"><div class="score-bar-fill" style="width:${(currentDetailedScores.activity/10)*100}%;background:${currentDetailedScores.activity>=8?'var(--green)':currentDetailedScores.activity>=5?'var(--amber)':'var(--red)'}"></div></div><span style="font-size:10px;color:var(--text3);width:28px;text-align:right">${currentDetailedScores.activity}/10</span></div>`;
   }
-  // Avg BP 7d
-  if(last7.length){const aS=avg(last7.map(m=>m.sys)),aD=avg(last7.map(m=>m.dia));document.getElementById('avgBP7').textContent=aS+'/'+aD;document.getElementById('avgBP7sub').textContent=getBPStatus(aS,aD).label.replace(/[🚨▲⚠✓⬇️]/g,'').trim()}
-  else{document.getElementById('avgBP7').textContent='—';document.getElementById('avgBP7sub').textContent='немає даних'}
+  // Avg BP — last 7 measurements (not last 7 days, для коректної логіки)
+  const last7m=all.slice(0,7);
+  const bpValEl=document.getElementById('avgBP7');
+  const bpSubEl=document.getElementById('avgBP7sub');
+  if(last7m.length){
+    const aS=avg(last7m.map(m=>m.sys)),aD=avg(last7m.map(m=>m.dia));
+    bpValEl.textContent=aS+'/'+aD;
+    const st=getBPStatus(aS,aD);
+    bpSubEl.textContent=st.label.replace(/[🚨▲⚠✓⬇️]/g,'').trim();
+    const bpColor=st.cls==='badge-ok'?'var(--green)':st.cls==='badge-warn'?'var(--amber)':st.cls==='badge-crit'?'var(--red)':'';
+    bpValEl.style.color=bpColor;
+    bpSubEl.style.color=bpColor;
+  } else {
+    bpValEl.textContent='—';bpSubEl.textContent='немає даних';
+    bpValEl.style.color='';bpSubEl.style.color='';
+  }
 
   // Trend
   if(all.length>=5){
@@ -1521,10 +1534,15 @@ function renderAnalytics(){
   // Max/Min
   if(all.length){const sa=all.map(m=>m.sys);document.getElementById('maxSys').textContent=Math.max(...sa);document.getElementById('minSysLabel').textContent='мін.: '+Math.min(...sa)}
 
-  // Pulse
-  const pp=last7.filter(m=>m.pulse);
+  // Pulse — last 7 measurements + кольорова індикація
+  const pp=last7m.filter(m=>m.pulse);
   const avgPulse7Val = pp.length ? Math.round(pp.reduce((acc,m)=>acc+(m.pulse||0),0)/pp.length) : null;
-  document.getElementById('avgPulse7').textContent=avgPulse7Val||'—';
+  const pulseEl=document.getElementById('avgPulse7');
+  pulseEl.textContent=avgPulse7Val||'—';
+  if(avgPulse7Val){
+    const pulseColor=(avgPulse7Val>=120||avgPulse7Val<=50)?'var(--red)':(avgPulse7Val>100||avgPulse7Val<60)?'var(--amber)':'var(--green)';
+    pulseEl.style.color=pulseColor;
+  } else { pulseEl.style.color=''; }
 
   // Normal %
   if(all.length){const n=getBPNorm();document.getElementById('pctNormal').textContent=Math.round(all.filter(m=>m.sys<n.sysWarn&&m.dia<n.diaWarn).length/all.length*100)+'%'}
