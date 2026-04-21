@@ -318,7 +318,11 @@ select.text-input{cursor:pointer;-webkit-appearance:none;background-image:url("d
 .adh-bar{height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;border:1px solid var(--border);margin-bottom:10px}
 .adh-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--blue),var(--violet));transition:width .6s ease}
 .all-pills-section{margin-top:4px}
-.pill-schedule-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:7px;background:var(--bg2);font-size:10px;font-weight:600;color:var(--text3);margin-top:3px}
+.pill-schedule-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border:1px solid var(--blue);background:var(--blue-dim);border-radius:8px;font-size:10px;font-weight:700;color:var(--blue2);margin-top:4px;line-height:1}
+.pill-schedule-badge svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.pill-meta-ico{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:inline-block;vertical-align:-1px;margin:0 2px 0 4px}
+.pill-past-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:6px;background:var(--bg2);border:1px solid var(--border2);font-size:10px;font-weight:600;color:var(--text3);margin-left:6px}
+.pill-past-badge svg{width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .disclaimer{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--red-dim);border:1px solid rgba(239,68,68,.2);font-size:11px;font-weight:600;color:var(--text2);line-height:1.6}
 .disclaimer strong{color:var(--red)}
 .pharmacy-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
@@ -1979,9 +1983,10 @@ function renderPills(){
       const foundDrug=Object.keys(DRUG_DB).find(k=>p.name.toLowerCase().includes(k)||k.includes(p.name.toLowerCase()));
       const dInfo=foundDrug?DRUG_DB[foundDrug]:null;
       const warn=dInfo?`<div class="drug-warn" style="margin-top:4px">⚠️ Макс: ${dInfo.max} ${dInfo.unit}/добу · ${dInfo.warn}</div>`:'';
+      const overdueChip=ov?` · <svg class="pill-meta-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Пропущено`:'';
       return `<div class="pill-item ${taken?'taken':ov?'overdue':''}" id="pill-${p.id}">
         <div class="pill-chk" onclick="togglePill(${p.id})"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-        <div class="pill-info"><div class="pill-name">${p.name}</div><div class="pill-dose">${p.dose}${ov?' · ⏰ Пропущено':''} · 📅 ${getDayName(p)}</div>${warn}</div>
+        <div class="pill-info"><div class="pill-name">${p.name}</div><div class="pill-dose">${p.dose}${overdueChip}</div><div class="pill-schedule-badge"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${getDayName(p)}</div>${warn}</div>
         <div style="display:flex;align-items:center;gap:5px;flex-shrink:0"><div class="pill-time">${p.time}</div><button class="pill-del" onclick="deletePill(${p.id})">×</button></div>
       </div>`;
     }).join('');
@@ -2008,9 +2013,9 @@ function renderPills(){
     allList.innerHTML=sortedAll.map(p=>{
       const isPast=p.days==='date'&&p.date&&p.date<today();
       const opacity=isPast?'opacity:.55':'';
-      const pastBadge=isPast?' · ⏳ минула дата':'';
+      const pastBadge=isPast?'<span class="pill-past-badge"><svg viewBox="0 0 24 24"><path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>минула</span>':'';
       return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);${opacity}">
-        <div style="flex:1"><div style="font-size:14px;font-weight:700">${p.name}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${p.dose} · ${p.time}${pastBadge}</div><div class="pill-schedule-badge">📅 ${getDayName(p)}</div></div>
+        <div style="flex:1"><div style="font-size:14px;font-weight:700">${p.name}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${p.dose} · ${p.time}${pastBadge}</div><div class="pill-schedule-badge"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${getDayName(p)}</div></div>
         <button class="pill-del" onclick="deletePill(${p.id})">×</button>
       </div>`;
     }).join('');
