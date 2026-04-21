@@ -469,12 +469,12 @@ select.text-input{cursor:pointer;-webkit-appearance:none;background-image:url("d
 
 <!-- BANNERS -->
 <div class="banner b-install" id="installBanner">
-  <span style="font-size:20px">📲</span>
+  <span style="display:inline-flex;align-items:center;justify-content:center;flex-shrink:0"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/><polyline points="8 11 12 15 16 11"/><line x1="12" y1="6" x2="12" y2="15"/></svg></span>
   <div class="banner-text" id="t-install">Встановіть додаток на телефон!</div>
   <button class="banner-btn" onclick="installApp()" id="t-install-btn">Встановити</button>
 </div>
 <div class="banner b-update" id="updateBanner">
-  <span style="font-size:18px">🔄</span>
+  <span style="display:inline-flex;align-items:center;justify-content:center;flex-shrink:0"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></span>
   <div class="banner-text" id="t-update">Доступне оновлення</div>
   <button class="banner-btn" onclick="applyUpdate()" id="t-update-btn">Оновити</button>
 </div>
@@ -854,7 +854,8 @@ select.text-input{cursor:pointer;-webkit-appearance:none;background-image:url("d
     </div>
     <div class="info-box" style="margin-top:4px" id="t-emergency-info">При тиску ≥180/120 з'явиться кнопка SMS-сповіщення цьому контакту.</div>
     <button class="btn btn-outline" style="margin-top:10px" onclick="testEmergency()">
-      <span id="t-test-sms">📱 Тест SMS</span>
+      <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+      <span id="t-test-sms">Тест SMS</span>
     </button>
   </div>
 
@@ -945,7 +946,7 @@ select.text-input{cursor:pointer;-webkit-appearance:none;background-image:url("d
   <div class="card">
     <div class="card-title"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><span id="t-email-notif">Нагадування на Email/SMS</span></div>
     <div class="info-box" id="t-email-info">Автоматична відправка Email потребує серверної частини (бекенду). Ця функція недоступна в автономному PWA. Рекомендуємо: налаштуйте повторювані події в Google Календар → вони надсилатимуть нагадування на вашу пошту.</div>
-    <a href="https://calendar.google.com" target="_blank" class="btn btn-outline" style="margin-top:8px;text-decoration:none;text-align:center" id="t-gcal">📅 Google Календар →</a>
+    <a href="https://calendar.google.com" target="_blank" class="btn btn-outline" style="margin-top:8px;text-decoration:none;text-align:center"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span id="t-gcal">Google Календар →</span></a>
   </div>
 
   <div class="card">
@@ -953,7 +954,7 @@ select.text-input{cursor:pointer;-webkit-appearance:none;background-image:url("d
     <div class="settings-row"><div><div class="settings-label" id="t-version">Версія</div><div class="settings-sub">HealthPro v4.0 PWA</div></div></div>
     <div class="settings-row"><div><div class="settings-label" id="t-data">Дані</div><div class="settings-sub" id="t-data-sub">Зберігаються тільки на вашому пристрої</div></div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
     <div class="warn-box" style="margin-top:10px" id="t-disclaimer">⚠️ Додаток не замінює консультацію лікаря. При погіршенні самопочуття — зверніться до медика негайно.</div>
-    <button class="btn btn-red" onclick="clearAllData()" style="margin-top:10px;font-size:13px" id="t-delete-all">🗑️ Видалити всі дані</button>
+    <button class="btn btn-red" onclick="clearAllData()" style="margin-top:10px;font-size:13px"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span id="t-delete-all">Видалити всі дані</span></button>
   </div>
 </div>
 
@@ -1064,7 +1065,7 @@ const T={
     't-journal':'Журнал вимірів','t-h-week':'Тиждень','t-h-month':'Місяць','t-h-all':'Всі','t-no-history':'Немає записів','t-clear-hist':'Очистити журнал',
     't-profile':'Мій профіль','t-name':'Ім\'я','t-age':'Вік','t-height':'Зріст (см)','t-weight':'Вага (кг)','t-gender':'Стать','t-phone':'Телефон','t-email':'Email',
     't-save-profile':'Зберегти профіль','t-emergency':'Екстрений контакт','t-e-phone':'Телефон','t-e-name':'Ім\'я контакту',
-    't-emergency-info':'При тиску ≥180/120 з\'явиться кнопка SMS-сповіщення цьому контакту.','t-test-sms':'📱 Тест SMS',
+    't-emergency-info':'При тиску ≥180/120 з\'явиться кнопка SMS-сповіщення цьому контакту.','t-test-sms':'Тест SMS',
     't-notif':'Нагадування','t-notif-pill':'Нагадування про ліки','t-notif-pill-sub':'Push при настанні часу',
     't-measure-remind':'Нагадування про вимір','t-measure-remind-sub':'Ранок та вечір (налаштовуйте час)',
     't-morning':'Ранок','t-evening':'Вечір',
@@ -1074,8 +1075,8 @@ const T={
     't-exp-csv':'Експорт CSV','t-exp-csv-sub':'Для Excel / лікаря','t-exp-pdf':'Друк / PDF','t-exp-pdf-sub':'Звіт через друк',
     't-imp':'Імпорт даних','t-imp-sub':'Відновити з JSON','t-imp-btn':'Відновити',
     't-email-notif':'Нагадування на Email/SMS','t-email-info':'Автоматична відправка Email потребує серверної частини (бекенду). Ця функція недоступна в автономному PWA. Рекомендуємо: Google Календар.',
-    't-gcal':'📅 Google Календар →','t-about':'Про додаток','t-version':'Версія','t-data':'Дані','t-data-sub':'Зберігаються тільки на вашому пристрої',
-    't-disclaimer':'⚠️ Додаток не замінює консультацію лікаря. При погіршенні — зверніться до медика.','t-delete-all':'🗑️ Видалити всі дані',
+    't-gcal':'Google Календар →','t-about':'Про додаток','t-version':'Версія','t-data':'Дані','t-data-sub':'Зберігаються тільки на вашому пристрої',
+    't-disclaimer':'⚠️ Додаток не замінює консультацію лікаря. При погіршенні — зверніться до медика.','t-delete-all':'Видалити всі дані',
     't-trend-modal':'Тенденція тиску','t-who-modal':'Класифікація тиску ВООЗ',
     'o-daily':'Щодня','o-date':'Дата',
     'o-gender-none':'Не вказано','o-male':'Чоловіча','o-female':'Жіноча',
@@ -1100,7 +1101,7 @@ const T={
     't-journal':'Журнал измерений','t-h-week':'Неделя','t-h-month':'Месяц','t-h-all':'Все','t-no-history':'Нет записей','t-clear-hist':'Очистить журнал',
     't-profile':'Мой профиль','t-name':'Имя','t-age':'Возраст','t-height':'Рост (см)','t-weight':'Вес (кг)','t-gender':'Пол','t-phone':'Телефон','t-email':'Email',
     't-save-profile':'Сохранить профиль','t-emergency':'Экстренный контакт','t-e-phone':'Телефон','t-e-name':'Имя контакта',
-    't-emergency-info':'При давлении ≥180/120 появится кнопка SMS-уведомления.','t-test-sms':'📱 Тест SMS',
+    't-emergency-info':'При давлении ≥180/120 появится кнопка SMS-уведомления.','t-test-sms':'Тест SMS',
     't-notif':'Напоминания','t-notif-pill':'Напоминание о лекарствах','t-notif-pill-sub':'Push при наступлении времени',
     't-measure-remind':'Напоминание об измерении','t-measure-remind-sub':'Утро и вечер (настройте время)',
     't-morning':'Утро','t-evening':'Вечер',
@@ -1110,8 +1111,8 @@ const T={
     't-exp-csv':'Экспорт CSV','t-exp-csv-sub':'Для Excel / врача','t-exp-pdf':'Печать / PDF','t-exp-pdf-sub':'Отчёт через печать',
     't-imp':'Импорт данных','t-imp-sub':'Восстановить из JSON','t-imp-btn':'Восстановить',
     't-email-notif':'Напоминания на Email/SMS','t-email-info':'Автоматическая отправка Email требует серверной части. Рекомендуем: Google Календарь.',
-    't-gcal':'📅 Google Календарь →','t-about':'О приложении','t-version':'Версия','t-data':'Данные','t-data-sub':'Хранятся только на вашем устройстве',
-    't-disclaimer':'⚠️ Приложение не заменяет консультацию врача.','t-delete-all':'🗑️ Удалить все данные',
+    't-gcal':'Google Календарь →','t-about':'О приложении','t-version':'Версия','t-data':'Данные','t-data-sub':'Хранятся только на вашем устройстве',
+    't-disclaimer':'⚠️ Приложение не заменяет консультацию врача.','t-delete-all':'Удалить все данные',
     't-trend-modal':'Тенденция давления','t-who-modal':'Классификация давления ВОЗ',
     'o-daily':'Ежедневно','o-date':'Дата',
     'o-gender-none':'Не указано','o-male':'Мужской','o-female':'Женский',
@@ -2834,7 +2835,7 @@ window.addEventListener('resize',()=>setTimeout(renderChart,50));
  <div id="healthTooltip" class="tooltip-overlay" onclick="toggleHealthTooltip()">
   <div class="tooltip-content" onclick="event.stopPropagation()">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-        <h3 style="font-size:16px; font-weight:800; margin:0; color:var(--text);">📊 Деталі індексу</h3>
+        <h3 style="font-size:16px; font-weight:800; margin:0; color:var(--text); display:flex; align-items:center; gap:8px;"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Деталі індексу</h3>
         <button class="modal-close" onclick="toggleHealthTooltip()">×</button>
     </div>
 <ul class="score-list">
