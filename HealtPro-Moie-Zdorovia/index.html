@@ -763,13 +763,13 @@ select.text-input{cursor:pointer;-webkit-appearance:none;background-image:url("d
           <circle class="sr-bg" cx="44" cy="44" r="36"/>
           <circle class="sr-fill" id="scoreRingFill" cx="44" cy="44" r="36" stroke-dasharray="226" stroke-dashoffset="226"/>
         </svg>
-        <div class="score-num" id="scoreNum"><span>—</span><small>бал</small></div>
+        <div class="score-num" id="scoreNum"><span>—</span><small id="t-score-bal">бал</small></div>
       </div>
       <div class="score-info">
         <div class="score-title" id="scoreTitle">Немає даних</div>
         <div class="score-desc" id="scoreDesc">Додайте 3+ виміри для аналізу</div>
         <div class="score-targets">
-          <span class="score-target-pill">Ціль: 80+</span>
+          <span class="score-target-pill" id="t-score-goal">Ціль: 80+</span>
           <span class="score-target-pill" id="scoreTargetBP">Тиск: —</span>
         </div>
       </div>
@@ -928,7 +928,7 @@ select.text-input{cursor:pointer;-webkit-appearance:none;background-image:url("d
     <div class="history-actions">
       <button class="btn btn-outline" onclick="openExportModal()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-        <span>Друк</span>
+        <span id="t-journal-print">Друк</span>
       </button>
       <button class="btn btn-outline" onclick="clearHistory()">
         <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
@@ -958,16 +958,16 @@ select.text-input{cursor:pointer;-webkit-appearance:none;background-image:url("d
         <option value="f" id="o-female">Жіноча</option>
       </select>
     </div>
-    <div class="info-box" style="margin:4px 0 10px;background:var(--blue-dim);">💡 <b>Особиста норма</b> — допомагає визначати, чи завищений тиск саме для вас. Враховується у вимірюваннях, аналітиці та звітах для лікаря.</div>
+    <div id="t-personal-norm-box" class="info-box" style="margin:4px 0 10px;background:var(--blue-dim);">💡 <b>Особиста норма</b> — допомагає визначати, чи завищений тиск саме для вас. Враховується у вимірюваннях, аналітиці та звітах для лікаря.</div>
     <div class="form-row">
-      <div class="input-group"><label class="input-label">Звичайний тиск (сис.)</label><input type="number" class="text-input" id="normalSys" placeholder="120" min="70" max="200"></div>
-      <div class="input-group"><label class="input-label">Звичайний тиск (діа.)</label><input type="number" class="text-input" id="normalDia" placeholder="80" min="40" max="130"></div>
+      <div class="input-group"><label class="input-label" id="t-normal-sys">Звичайний тиск (сис.)</label><input type="number" class="text-input" id="normalSys" placeholder="120" min="70" max="200"></div>
+      <div class="input-group"><label class="input-label" id="t-normal-dia">Звичайний тиск (діа.)</label><input type="number" class="text-input" id="normalDia" placeholder="80" min="40" max="130"></div>
     </div>
-    <div class="input-group"><label class="input-label">Звичайний пульс (уд/хв)</label><input type="number" class="text-input" id="normalPulse" placeholder="70" min="30" max="150"></div>
+    <div class="input-group"><label class="input-label" id="t-normal-pulse">Звичайний пульс (уд/хв)</label><input type="number" class="text-input" id="normalPulse" placeholder="70" min="30" max="150"></div>
   </div>
 
   <div class="card">
-    <div class="card-title"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><span>Контактна інформація</span></div>
+    <div class="card-title"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><span id="t-contacts-title">Контактна інформація</span></div>
     <div class="form-row">
       <div class="input-group"><label class="input-label" id="t-phone">Телефон</label><input type="tel" class="text-input" id="userPhone" placeholder="+380XXXXXXXXX"></div>
       <div class="input-group"><label class="input-label" id="t-email">Email</label><input type="email" class="text-input" id="userEmail" placeholder="your@email.com"></div>
@@ -1053,14 +1053,14 @@ select.text-input{cursor:pointer;-webkit-appearance:none;background-image:url("d
   <div class="card">
     <div class="card-title">
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-      <span>Звіт для лікаря</span>
+      <span id="t-settings-doc-title">Звіт для лікаря</span>
     </div>
     <div class="settings-row">
       <div>
-        <div class="settings-label">Друк / PDF / CSV</div>
-        <div class="settings-sub">Оберіть період та формат звіту</div>
+        <div class="settings-label" id="t-settings-doc-label">Друк / PDF / CSV</div>
+        <div class="settings-sub" id="t-settings-doc-sub">Оберіть період та формат звіту</div>
       </div>
-      <button class="btn btn-outline btn-sm" onclick="openExportModal()">Звіт</button>
+      <button class="btn btn-outline btn-sm" onclick="openExportModal()" id="t-settings-doc-btn">Звіт</button>
     </div>
   </div>
 
@@ -1122,37 +1122,37 @@ select.text-input{cursor:pointer;-webkit-appearance:none;background-image:url("d
     <span class="modal-handle"></span>
     <div class="modal-title">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blue2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-      <span>Звіт для лікаря</span>
+      <span id="t-export-title">Звіт для лікаря</span>
       <button class="modal-close" onclick="closeExportModal()">×</button>
     </div>
 
-    <div style="font-size:12px;color:var(--text3);margin-bottom:4px;font-weight:600;letter-spacing:.5px;text-transform:uppercase">Вибір периоду</div>
+    <div id="t-export-period-lbl" style="font-size:12px;color:var(--text3);margin-bottom:4px;font-weight:600;letter-spacing:.5px;text-transform:uppercase">Вибір периоду</div>
     <div class="exp-period-grid">
       <button class="exp-period-btn" id="expP-week" onclick="selectExportPeriod('week',this)">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
-        Тиждень
+        <span id="t-exp-btn-week">Тиждень</span>
       </button>
       <button class="exp-period-btn" id="expP-2weeks" onclick="selectExportPeriod('2weeks',this)">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
-        2 тижні
+        <span id="t-exp-btn-2weeks">2 тижні</span>
       </button>
       <button class="exp-period-btn active" id="expP-month" onclick="selectExportPeriod('month',this)">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
-        Місяць
+        <span id="t-exp-btn-month">Місяць</span>
       </button>
       <button class="exp-period-btn" id="expP-custom" onclick="selectExportPeriod('custom',this)">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        Свій період
+        <span id="t-exp-btn-custom">Свій період</span>
       </button>
     </div>
 
     <div class="exp-custom-range" id="expCustomRange">
       <div style="flex:1">
-        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;font-weight:600">З дати</div>
+        <div id="t-exp-from-lbl" style="font-size:11px;color:var(--text3);margin-bottom:4px;font-weight:600">З дати</div>
         <input type="date" id="expDateFrom" onchange="updateExportCount()">
       </div>
       <div style="flex:1">
-        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;font-weight:600">По дату</div>
+        <div id="t-exp-to-lbl" style="font-size:11px;color:var(--text3);margin-bottom:4px;font-weight:600">По дату</div>
         <input type="date" id="expDateTo" onchange="updateExportCount()">
       </div>
     </div>
@@ -1162,11 +1162,11 @@ select.text-input{cursor:pointer;-webkit-appearance:none;background-image:url("d
     <div class="exp-actions">
       <button class="btn-print" onclick="printReportPeriod()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-        Друк / PDF
+        <span id="t-exp-print-btn">Друк / PDF</span>
       </button>
       <button class="btn-csv-exp" onclick="exportReportCSV()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Зберегти CSV
+        <span id="t-exp-csv-btn">Зберегти CSV</span>
       </button>
     </div>
   </div>
@@ -1215,6 +1215,28 @@ const T={
     't-veto-label':'ВЕТО:','t-veto-text':'Ваш останній тиск занадто високий. Загальний індекс автоматично знижено для вашої безпеки.',
     'o-daily':'Щодня','o-date':'Дата',
     'o-gender-none':'Не вказано','o-male':'Чоловіча','o-female':'Жіноча',
+    't-score-bal':'бал',
+    't-score-goal':'Ціль: 80+',
+    't-settings-doc-title':'Звіт для лікаря',
+    't-settings-doc-label':'Друк / PDF / CSV',
+    't-settings-doc-sub':'Оберіть період та формат звіту',
+    't-settings-doc-btn':'Звіт',
+    't-export-title':'Звіт для лікаря',
+    't-export-period-lbl':'Вибір периоду',
+    't-exp-btn-week':'Тиждень',
+    't-exp-btn-2weeks':'2 тижні',
+    't-exp-btn-month':'Місяць',
+    't-exp-btn-custom':'Свій період',
+    't-exp-from-lbl':'З дати',
+    't-exp-to-lbl':'По дату',
+    't-exp-print-btn':'Друк / PDF',
+    't-exp-csv-btn':'Зберегти CSV',
+    't-personal-norm-box':'💡 <b>Особиста норма</b> — допомагає визначати, чи завищений тиск саме для вас. Враховується у вимірюваннях, аналітиці та звітах для лікаря.',
+    't-contacts-title':'Контактна інформація',
+    't-normal-sys':'Звичайний тиск (сис.)',
+    't-normal-dia':'Звичайний тиск (діа.)',
+    't-normal-pulse':'Звичайний пульс (уд/хв)',
+    't-journal-print':'Друк',
   },
   ru:{
     'nt-pressure':'Давление','nt-analytics':'Анализ','nt-pills':'Лекарства','nt-history':'Журнал','nt-profile':'Профиль','nt-settings':'Настр.',
@@ -1254,6 +1276,28 @@ const T={
     't-veto-label':'ВЕТО:','t-veto-text':'Ваше последнее давление слишком высокое. Общий индекс автоматически снижен для вашей безопасности.',
     'o-daily':'Ежедневно','o-date':'Дата',
     'o-gender-none':'Не указано','o-male':'Мужской','o-female':'Женский',
+    't-score-bal':'балл',
+    't-score-goal':'Цель: 80+',
+    't-settings-doc-title':'Отчёт для врача',
+    't-settings-doc-label':'Печать / PDF / CSV',
+    't-settings-doc-sub':'Выберите период и формат отчёта',
+    't-settings-doc-btn':'Отчёт',
+    't-export-title':'Отчёт для врача',
+    't-export-period-lbl':'Выбор периода',
+    't-exp-btn-week':'Неделя',
+    't-exp-btn-2weeks':'2 недели',
+    't-exp-btn-month':'Месяц',
+    't-exp-btn-custom':'Свой период',
+    't-exp-from-lbl':'С даты',
+    't-exp-to-lbl':'По дату',
+    't-exp-print-btn':'Печать / PDF',
+    't-exp-csv-btn':'Сохранить CSV',
+    't-personal-norm-box':'💡 <b>Личная норма</b> — помогает определить, повышено ли давление именно для вас. Учитывается в измерениях, аналитике и отчётах для врача.',
+    't-contacts-title':'Контактная информация',
+    't-normal-sys':'Обычное давление (сис.)',
+    't-normal-dia':'Обычное давление (диа.)',
+    't-normal-pulse':'Обычный пульс (уд/мин)',
+    't-journal-print':'Печать',
   }
 };
 
@@ -1325,11 +1369,12 @@ function setLang(l){
   document.getElementById('lang-uk').classList.toggle('active',l==='uk');
   document.getElementById('lang-ru').classList.toggle('active',l==='ru');
   const t=T[l];
-  Object.keys(t).forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=t[id]});
+  Object.keys(t).forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=t[id]});
   renderWelcomeText();
   renderDisclaimerBody();
   // Re-render dynamic views that depend on lang
-  if(typeof renderAll==='function')try{renderAll()}catch(e){}
+  try{renderAnalytics()}catch(e){}
+  try{renderHistory()}catch(e){}
 }
 function t(id){return T[lang][id]||T['uk'][id]||id}
 
@@ -1689,7 +1734,7 @@ function renderAnalytics(){
   const sc=score===null?'#475569':score>=80?'#10b981':score>=60?'#f59e0b':'#ef4444';
   fill.setAttribute('stroke-dashoffset',score===null?circ:circ-(circ*(score/100)));
   fill.setAttribute('stroke',sc);
-  document.getElementById('scoreNum').innerHTML=`<span style="color:${sc}">${score===null?'—':score}</span><small>бал</small>`;
+  document.getElementById('scoreNum').innerHTML=`<span style="color:${sc}">${score===null?'—':score}</span><small id="t-score-bal">бал</small>`;
   document.getElementById('scoreTitle').textContent=score===null?(isRu?'Нет данных':'Немає даних'):score>=80?(isRu?'Отлично':'Відмінно'):score>=65?(isRu?'Хорошо':'Добре'):score>=50?(isRu?'Удовлетворительно':'Задовільно'):(isRu?'Требует внимания':'Потребує уваги');
   document.getElementById('scoreDesc').textContent=score===null?(isRu?'Добавьте 3+ измерения':'Додайте 3+ виміри'):score>=80?(isRu?'Показатели в норме':'Показники в нормі'):score>=65?(isRu?'Большинство показателей хорошие':'Більшість показників добрі'):score>=50?(isRu?'Обратите внимание на рекомендации':'Зверніть увагу на рекомендації'):(isRu?'Рекомендуется консультация врача':'Рекомендується консультація лікаря');
   const stBP=document.getElementById('scoreTargetBP');
@@ -1751,7 +1796,7 @@ function renderAnalytics(){
     const maxEl=document.getElementById('maxSys');
     const minEl=document.getElementById('minSysLabel');
     maxEl.textContent=maxV;
-    minEl.textContent='мін.: '+minV;
+    minEl.textContent=(isRu?'мин.:':'мін.')+'\u00a0'+minV;
     const maxColor = maxV>=180 ? 'var(--red)' : maxV>=n.sysWarn ? 'var(--amber)' : maxV>n.sysOk ? 'var(--amber)' : 'var(--green)';
     const minColor = minV<90 ? 'var(--red)' : minV<100 ? 'var(--amber)' : 'var(--green)';
     maxEl.style.color=maxColor;
