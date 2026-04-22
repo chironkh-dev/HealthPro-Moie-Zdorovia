@@ -1810,7 +1810,6 @@ function renderAnalytics(){
   document.getElementById('scoreTitle').textContent=score===null?(isRu?'Нет данных':'Немає даних'):score>=80?(isRu?'Отлично':'Відмінно'):score>=65?(isRu?'Хорошо':'Добре'):score>=50?(isRu?'Удовлетворительно':'Задовільно'):(isRu?'Требует внимания':'Потребує уваги');
   document.getElementById('scoreDesc').textContent=score===null?(isRu?'Добавьте 3+ измерения':'Додайте 3+ виміри'):score>=80?(isRu?'Показатели в норме':'Показники в нормі'):score>=65?(isRu?'Большинство показателей хорошие':'Більшість показників добрі'):score>=50?(isRu?'Обратите внимание на рекомендации':'Зверніть увагу на рекомендації'):(isRu?'Рекомендуется консультация врача':'Рекомендується консультація лікаря');
   const stBP=document.getElementById('scoreTargetBP');
-  const isRu=lang==='ru';
   if(stBP&&all.length){const n=getBPNorm();const aS=last7.length?avg(last7.map(m=>m.sys)):all[0].sys;stBP.textContent=(isRu?`Цель давления <${n.sysWarn}`:`Ціль тиску <${n.sysWarn}`); stBP.style.color=aS<n.sysWarn?'var(--green)':'var(--amber)';}
 
 // Score breakdown bars
