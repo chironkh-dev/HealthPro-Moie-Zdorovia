@@ -3,7 +3,7 @@
 // Cache-first strategy + offline support
 // ============================================================
 
-const CACHE_NAME = 'healthpro-v5.3';
+const CACHE_NAME = 'healthpro-v5.4';
 const STATIC_ASSETS = [
   './index.html',
   './manifest.json',
