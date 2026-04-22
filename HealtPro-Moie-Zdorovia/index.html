@@ -16,6 +16,16 @@
 <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
 <link rel="shortcut icon" href="icons/icon-192.png">
 <title>HealthPro</title>
+<script>
+  window.__HP_STORAGE_KEYS = {
+    measurements: 'hp_measurements',
+    pills: 'hp_pills',
+    pillsTaken: 'hp_pills_taken',
+    settings: 'hp_settings',
+    theme: 'hp_theme',
+    lang: 'hp_lang',
+  };
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -904,9 +914,13 @@ function renderWelcomeText(){
   Object.keys(map).forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=map[id]});
 }
 
-let lang=localStorage.getItem('lang')||'uk';
+const STORAGE_KEYS=(window.__HP_STORAGE_KEYS)
+  || (window.HealthProModules&&window.HealthProModules.storage&&window.HealthProModules.storage.keys)
+  || {measurements:'measurements',pills:'pills',pillsTaken:'pillsTaken',settings:'settings',theme:'theme',lang:'lang'};
+
+let lang=localStorage.getItem(STORAGE_KEYS.lang)||'uk';
 function setLang(l){
-  lang=l;localStorage.setItem('lang',l);
+  lang=l;localStorage.setItem(STORAGE_KEYS.lang,l);
   // Settings page lang buttons
   const lu=document.getElementById('lang-uk'),lr=document.getElementById('lang-ru');
   if(lu)lu.classList.toggle('active',l==='uk');
@@ -916,7 +930,8 @@ function setLang(l){
   if(wu)wu.classList.toggle('active',l==='uk');
   if(wr)wr.classList.toggle('active',l==='ru');
   document.documentElement.setAttribute('lang',l);
-  const t=T[l];
+  const modularDict=(window.HealthProModules&&window.HealthProModules.dictionaries&&window.HealthProModules.dictionaries[l])||null;
+  const t=modularDict||T[l];
   Object.keys(t).forEach(id=>{
     if(id.startsWith('p-'))return;
     const el=document.getElementById(id);if(el)el.innerHTML=t[id];
@@ -943,22 +958,22 @@ function t(id){return T[lang][id]||T['uk'][id]||id}
 // DATA
 // ══════════════════════════════════════════
 const DB={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch{return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}}
-let measurements=DB.get('measurements',[]);
-let pills=DB.get('pills',[]);
-let pillsTaken=DB.get('pillsTaken',{});
-let settings=DB.get('settings',{name:'',age:'',height:'',weight:'',gender:'',phone:'',email:'',viber:'',telegram:'',whatsapp:'',normalSys:'',normalDia:'',normalPulse:'',notif:false,measureReminder:false,emergencyPhone:'',emergencyName:'',morningTime:'08:00',eveningTime:'20:00',stepGoal:10000,stepsEnabled:false});
-function saveData(){DB.set('measurements',measurements);DB.set('pills',pills);DB.set('pillsTaken',pillsTaken);DB.set('settings',settings)}
+let measurements=DB.get(STORAGE_KEYS.measurements,DB.get('measurements',[]));
+let pills=DB.get(STORAGE_KEYS.pills,DB.get('pills',[]));
+let pillsTaken=DB.get(STORAGE_KEYS.pillsTaken,DB.get('pillsTaken',{}));
+let settings=DB.get(STORAGE_KEYS.settings,DB.get('settings',{name:'',age:'',height:'',weight:'',gender:'',phone:'',email:'',viber:'',telegram:'',whatsapp:'',normalSys:'',normalDia:'',normalPulse:'',notif:false,measureReminder:false,emergencyPhone:'',emergencyName:'',morningTime:'08:00',eveningTime:'20:00',stepGoal:10000,stepsEnabled:false}));
+function saveData(){DB.set(STORAGE_KEYS.measurements,measurements);DB.set(STORAGE_KEYS.pills,pills);DB.set(STORAGE_KEYS.pillsTaken,pillsTaken);DB.set(STORAGE_KEYS.settings,settings)}
 
 // ══════════════════════════════════════════
 // THEME
 // ══════════════════════════════════════════
-let isDark=DB.get('theme','dark')==='dark';
+let isDark=DB.get(STORAGE_KEYS.theme,DB.get('theme','dark'))==='dark';
 function applyTheme(){
   document.documentElement.setAttribute('data-theme',isDark?'dark':'light');
   const ic=document.getElementById('themeIcon');
   ic.innerHTML=isDark?'<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>':'<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
 }
-function toggleTheme(){isDark=!isDark;DB.set('theme',isDark?'dark':'light');applyTheme()}
+function toggleTheme(){isDark=!isDark;DB.set(STORAGE_KEYS.theme,isDark?'dark':'light');applyTheme()}
 
 // ══════════════════════════════════════════
 // UTILS
@@ -2970,5 +2985,6 @@ window.addEventListener('resize',()=>setTimeout(renderChart,50));
   </div>
 </div>
  
+<script type="module" src="/src/main.js"></script>
 </body>
 </html>
