@@ -29,6 +29,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="/state-storage.js"></script>
 <link rel="stylesheet" href="/styles/app.css">
 </head>
 <body>
@@ -957,23 +958,38 @@ function t(id){return T[lang][id]||T['uk'][id]||id}
 // ══════════════════════════════════════════
 // DATA
 // ══════════════════════════════════════════
-const DB={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch{return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}}
-let measurements=DB.get(STORAGE_KEYS.measurements,DB.get('measurements',[]));
-let pills=DB.get(STORAGE_KEYS.pills,DB.get('pills',[]));
-let pillsTaken=DB.get(STORAGE_KEYS.pillsTaken,DB.get('pillsTaken',{}));
-let settings=DB.get(STORAGE_KEYS.settings,DB.get('settings',{name:'',age:'',height:'',weight:'',gender:'',phone:'',email:'',viber:'',telegram:'',whatsapp:'',normalSys:'',normalDia:'',normalPulse:'',notif:false,measureReminder:false,emergencyPhone:'',emergencyName:'',morningTime:'08:00',eveningTime:'20:00',stepGoal:10000,stepsEnabled:false}));
-function saveData(){DB.set(STORAGE_KEYS.measurements,measurements);DB.set(STORAGE_KEYS.pills,pills);DB.set(STORAGE_KEYS.pillsTaken,pillsTaken);DB.set(STORAGE_KEYS.settings,settings)}
+const stateStorage = window.HealthProStateStorage || {
+  DB: { get(_k, d) { return d; }, set() {} },
+  loadState() {
+    return {
+      measurements: [],
+      pills: [],
+      pillsTaken: {},
+      settings: {},
+      isDark: true,
+    };
+  },
+  saveState() {},
+  saveTheme() {},
+};
+const DB = stateStorage.DB;
+const initialState = stateStorage.loadState();
+let measurements = initialState.measurements;
+let pills = initialState.pills;
+let pillsTaken = initialState.pillsTaken;
+let settings = initialState.settings;
+function saveData(){stateStorage.saveState({measurements,pills,pillsTaken,settings})}
 
 // ══════════════════════════════════════════
 // THEME
 // ══════════════════════════════════════════
-let isDark=DB.get(STORAGE_KEYS.theme,DB.get('theme','dark'))==='dark';
+let isDark = initialState.isDark;
 function applyTheme(){
   document.documentElement.setAttribute('data-theme',isDark?'dark':'light');
   const ic=document.getElementById('themeIcon');
   ic.innerHTML=isDark?'<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>':'<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
 }
-function toggleTheme(){isDark=!isDark;DB.set(STORAGE_KEYS.theme,isDark?'dark':'light');applyTheme()}
+function toggleTheme(){isDark=!isDark;stateStorage.saveTheme(isDark);applyTheme()}
 
 // ══════════════════════════════════════════
 // UTILS
@@ -2125,12 +2141,17 @@ function handleMotion(e){
   lastAcc=acc;
 }
 function updateStepUI(){
-  document.getElementById('stepCount').textContent=stepCount.toLocaleString();
+  const stepCountEl = document.getElementById('stepCount');
+  const stepPctEl = document.getElementById('stepPct');
+  const stepBarEl = document.getElementById('stepBar');
+  const stepGoalEl = document.getElementById('t-step-goal');
+  if(!stepCountEl || !stepPctEl || !stepBarEl) return;
+  stepCountEl.textContent=stepCount.toLocaleString();
   const goal=settings.stepGoal||10000;
   const pct=Math.min(100,Math.round(stepCount/goal*100));
-  document.getElementById('stepPct').textContent=pct+'%';
-  document.getElementById('stepBar').style.width=pct+'%';
-  document.getElementById('t-step-goal').textContent=`ціль: ${goal.toLocaleString()}`;
+  stepPctEl.textContent=pct+'%';
+  stepBarEl.style.width=pct+'%';
+  if(stepGoalEl) stepGoalEl.textContent=`ціль: ${goal.toLocaleString()}`;
 }
 
 // ══════════════════════════════════════════
