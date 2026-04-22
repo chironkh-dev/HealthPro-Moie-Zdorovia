@@ -539,38 +539,38 @@ select.text-input{cursor:pointer;-webkit-appearance:none;background-image:url("d
       </div>
     </div>
     <h1 class="welcome-title">HealthPro</h1>
-    <div class="welcome-subtitle">Моє Здоров'я</div>
-    <div class="welcome-tagline">Ваш персональний щоденник здоров'я</div>
+    <div class="welcome-subtitle" id="w-subtitle">Моє Здоров'я</div>
+    <div class="welcome-tagline" id="w-tagline">Ваш персональний щоденник здоров'я</div>
 
     <div class="welcome-features">
       <div class="welcome-feat">
         <div class="welcome-feat-ico"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
-        <div class="welcome-feat-txt">Контроль артеріального тиску та пульсу</div>
+        <div class="welcome-feat-txt" id="w-feat1">Контроль артеріального тиску та пульсу</div>
       </div>
       <div class="welcome-feat">
         <div class="welcome-feat-ico"><svg viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8zM6 1v3M10 1v3M14 1v3"/></svg></div>
-        <div class="welcome-feat-txt">Розклад прийому ліків з нагадуваннями</div>
+        <div class="welcome-feat-txt" id="w-feat2">Розклад прийому ліків з нагадуваннями</div>
       </div>
       <div class="welcome-feat">
         <div class="welcome-feat-ico"><svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
-        <div class="welcome-feat-txt">Аналітика та звіти для лікаря</div>
+        <div class="welcome-feat-txt" id="w-feat3">Аналітика та звіти для лікаря</div>
       </div>
       <div class="welcome-feat">
         <div class="welcome-feat-ico"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
-        <div class="welcome-feat-txt">Дані зберігаються лише на пристрої</div>
+        <div class="welcome-feat-txt" id="w-feat4">Дані зберігаються лише на пристрої</div>
       </div>
     </div>
 
     <a class="welcome-disclaimer-link" onclick="openDisclaimerModal()">
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-      Переглянути медичний дисклеймер
+      <span id="w-discl-link">Переглянути медичний дисклеймер</span>
     </a>
 
     <button class="welcome-accept-btn" onclick="acceptDisclaimer()">
       <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-      Погоджуюсь та продовжити
+      <span id="w-accept">Погоджуюсь та продовжити</span>
     </button>
-    <div class="welcome-version">HealthPro v4.8 PWA · Дисклеймер v1.0</div>
+    <div class="welcome-version" id="w-version">HealthPro v4.8 PWA · Дисклеймер v1.0</div>
   </div>
 </div>
 
@@ -579,42 +579,10 @@ select.text-input{cursor:pointer;-webkit-appearance:none;background-image:url("d
   <div class="disclaimer-sheet">
     <div class="disclaimer-handle"></div>
     <div class="disclaimer-head">
-      <h3><svg viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Медичний дисклеймер</h3>
+      <h3><svg viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span id="d-title">Медичний дисклеймер</span></h3>
       <button class="disclaimer-close" onclick="closeDisclaimerModal()">×</button>
     </div>
-    <div class="disclaimer-body">
-      <div class="disclaimer-version">МЕДИЧНИЙ ДИСКЛЕЙМЕР ТА ВІДМОВА ВІД ВІДПОВІДАЛЬНОСТІ · Версія 1.0</div>
-      <div id="disclaimerStatus"></div>
-
-      <h4><span class="num">1</span>Загальні положення</h4>
-      <p>Цей Додаток призначений виключно для ведення щоденника показників артеріального тиску та обліку прийому лікарських засобів. Вміст Додатка надається лише для інформаційних цілей і <b>не може розцінюватися як медична консультація або діагноз</b>.</p>
-
-      <h4><span class="num">2</span>Відсутність медичних послуг</h4>
-      <p>Використання цього Додатка <b>не створює відносин «лікар-пацієнт»</b>. Ми наполегливо рекомендуємо не приймати жодних медичних рішень без консультації з кваліфікованим лікарем. Ніколи не змінюйте дозування ліків та не припиняйте їх прийом самостійно на основі даних у цьому додатку.</p>
-
-      <h4><span class="num">3</span>Локальне збереження даних</h4>
-      <p>Усі Ваші персональні та медичні дані (показники тиску, розклад ліків) зберігаються виключно локально на Вашому мобільному пристрої. Розробник:</p>
-      <ul>
-        <li>Не має доступу до Ваших даних;</li>
-        <li>Не створює хмарних резервних копій;</li>
-        <li>Не несе відповідальності за втрату даних у разі поломки, втрати пристрою або видалення Додатка.</li>
-      </ul>
-
-      <h4><span class="num">4</span>Точність вимірювань</h4>
-      <p>Для отримання точних даних про артеріальний тиск необхідно використовувати сертифіковані медичні пристрої (тонометри). Додаток лише фіксує введену Вами інформацію і не відповідає за технічну точність Вашого тонометра.</p>
-
-      <h4><span class="num">5</span>Обмеження відповідальності</h4>
-      <table class="risk-table">
-        <thead><tr><th>Тип ризику</th><th>Позиція розробника</th></tr></thead>
-        <tbody>
-          <tr><td>Самолікування</td><td>Розробник не несе відповідальності за шкоду, завдану внаслідок самостійної зміни лікування.</td></tr>
-          <tr><td>Технічні збої</td><td>Користувач несе відповідальність за регулярне створення власних копій даних (наприклад, через функцію експорту).</td></tr>
-          <tr><td>Екстрені стани</td><td>У разі критичних показників тиску негайно звертайтеся до служби екстреної допомоги (103).</td></tr>
-        </tbody>
-      </table>
-
-      <div class="accent-box">⚠️ Натискаючи «Погоджуюсь» або продовжуючи використання Додатка, Ви підтверджуєте, що прочитали, зрозуміли та приймаєте умови цієї Відмови від відповідальності.</div>
-    </div>
+    <div class="disclaimer-body" id="disclaimerBody"></div>
   </div>
 </div>
 
@@ -628,7 +596,7 @@ select.text-input{cursor:pointer;-webkit-appearance:none;background-image:url("d
   </div>
 </div>
 
-<div class="offline-bar" id="offlineBar">Офлайн режим — дані зберігаються локально</div>
+<div class="offline-bar" id="offlineBar"><span id="t-offline">Офлайн режим — дані зберігаються локально</span></div>
 
 <!-- BANNERS -->
 <div class="banner b-install" id="installBanner">
@@ -1211,7 +1179,7 @@ select.text-input{cursor:pointer;-webkit-appearance:none;background-image:url("d
 const T={
   uk:{
     'nt-pressure':'Тиск','nt-analytics':'Аналіз','nt-pills':'Ліки','nt-history':'Журнал','nt-profile':'Профіль','nt-settings':'Налашт.',
-    't-install':'Встановіть додаток на телефон!','t-install-btn':'Встановити','t-update':'Доступне оновлення','t-update-btn':'Оновити',
+    't-install':'Встановіть додаток на телефон!','t-install-btn':'Встановити','t-update':'Доступне оновлення','t-update-btn':'Оновити','t-offline':'Офлайн режим — дані зберігаються локально',
     't-last-bp':'Останній тиск','t-last-pulse':'Пульс','t-bpm':'уд/хв','t-new-meas':'Новий вимір',
     't-bp-label':'Тиск (sys / dia) та Пульс','t-note':'Нотатка (необов\'язково)','t-save-meas':'Зберегти вимір',
     't-chart-title':'Графік вимірів','t-chart-all':'Все','t-pulse-toggle':'Пульс',
@@ -1247,7 +1215,7 @@ const T={
   },
   ru:{
     'nt-pressure':'Давление','nt-analytics':'Анализ','nt-pills':'Лекарства','nt-history':'Журнал','nt-profile':'Профиль','nt-settings':'Настр.',
-    't-install':'Установите приложение!','t-install-btn':'Установить','t-update':'Доступно обновление','t-update-btn':'Обновить',
+    't-install':'Установите приложение!','t-install-btn':'Установить','t-update':'Доступно обновление','t-update-btn':'Обновить','t-offline':'Офлайн режим — данные хранятся локально',
     't-last-bp':'Последнее давление','t-last-pulse':'Пульс','t-bpm':'уд/мин','t-new-meas':'Новое измерение',
     't-bp-label':'Давление (sys / dia) и Пульс','t-note':'Заметка (необязательно)','t-save-meas':'Сохранить измерение',
     't-chart-title':'График измерений','t-chart-all':'Всё','t-pulse-toggle':'Пульс',
@@ -1283,6 +1251,68 @@ const T={
   }
 };
 
+// Welcome screen + disclaimer text (full content, per language)
+const WELCOME_T={
+  uk:{subtitle:"Моє Здоров'я",tagline:"Ваш персональний щоденник здоров'я",
+    feat1:'Контроль артеріального тиску та пульсу',
+    feat2:'Розклад прийому ліків з нагадуваннями',
+    feat3:'Аналітика та звіти для лікаря',
+    feat4:'Дані зберігаються лише на пристрої',
+    discl:'Переглянути медичний дисклеймер',accept:'Погоджуюсь та продовжити',
+    version:'HealthPro v4.0 PWA · Дисклеймер v1.0'},
+  ru:{subtitle:'Моё Здоровье',tagline:'Ваш персональный дневник здоровья',
+    feat1:'Контроль артериального давления и пульса',
+    feat2:'Расписание приёма лекарств с напоминаниями',
+    feat3:'Аналитика и отчёты для врача',
+    feat4:'Данные хранятся только на устройстве',
+    discl:'Посмотреть медицинский дисклеймер',accept:'Согласен и продолжить',
+    version:'HealthPro v4.0 PWA · Дисклеймер v1.0'}
+};
+
+const DISCLAIMER_T={
+  uk:{title:'Медичний дисклеймер',
+    version:'МЕДИЧНИЙ ДИСКЛЕЙМЕР ТА ВІДМОВА ВІД ВІДПОВІДАЛЬНОСТІ · Версія 1.0',
+    s1:{h:'Загальні положення',p:'Цей Додаток призначений виключно для ведення щоденника показників артеріального тиску та обліку прийому лікарських засобів. Вміст Додатка надається лише для інформаційних цілей і <b>не може розцінюватися як медична консультація або діагноз</b>.'},
+    s2:{h:'Відсутність медичних послуг',p:'Використання цього Додатка <b>не створює відносин «лікар-пацієнт»</b>. Ми наполегливо рекомендуємо не приймати жодних медичних рішень без консультації з кваліфікованим лікарем. Ніколи не змінюйте дозування ліків та не припиняйте їх прийом самостійно на основі даних у цьому додатку.'},
+    s3:{h:'Локальне збереження даних',p:'Усі Ваші персональні та медичні дані (показники тиску, розклад ліків) зберігаються виключно локально на Вашому мобільному пристрої. Розробник:',li:['Не має доступу до Ваших даних;','Не створює хмарних резервних копій;','Не несе відповідальності за втрату даних у разі поломки, втрати пристрою або видалення Додатка.']},
+    s4:{h:'Точність вимірювань',p:'Для отримання точних даних про артеріальний тиск необхідно використовувати сертифіковані медичні пристрої (тонометри). Додаток лише фіксує введену Вами інформацію і не відповідає за технічну точність Вашого тонометра.'},
+    s5:{h:'Обмеження відповідальності',th1:'Тип ризику',th2:'Позиція розробника',
+      rows:[['Самолікування','Розробник не несе відповідальності за шкоду, завдану внаслідок самостійної зміни лікування.'],['Технічні збої','Користувач несе відповідальність за регулярне створення власних копій даних (наприклад, через функцію експорту).'],['Екстрені стани','У разі критичних показників тиску негайно звертайтеся до служби екстреної допомоги (103).']]},
+    accept:'⚠️ Натискаючи «Погоджуюсь» або продовжуючи використання Додатка, Ви підтверджуєте, що прочитали, зрозуміли та приймаєте умови цієї Відмови від відповідальності.'},
+  ru:{title:'Медицинский дисклеймер',
+    version:'МЕДИЦИНСКИЙ ДИСКЛЕЙМЕР И ОТКАЗ ОТ ОТВЕТСТВЕННОСТИ · Версия 1.0',
+    s1:{h:'Общие положения',p:'Данное Приложение предназначено исключительно для ведения дневника показателей артериального давления и учёта приёма лекарственных средств. Содержимое Приложения предоставляется только в информационных целях и <b>не может расцениваться как медицинская консультация или диагноз</b>.'},
+    s2:{h:'Отсутствие медицинских услуг',p:'Использование данного Приложения <b>не создаёт отношений «врач — пациент»</b>. Мы настоятельно рекомендуем не принимать никаких медицинских решений без консультации с квалифицированным врачом. Никогда не изменяйте дозировку лекарств и не прекращайте их приём самостоятельно на основе данных в этом приложении.'},
+    s3:{h:'Локальное хранение данных',p:'Все ваши персональные и медицинские данные (показатели давления, расписание приёма лекарств) хранятся исключительно локально на вашем мобильном устройстве. Разработчик:',li:['Не имеет доступа к вашим данным;','Не создаёт облачных резервных копий;','Не несёт ответственности за потерю данных в случае поломки, утери устройства или удаления Приложения.']},
+    s4:{h:'Точность измерений',p:'Для получения точных данных об артериальном давлении необходимо использовать сертифицированные медицинские устройства (тонометры). Приложение лишь фиксирует введённую вами информацию и не отвечает за техническую точность вашего тонометра.'},
+    s5:{h:'Ограничение ответственности',th1:'Вид риска',th2:'Позиция разработчика',
+      rows:[['Самолечение','Разработчик не несёт ответственности за вред, причинённый в результате самостоятельного изменения лечения.'],['Технические сбои','Пользователь несёт ответственность за регулярное создание собственных копий данных (например, через функцию экспорта).'],['Экстренные ситуации','При критических показателях давления немедленно обращайтесь в службу экстренной помощи (103).']]},
+    accept:'⚠️ Нажимая «Согласен» или продолжая использование Приложения, вы подтверждаете, что прочитали, поняли и принимаете условия данного Отказа от ответственности.'}
+};
+
+function renderDisclaimerBody(){
+  const d=DISCLAIMER_T[lang]||DISCLAIMER_T.uk;
+  const el=document.getElementById('disclaimerBody');
+  if(!el)return;
+  const sec=(n,s)=>`<h4><span class="num">${n}</span>${s.h}</h4><p>${s.p}</p>${s.li?'<ul>'+s.li.map(x=>`<li>${x}</li>`).join('')+'</ul>':''}`;
+  el.innerHTML=`
+    <div class="disclaimer-version">${d.version}</div>
+    <div id="disclaimerStatus"></div>
+    ${sec(1,d.s1)}${sec(2,d.s2)}${sec(3,d.s3)}${sec(4,d.s4)}
+    <h4><span class="num">5</span>${d.s5.h}</h4>
+    <table class="risk-table"><thead><tr><th>${d.s5.th1}</th><th>${d.s5.th2}</th></tr></thead><tbody>
+      ${d.s5.rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')}
+    </tbody></table>
+    <div class="accent-box">${d.accept}</div>`;
+  const tt=document.getElementById('d-title');if(tt)tt.textContent=d.title;
+}
+
+function renderWelcomeText(){
+  const w=WELCOME_T[lang]||WELCOME_T.uk;
+  const map={'w-subtitle':w.subtitle,'w-tagline':w.tagline,'w-feat1':w.feat1,'w-feat2':w.feat2,'w-feat3':w.feat3,'w-feat4':w.feat4,'w-discl-link':w.discl,'w-accept':w.accept,'w-version':w.version};
+  Object.keys(map).forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=map[id]});
+}
+
 let lang=localStorage.getItem('lang')||'uk';
 function setLang(l){
   lang=l;localStorage.setItem('lang',l);
@@ -1290,6 +1320,10 @@ function setLang(l){
   document.getElementById('lang-ru').classList.toggle('active',l==='ru');
   const t=T[l];
   Object.keys(t).forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=t[id]});
+  renderWelcomeText();
+  renderDisclaimerBody();
+  // Re-render dynamic views that depend on lang
+  if(typeof renderAll==='function')try{renderAll()}catch(e){}
 }
 function t(id){return T[lang][id]||T['uk'][id]||id}
 
@@ -1395,10 +1429,10 @@ function onPillDaysChange(){
 // ══════════════════════════════════════════
 function checkCritical(s,d){
   if(s>=180||d>=120){
-    document.getElementById('criticalText').textContent=`Критичний тиск: ${s}/${d}! Негайно зверніться до лікаря або виклич 103.`;
+    document.getElementById('criticalText').textContent=lang==='ru'?`Критическое давление: ${s}/${d}! Немедленно обратитесь к врачу или вызовите 103.`:`Критичний тиск: ${s}/${d}! Негайно зверніться до лікаря або викличте 103.`;
     document.getElementById('criticalAlert').classList.add('show');
     if(settings.notif&&'Notification' in window&&Notification.permission==='granted')
-      new Notification('🚨 Критичний тиск!',{body:`Тиск ${s}/${d} — виклич 103!`,icon:'icons/icon-192.png',requireInteraction:true,vibrate:[500,100,500,100,500]});
+      new Notification(lang==='ru'?'🚨 Критическое давление!':'🚨 Критичний тиск!',{body:lang==='ru'?`Давление ${s}/${d} — вызывайте 103!`:`Тиск ${s}/${d} — виклич 103!`,icon:'icons/icon-192.png',requireInteraction:true,vibrate:[500,100,500,100,500]});
   }
 }
 function sendCriticalSMS(){
