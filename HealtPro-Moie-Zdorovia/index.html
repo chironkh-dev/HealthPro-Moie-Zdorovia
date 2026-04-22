@@ -1795,6 +1795,7 @@ function setupChartTooltip(){
 // ANALYTICS
 // ══════════════════════════════════════════
 function renderAnalytics(){
+  const isRu=lang==='ru';
   const all=measurements;
   const last7=all.filter(m=>new Date(m.time)>new Date(Date.now()-7*864e5));
 
