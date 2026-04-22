@@ -1210,6 +1210,9 @@ const T={
     't-gcal':'Google Календар →','t-about':'Про додаток','t-version':'Версія','t-data':'Дані','t-data-sub':'Зберігаються тільки на вашому пристрої',
     't-disclaimer':'⚠️ Додаток не замінює консультацію лікаря. При погіршенні — зверніться до медика.','t-view-discl':'Переглянути медичний дисклеймер','t-delete-all':'Видалити всі дані',
     't-trend-modal':'Тенденція тиску','t-who-modal':'Класифікація тиску ВООЗ',
+    't-health-tooltip-title':'Деталі індексу','t-health-tooltip-ok':'Зрозуміло',
+    't-score-bp-lbl':'Тиск:','t-score-pulse-lbl':'Пульс:','t-score-pills-lbl':'Ліки:','t-score-activity-lbl':'Активність:','t-score-bmi-lbl':'ІМТ:',
+    't-veto-label':'ВЕТО:','t-veto-text':'Ваш останній тиск занадто високий. Загальний індекс автоматично знижено для вашої безпеки.',
     'o-daily':'Щодня','o-date':'Дата',
     'o-gender-none':'Не вказано','o-male':'Чоловіча','o-female':'Жіноча',
   },
@@ -1246,6 +1249,9 @@ const T={
     't-gcal':'Google Календарь →','t-about':'О приложении','t-version':'Версия','t-data':'Данные','t-data-sub':'Хранятся только на вашем устройстве',
     't-disclaimer':'⚠️ Приложение не заменяет консультацию врача.','t-view-discl':'Посмотреть медицинский дисклеймер','t-delete-all':'Удалить все данные',
     't-trend-modal':'Тенденция давления','t-who-modal':'Классификация давления ВОЗ',
+    't-health-tooltip-title':'Детали индекса','t-health-tooltip-ok':'Понятно',
+    't-score-bp-lbl':'Давление:','t-score-pulse-lbl':'Пульс:','t-score-pills-lbl':'Лекарства:','t-score-activity-lbl':'Активность:','t-score-bmi-lbl':'ИМТ:',
+    't-veto-label':'ВЕТО:','t-veto-text':'Ваше последнее давление слишком высокое. Общий индекс автоматически снижен для вашей безопасности.',
     'o-daily':'Ежедневно','o-date':'Дата',
     'o-gender-none':'Не указано','o-male':'Мужской','o-female':'Женский',
   }
@@ -1357,36 +1363,38 @@ function formatDate(s){return new Date(s).toLocaleDateString(lang==='ru'?'ru-UA'
 function avg(arr){return arr.length?Math.round(arr.reduce((a,b)=>a+b,0)/arr.length):null}
 function showToast(msg,dur=2500){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),dur)}
 
-// Age-based BP norms (ESC/ESH 2023)
 function getBPNorm(){
+  const isRu=lang==='ru';
   const ns=parseInt(settings.normalSys), nd=parseInt(settings.normalDia);
-  if(ns&&nd)return{sysOk:ns+5,diaOk:nd+5,sysWarn:ns+15,diaWarn:nd+10,note:`особиста норма ${ns}/${nd}`,personal:true};
+  if(ns&&nd)return{sysOk:ns+5,diaOk:nd+5,sysWarn:ns+15,diaWarn:nd+10,note:(isRu?`личная норма ${ns}/${nd}`:`особиста норма ${ns}/${nd}`),personal:true};
   const age=parseInt(settings.age)||50;
-  if(age<18)return{sysOk:110,diaOk:70,sysWarn:130,diaWarn:85,note:'норми до 17 р.'};
-  if(age<=59)return{sysOk:120,diaOk:80,sysWarn:130,diaWarn:80,note:'норми 18–59 р.'};
-  if(age<=79)return{sysOk:130,diaOk:85,sysWarn:140,diaWarn:90,note:'норми 60–79 р.'};
-  return{sysOk:140,diaOk:90,sysWarn:150,diaWarn:90,note:'норми 80+ р.'};
+  if(age<18)return{sysOk:110,diaOk:70,sysWarn:130,diaWarn:85,note:(isRu?'нормы до 17 л.':'норми до 17 р.')};
+  if(age<=59)return{sysOk:120,diaOk:80,sysWarn:130,diaWarn:80,note:(isRu?'нормы 18–59 л.':'норми 18–59 р.')};
+  if(age<=79)return{sysOk:130,diaOk:85,sysWarn:140,diaWarn:90,note:(isRu?'нормы 60–79 л.':'норми 60–79 р.')};
+  return{sysOk:140,diaOk:90,sysWarn:150,diaWarn:90,note:(isRu?'нормы 80+ л.':'норми 80+ р.')};
 }
 function getBPStatus(s,d){
-  if(s<80||d<50)return{label:'⬇️ Дуже низький',cls:'badge-warn'};
-  if(s<90||d<60)return{label:'⬇️ Знижений тиск',cls:'badge-warn'};
+  const isRu=lang==='ru';
+  if(s<80||d<50)return{label:isRu?'⬇️ Очень низкое':'⬇️ Дуже низький',cls:'badge-warn'};
+  if(s<90||d<60)return{label:isRu?'⬇️ Пониженное':'⬇️ Знижений тиск',cls:'badge-warn'};
   const n=getBPNorm();
-  if(s<=n.sysOk&&d<=n.diaOk)return{label:'✓ Норма',cls:'badge-ok'};
-  if(s<n.sysWarn&&d<n.diaWarn)return{label:'⚠ Підвищений',cls:'badge-warn'};
-  if(s<160&&d<100)return{label:'⚠ Гіпертензія І',cls:'badge-warn'};
-  if(s<180&&d<120)return{label:'▲ Гіпертензія ІІ',cls:'badge-bad'};
-  return{label:'🚨 Криз!',cls:'badge-crit'};
+  if(s<=n.sysOk&&d<=n.diaOk)return{label:isRu?'✓ Норма':'✓ Норма',cls:'badge-ok'};
+  if(s<n.sysWarn&&d<n.diaWarn)return{label:isRu?'⚠ Повышенное':'⚠ Підвищений',cls:'badge-warn'};
+  if(s<160&&d<100)return{label:isRu?'⚠ Гипертензия І':'⚠ Гіпертензія І',cls:'badge-warn'};
+  if(s<180&&d<120)return{label:isRu?'▲ Гипертензия ІІ':'▲ Гіпертензія ІІ',cls:'badge-bad'};
+  return{label:isRu?'🚨 Криз!':'🚨 Криз!',cls:'badge-crit'};
 }
 function getBPDotClass(s){if(s<90)return'd-warn';if(s<140)return'd-ok';if(s<160)return'd-warn';return'd-bad'}
 
 // WHO classification (#1 fix — Ukrainian context)
 function getWHOCategory(s,d){
-  if(s<120&&d<80)return{label:'Оптимальний',sub:'<120/80 мм рт.ст.',c:'var(--green)',key:'optimal'};
-  if(s<130&&d<85)return{label:'Нормальний',sub:'120–129/80–84',c:'var(--green)',key:'normal'};
-  if(s<140&&d<90)return{label:'Високо-нормальний',sub:'130–139/85–89',c:'var(--amber)',key:'high-normal'};
-  if(s<160&&d<100)return{label:'Гіпертензія І ст.',sub:'140–159/90–99',c:'var(--amber)',key:'ht1'};
-  if(s<180&&d<110)return{label:'Гіпертензія ІІ ст.',sub:'160–179/100–109',c:'var(--red)',key:'ht2'};
-  return{label:'Гіпертензія ІІІ ст.',sub:'≥180/110',c:'var(--rose)',key:'ht3'};
+  const isRu=lang==='ru';
+  if(s<120&&d<80)return{label:isRu?'Оптимальное':'Оптимальний',sub:'<120/80 мм рт.ст.',c:'var(--green)',key:'optimal'};
+  if(s<130&&d<85)return{label:isRu?'Нормальное':'Нормальний',sub:'120–129/80–84',c:'var(--green)',key:'normal'};
+  if(s<140&&d<90)return{label:isRu?'Высоко-нормальное':'Високо-нормальний',sub:'130–139/85–89',c:'var(--amber)',key:'high-normal'};
+  if(s<160&&d<100)return{label:isRu?'Гипертензия І ст.':'Гіпертензія І ст.',sub:'140–159/90–99',c:'var(--amber)',key:'ht1'};
+  if(s<180&&d<110)return{label:isRu?'Гипертензия ІІ ст.':'Гіпертензія ІІ ст.',sub:'160–179/100–109',c:'var(--red)',key:'ht2'};
+  return{label:isRu?'Гипертензия ІІІ ст.':'Гіпертензія ІІІ ст.',sub:'≥180/110',c:'var(--rose)',key:'ht3'};
 }
 
 function isPillDueToday(p){
@@ -1403,11 +1411,13 @@ function fmtPillDate(iso){
   return `${da}.${mo}.${y.slice(2)}`;
 }
 function getDayName(p){
-  // accepts pill object or legacy days-string
+  const isRu=lang==='ru';
   if(typeof p==='string')p={days:p};
-  if(p.days==='daily')return'Щодня';
-  if(p.days==='date')return p.date?fmtPillDate(p.date):'Дата';
-  const map={weekdays:'Пн–Пт',mon:'Понеділок',tue:'Вівторок',wed:'Середа',thu:'Четвер',fri:'П\'ятниця',sat:'Субота',sun:'Неділя'};
+  if(p.days==='daily')return isRu?'Ежедневно':'Щодня';
+  if(p.days==='date')return p.date?fmtPillDate(p.date):(isRu?'Дата':'Дата');
+  const map=isRu?
+    {weekdays:'Пн–Пт',mon:'Понедельник',tue:'Вторник',wed:'Среда',thu:'Четверг',fri:'Пятница',sat:'Суббота',sun:'Воскресенье'}:
+    {weekdays:'Пн–Пт',mon:'Понеділок',tue:'Вівторок',wed:'Середа',thu:'Четвер',fri:'П\'ятниця',sat:'Субота',sun:'Неділя'};
   return map[p.days]||p.days;
 }
 function onPillDaysChange(){
@@ -1437,14 +1447,14 @@ function checkCritical(s,d){
 }
 function sendCriticalSMS(){
   const phone=settings.emergencyPhone;
-  if(!phone){showToast('⚠️ Вкажіть телефон у Профілі');return}
+  if(!phone){showToast(lang==='ru'?'⚠️ Укажите телефон в Профиле':'⚠️ Вкажіть телефон у Профілі');return}
   const last=measurements[0];
   const msg=encodeURIComponent(`${settings.emergencyName||'Увага'}! Критичний тиск ${last?.sys||''}/${last?.dia||''} о ${new Date().toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'})}. HealthPro.`);
   window.location.href=`sms:${phone}?body=${msg}`;
 }
 function testEmergency(){
   const phone=document.getElementById('emergencyPhone').value||settings.emergencyPhone;
-  if(!phone){showToast('⚠️ Введіть номер');return}
+  if(!phone){showToast(lang==='ru'?'⚠️ Введите номер':'⚠️ Введіть номер');return}
   window.location.href=`sms:${phone}?body=${encodeURIComponent('Тест HealthPro — перевірка зв\'язку. Все гаразд!')}`;
 }
 
@@ -1461,7 +1471,8 @@ const WHO_INFO={
 };
 
 function openWHOInfo(){
-  if(!measurements.length){showToast('⚠️ Немає вимірів');return}
+  const isRu=lang==='ru';
+  if(!measurements.length){showToast(isRu?'⚠️ Нет измерений':'⚠️ Немає вимірів');return}
   const who=getWHOCategory(measurements[0].sys,measurements[0].dia);
   const info=WHO_INFO[who.key];
   if(!info)return;
@@ -1470,9 +1481,9 @@ function openWHOInfo(){
       <div style="font-size:16px;font-weight:800;color:${who.c};margin-bottom:4px">${info.title}</div>
       <div style="font-size:12px;color:var(--text2);line-height:1.6">${info.body}</div>
     </div>
-    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Рекомендації:</div>
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">${isRu?'Рекомендации:':'Рекомендації:'}</div>
     ${info.advice.map(a=>`<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:7px;font-size:12px;color:var(--text2);line-height:1.5"><span style="color:var(--blue2);font-size:14px;flex-shrink:0">›</span>${a}</div>`).join('')}
-    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin:12px 0 8px">Посилання (🇺🇦 Ukraine):</div>
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin:12px 0 8px">${isRu?'Ссылки (🇺🇦 Ukraine):':'Посилання (🇺🇦 Ukraine):'}</div>
     <div style="display:flex;flex-wrap:wrap;gap:6px">${info.links.map(l=>`<a href="${l.u}" target="_blank" class="reco-link">${l.l}</a>`).join('')}</div>`;
   document.getElementById('whoModal').classList.add('show');
 }
@@ -1500,12 +1511,12 @@ function saveMeasurement(){
   const p=parseInt(document.getElementById('pulse').value);
   const note=document.getElementById('note').value.trim();
 
-  if(!s||!d){showToast('Введіть систолічний та діастолічний тиск');return}
-  if(s<60||s>300){showToast('Перевірте значення систолічного тиску');return}
-  if(d<40||d>200){showToast('Перевірте значення діастолічного тиску');return}
+  if(!s||!d){showToast(lang==='ru'?'Введите систолическое и диастолическое давление':'Введіть систолічний та діастолічний тиск');return}
+  if(s<60||s>300){showToast(lang==='ru'?'Проверьте значение систолического давления':'Перевірте значення систолічного тиску');return}
+  if(d<40||d>200){showToast(lang==='ru'?'Проверьте значение диастолического давления':'Перевірте значення діастолічного тиску');return}
   
   // Додано жорстку перевірку пульсу
-  if(p && (p<30 || p>250)){showToast('Неприпустиме значення пульсу (допустимо від 30 до 250)');return}
+  if(p && (p<30 || p>250)){showToast(lang==='ru'?'Недопустимое значение пульса (допустимо от 30 до 250)':'Неприпустиме значення пульсу (допустимо від 30 до 250)');return}
 
   measurements.unshift({sys:s,dia:d,pulse:p||null,note:note||null,time:new Date().toISOString()});
   if(measurements.length>500)measurements.pop();
@@ -1514,7 +1525,7 @@ function saveMeasurement(){
   document.getElementById('bpStatus').innerHTML='';
   updateLastReading();renderChart();updateHeaderStatus();
   checkCritical(s,d);
-  showToast('Вимір збережено!');
+  showToast(lang==='ru'?'Измерение сохранено!':'Вимір збережено!');
 }
 function updateLastReading(){
   if(!measurements.length)return;
@@ -1528,7 +1539,7 @@ function updateHeaderStatus(){
   if(!measurements.length){document.getElementById('hdrBP').textContent='—';document.getElementById('hdrPulse').textContent='';return}
   const last=measurements[0];
   document.getElementById('hdrBP').textContent=last.sys+'/'+last.dia;
-  document.getElementById('hdrPulse').textContent=last.pulse?last.pulse+' уд/хв':'';
+  document.getElementById('hdrPulse').textContent=last.pulse?last.pulse+(lang==='ru'?' уд/мин':' уд/хв'):'';
 }
 
 document.getElementById('sys').addEventListener('input',previewBP);
@@ -1542,12 +1553,13 @@ function previewBP(){
 }
 
 function getPulseStatus(p) {
+  const isRu=lang==='ru';
   if (!p) return { label: '', cls: '' };
-  if (p < 45) return { label: 'Брадикардія', cls: 'badge-bad' };
-  if (p < 60) return { label: 'Знижений', cls: 'badge-warn' };
-  if (p <= 85) return { label: 'Норма', cls: 'badge-ok' };
-  if (p <= 100) return { label: 'Підвищений', cls: 'badge-warn' };
-  return { label: 'Тахікардія', cls: 'badge-bad' };
+  if (p < 45) return { label: isRu?'Брадикардия':'Брадикардія', cls: 'badge-bad' };
+  if (p < 60) return { label: isRu?'Пониженный':'Знижений', cls: 'badge-warn' };
+  if (p <= 85) return { label: isRu?'Норма':'Норма', cls: 'badge-ok' };
+  if (p <= 100) return { label: isRu?'Повышенный':'Підвищений', cls: 'badge-warn' };
+  return { label: isRu?'Тахикардия':'Тахікардія', cls: 'badge-bad' };
 }
 
 // ══════════════════════════════════════════
@@ -1643,9 +1655,10 @@ function setupChartTooltip(){
     chartPointsCache.forEach(p=>{const d=Math.abs(p.x-cx);if(d<minDist){minDist=d;nearest=p}});
     if(!nearest||minDist>30){tooltip.classList.remove('show');return}
     document.getElementById('cttDate').textContent=formatDate(nearest.time)+' '+formatTime(nearest.time);
-    document.getElementById('cttSys').textContent='Сис.: '+nearest.sys+' мм';
-    document.getElementById('cttDia').textContent='Діас.: '+nearest.dia+' мм';
-    document.getElementById('cttPulse').textContent='Пульс: '+(nearest.pulse||'—');
+    const isRu=lang==='ru';
+    document.getElementById('cttSys').textContent=(isRu?'Сис.: ':'Сис.: ')+nearest.sys+' мм';
+    document.getElementById('cttDia').textContent=(isRu?'Диас.: ':'Діас.: ')+nearest.dia+' мм';
+    document.getElementById('cttPulse').textContent=(isRu?'Пульс: ':'Пульс: ')+(nearest.pulse||'—');
     // Position tooltip
     const canvasW=rect.width;
     const left=nearest.x<canvasW/2?nearest.x+10:nearest.x-125;
@@ -1677,20 +1690,21 @@ function renderAnalytics(){
   fill.setAttribute('stroke-dashoffset',score===null?circ:circ-(circ*(score/100)));
   fill.setAttribute('stroke',sc);
   document.getElementById('scoreNum').innerHTML=`<span style="color:${sc}">${score===null?'—':score}</span><small>бал</small>`;
-  document.getElementById('scoreTitle').textContent=score===null?'Немає даних':score>=80?'Відмінно':score>=65?'Добре':score>=50?'Задовільно':'Потребує уваги';
-  document.getElementById('scoreDesc').textContent=score===null?'Додайте 3+ виміри':score>=80?'Показники в нормі':score>=65?'Більшість показників добрі':score>=50?'Зверніть увагу на рекомендації':'Рекомендується консультація лікаря';
+  document.getElementById('scoreTitle').textContent=score===null?(isRu?'Нет данных':'Немає даних'):score>=80?(isRu?'Отлично':'Відмінно'):score>=65?(isRu?'Хорошо':'Добре'):score>=50?(isRu?'Удовлетворительно':'Задовільно'):(isRu?'Требует внимания':'Потребує уваги');
+  document.getElementById('scoreDesc').textContent=score===null?(isRu?'Добавьте 3+ измерения':'Додайте 3+ виміри'):score>=80?(isRu?'Показатели в норме':'Показники в нормі'):score>=65?(isRu?'Большинство показателей хорошие':'Більшість показників добрі'):score>=50?(isRu?'Обратите внимание на рекомендации':'Зверніть увагу на рекомендації'):(isRu?'Рекомендуется консультация врача':'Рекомендується консультація лікаря');
   const stBP=document.getElementById('scoreTargetBP');
-  if(stBP&&all.length){const n=getBPNorm();const aS=last7.length?avg(last7.map(m=>m.sys)):all[0].sys;stBP.textContent=`Ціль тиску <${n.sysWarn}`; stBP.style.color=aS<n.sysWarn?'var(--green)':'var(--amber)';}
+  const isRu=lang==='ru';
+  if(stBP&&all.length){const n=getBPNorm();const aS=last7.length?avg(last7.map(m=>m.sys)):all[0].sys;stBP.textContent=(isRu?`Цель давления <${n.sysWarn}`:`Ціль тиску <${n.sysWarn}`); stBP.style.color=aS<n.sysWarn?'var(--green)':'var(--amber)';}
 
 // Score breakdown bars
   if(score !== null && currentDetailedScores) {
     const breakEl = document.getElementById('scoreBreakdown');
     if(breakEl) breakEl.innerHTML=`
-      <div class="score-bar-row"><div class="score-bar-label">Тиск</div><div class="score-bar-track"><div class="score-bar-fill" style="width:${(currentDetailedScores.bp/40)*100}%;background:${currentDetailedScores.bp>=30?'var(--green)':currentDetailedScores.bp>=15?'var(--amber)':'var(--red)'}"></div></div><span style="font-size:10px;color:var(--text3);width:28px;text-align:right">${currentDetailedScores.bp}/40</span></div>
-      <div class="score-bar-row"><div class="score-bar-label">Пульс</div><div class="score-bar-track"><div class="score-bar-fill" style="width:${(currentDetailedScores.pulse/20)*100}%;background:${currentDetailedScores.pulse>=15?'var(--green)':currentDetailedScores.pulse>=10?'var(--amber)':'var(--red)'}"></div></div><span style="font-size:10px;color:var(--text3);width:28px;text-align:right">${currentDetailedScores.pulse}/20</span></div>
-      <div class="score-bar-row"><div class="score-bar-label">Ліки</div><div class="score-bar-track"><div class="score-bar-fill" style="width:${(currentDetailedScores.pills/20)*100}%;background:${currentDetailedScores.pills>=15?'var(--green)':currentDetailedScores.pills>=10?'var(--amber)':'var(--red)'}"></div></div><span style="font-size:10px;color:var(--text3);width:28px;text-align:right">${currentDetailedScores.pills}/20</span></div>
-      <div class="score-bar-row"><div class="score-bar-label">ІМТ</div><div class="score-bar-track"><div class="score-bar-fill" style="width:${(currentDetailedScores.bmi/10)*100}%;background:${currentDetailedScores.bmi>=8?'var(--green)':currentDetailedScores.bmi>=4?'var(--amber)':'var(--red)'}"></div></div><span style="font-size:10px;color:var(--text3);width:28px;text-align:right">${currentDetailedScores.bmi}/10</span></div>
-      <div class="score-bar-row"><div class="score-bar-label">Активність</div><div class="score-bar-track"><div class="score-bar-fill" style="width:${(currentDetailedScores.activity/10)*100}%;background:${currentDetailedScores.activity>=8?'var(--green)':currentDetailedScores.activity>=5?'var(--amber)':'var(--red)'}"></div></div><span style="font-size:10px;color:var(--text3);width:28px;text-align:right">${currentDetailedScores.activity}/10</span></div>`;
+      <div class="score-bar-row"><div class="score-bar-label">${isRu?'Давление':'Тиск'}</div><div class="score-bar-track"><div class="score-bar-fill" style="width:${(currentDetailedScores.bp/40)*100}%;background:${currentDetailedScores.bp>=30?'var(--green)':currentDetailedScores.bp>=15?'var(--amber)':'var(--red)'}"></div></div><span style="font-size:10px;color:var(--text3);width:28px;text-align:right">${currentDetailedScores.bp}/40</span></div>
+      <div class="score-bar-row"><div class="score-bar-label">${isRu?'Пульс':'Пульс'}</div><div class="score-bar-track"><div class="score-bar-fill" style="width:${(currentDetailedScores.pulse/20)*100}%;background:${currentDetailedScores.pulse>=15?'var(--green)':currentDetailedScores.pulse>=10?'var(--amber)':'var(--red)'}"></div></div><span style="font-size:10px;color:var(--text3);width:28px;text-align:right">${currentDetailedScores.pulse}/20</span></div>
+      <div class="score-bar-row"><div class="score-bar-label">${isRu?'Лекарства':'Ліки'}</div><div class="score-bar-track"><div class="score-bar-fill" style="width:${(currentDetailedScores.pills/20)*100}%;background:${currentDetailedScores.pills>=15?'var(--green)':currentDetailedScores.pills>=10?'var(--amber)':'var(--red)'}"></div></div><span style="font-size:10px;color:var(--text3);width:28px;text-align:right">${currentDetailedScores.pills}/20</span></div>
+      <div class="score-bar-row"><div class="score-bar-label">${isRu?'ИМТ':'ІМТ'}</div><div class="score-bar-track"><div class="score-bar-fill" style="width:${(currentDetailedScores.bmi/10)*100}%;background:${currentDetailedScores.bmi>=8?'var(--green)':currentDetailedScores.bmi>=4?'var(--amber)':'var(--red)'}"></div></div><span style="font-size:10px;color:var(--text3);width:28px;text-align:right">${currentDetailedScores.bmi}/10</span></div>
+      <div class="score-bar-row"><div class="score-bar-label">${isRu?'Активность':'Активність'}</div><div class="score-bar-track"><div class="score-bar-fill" style="width:${(currentDetailedScores.activity/10)*100}%;background:${currentDetailedScores.activity>=8?'var(--green)':currentDetailedScores.activity>=5?'var(--amber)':'var(--red)'}"></div></div><span style="font-size:10px;color:var(--text3);width:28px;text-align:right">${currentDetailedScores.activity}/10</span></div>`;
   }
   // Avg BP — last 7 measurements (not last 7 days, для коректної логіки)
   const last7m=all.slice(0,7);
@@ -1705,7 +1719,7 @@ function renderAnalytics(){
     bpValEl.style.color=bpColor;
     bpSubEl.style.color=bpColor;
   } else {
-    bpValEl.textContent='—';bpSubEl.textContent='немає даних';
+    bpValEl.textContent='—';bpSubEl.textContent=isRu?'нет данных':'немає даних';
     bpValEl.style.color='';bpSubEl.style.color='';
   }
 
@@ -1713,16 +1727,16 @@ function renderAnalytics(){
   if(all.length>=5){
     const r=avg(all.slice(0,5).map(m=>m.sys)),o=avg(all.slice(Math.max(0,all.length-5)).map(m=>m.sys));
     const diff=r-o;
-    document.getElementById('trendVal').textContent=Math.abs(diff)<3?'→ Стабільний':diff<-3?'↓ Знижується':'↑ Зростає';
-    document.getElementById('trendSub').textContent=Math.abs(diff)<3?'Без суттєвих змін':diff<-3?`На ${Math.abs(Math.round(diff))} мм нижче`:`На ${Math.round(diff)} мм вище`;
-  }else{document.getElementById('trendVal').textContent='—';document.getElementById('trendSub').textContent='потрібно 5+ вимірів'}
+    document.getElementById('trendVal').textContent=Math.abs(diff)<3?(isRu?'→ Стабильный':'→ Стабільний'):diff<-3?(isRu?'↓ Снижается':'↓ Знижується'):(isRu?'↑ Растёт':'↑ Зростає');
+    document.getElementById('trendSub').textContent=Math.abs(diff)<3?(isRu?'Без существенных изменений':'Без суттєвих змін'):diff<-3?(isRu?`На ${Math.abs(Math.round(diff))} мм ниже`:`На ${Math.abs(Math.round(diff))} мм нижче`):(isRu?`На ${Math.round(diff)} мм выше`:`На ${Math.round(diff)} мм вище`);
+  }else{document.getElementById('trendVal').textContent='—';document.getElementById('trendSub').textContent=isRu?'нужно 5+ измерений':'потрібно 5+ вимірів'}
 
   // WHO
-  if(all.length){const who=getWHOCategory(all[0].sys,all[0].dia);document.getElementById('whoCategory').textContent=who.label;document.getElementById('whoCategory').style.color=who.c;document.getElementById('whoCategorySub').textContent=who.sub+' → Натисни для деталей'}
+  if(all.length){const who=getWHOCategory(all[0].sys,all[0].dia);document.getElementById('whoCategory').textContent=who.label;document.getElementById('whoCategory').style.color=who.c;document.getElementById('whoCategorySub').textContent=who.sub+(isRu?' → Нажми для деталей':' → Натисни для деталей')}
 
   // Total
   document.getElementById('totalMeasurements').textContent=all.length;
-  document.getElementById('totalMeasurementsSub').textContent=`Тиждень: ${last7.length} · Журнал →`;
+  document.getElementById('totalMeasurementsSub').textContent=isRu?`Неделя: ${last7.length} · Журнал →`:`Тиждень: ${last7.length} · Журнал →`;
 
   // Adherence
   const dp=pills.filter(isPillDueToday);
@@ -1883,19 +1897,20 @@ function toggleHealthTooltip() {
 // BMI
 function calcBMI(){const h=parseFloat(settings.height),w=parseFloat(settings.weight);if(!h||!w)return null;return Math.round((w/((h/100)**2))*10)/10}
 function getBMICategory(bmi){
-  if(bmi<16)return{label:'Виражений дефіцит',c:'var(--red)',impact:'Ризик гіпотонії та серцевих проблем'};
-  if(bmi<18.5)return{label:'Дефіцит маси',c:'var(--amber)',impact:'Можлива гіпотонія'};
-  if(bmi<25)return{label:'Норма ✓',c:'var(--green)',impact:'Нейтральний вплив на тиск'};
-  if(bmi<30)return{label:'Надмірна вага',c:'var(--amber)',impact:'Ризик гіпертонії +15–20%'};
-  if(bmi<35)return{label:'Ожиріння І ст.',c:'var(--red)',impact:'Кожен +5 кг ≈ +2–3 мм рт.ст.'};
-  if(bmi<40)return{label:'Ожиріння ІІ ст.',c:'var(--red)',impact:'Серйозний ризик гіпертензії'};
-  return{label:'Ожиріння ІІІ ст.',c:'var(--rose)',impact:'Критичний ризик!'};
+  const isRu=lang==='ru';
+  if(bmi<16)return{label:isRu?'Выраженный дефицит':'Виражений дефіцит',c:'var(--red)',impact:isRu?'Риск гипотонии и сердечных проблем':'Ризик гіпотонії та серцевих проблем'};
+  if(bmi<18.5)return{label:isRu?'Дефицит массы':'Дефіцит маси',c:'var(--amber)',impact:isRu?'Возможна гипотония':'Можлива гіпотонія'};
+  if(bmi<25)return{label:isRu?'Норма ✓':'Норма ✓',c:'var(--green)',impact:isRu?'Нейтральное влияние на давление':'Нейтральний вплив на тиск'};
+  if(bmi<30)return{label:isRu?'Избыточный вес':'Надмірна вага',c:'var(--amber)',impact:isRu?'Риск гипертонии +15–20%':'Ризик гіпертонії +15–20%'};
+  if(bmi<35)return{label:isRu?'Ожирение І ст.':'Ожиріння І ст.',c:'var(--red)',impact:isRu?'Каждые +5 кг ≈ +2–3 мм рт.ст.':'Кожен +5 кг ≈ +2–3 мм рт.ст.'};
+  if(bmi<40)return{label:isRu?'Ожирение ІІ ст.':'Ожиріння ІІ ст.',c:'var(--red)',impact:isRu?'Серьёзный риск гипертензии':'Серйозний ризик гіпертензії'};
+  return{label:isRu?'Ожирение ІІІ ст.':'Ожиріння ІІІ ст.',c:'var(--rose)',impact:isRu?'Критический риск!':'Критичний ризик!'};
 }
 function renderBMI(){
+  const isRu=lang==='ru';
   const bmi=calcBMI();const el=document.getElementById('bmiContent');
-  if(!bmi){el.innerHTML='<div class="empty-state" style="padding:12px"><div class="em"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg></div><p>Заповніть зріст та вагу в Профілі</p></div>';return}
+  if(!bmi){el.innerHTML=`<div class="empty-state" style="padding:12px"><div class="em"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg></div><p>${isRu?'Заполните рост и вес в Профиле':'Заповніть зріст та вагу в Профілі'}</p></div>`;return}
   const cat=getBMICategory(bmi);
-  // Position indicator: BMI scale 14–45
   const pct=Math.min(96,Math.max(2,((bmi-14)/(45-14))*100));
   const h=parseFloat(settings.height)/100;
   const wMin=Math.round(18.5*h*h),wMax=Math.round(24.9*h*h);
@@ -1907,21 +1922,20 @@ function renderBMI(){
       </div>
       <div class="bmi-info">
         <div class="bmi-category" style="color:${cat.c}">${cat.label}</div>
-        <div class="bmi-sub">Ідеальна вага: ${wMin}–${wMax} кг</div>
-        <div class="bmi-sub">Зріст: ${settings.height} см · Вага: ${settings.weight} кг</div>
+        <div class="bmi-sub">${isRu?'Идеальный вес':'Ідеальна вага'}: ${wMin}–${wMax} ${isRu?'кг':'кг'}</div>
+        <div class="bmi-sub">${isRu?'Рост':'Зріст'}: ${settings.height} ${isRu?'см':'см'} · ${isRu?'Вес':'Вага'}: ${settings.weight} ${isRu?'кг':'кг'}</div>
       </div>
     </div>
-    <!-- Gradient bar (#13) -->
     <div class="bmi-bar">
       <div class="bmi-bar-indicator" style="left:calc(${pct}% - 1.5px)"></div>
     </div>
     <div class="bmi-zones">
-      <span style="color:#3b82f6">Дефіцит</span>
-      <span style="color:#10b981">Норма</span>
-      <span style="color:#f59e0b">Надлишок</span>
-      <span style="color:#ef4444">Ожиріння</span>
+      <span style="color:#3b82f6">${isRu?'Дефицит':'Дефіцит'}</span>
+      <span style="color:#10b981">${isRu?'Норма':'Норма'}</span>
+      <span style="color:#f59e0b">${isRu?'Избыток':'Надлишок'}</span>
+      <span style="color:#ef4444">${isRu?'Ожирение':'Ожиріння'}</span>
     </div>
-    <div class="bmi-impact"><strong>Вплив на тиск:</strong> ${cat.impact}. ${bmi>25?'Зниження ваги на 5–10 кг може знизити систолічний тиск на 5–10 мм рт.ст.':'ІМТ в нормі — позитивний вплив на контроль тиску.'}</div>`;
+    <div class="bmi-impact"><strong>${isRu?'Влияние на давление':'Вплив на тиск'}:</strong> ${cat.impact}. ${bmi>25?(isRu?'Снижение веса на 5–10 кг может снизить систолическое давление на 5–10 мм рт.ст.':'Зниження ваги на 5–10 кг може знизити систолічний тиск на 5–10 мм рт.ст.'):(isRu?'ИМТ в норме — положительное влияние на контроль давления.':'ІМТ в нормі — позитивний вплив на контроль тиску.')}</div>`;
 }
 
 // SVG icon map for recommendations
@@ -1945,19 +1959,21 @@ const RECO_SVG={
   sleep:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
 };
 function generateAdvice(s, d, p) {
+  const isRu=lang==='ru';
   let tips = [];
-  if (s >= 140 || d >= 90) tips.push("Обмежте сіль та відпочиньте.");
-  if (s < 100 || d < 60) tips.push("Пийте більше води, можлива гіпотонія.");
+  if (s >= 140 || d >= 90) tips.push(isRu?"Ограничьте соль и отдохните.":"Обмежте сіль та відпочиньте.");
+  if (s < 100 || d < 60) tips.push(isRu?"Пейте больше воды, возможна гипотония.":"Пийте більше води, можлива гіпотонія.");
   if (p) {
-    if (p > 100) tips.push("Пульс високий. Уникайте кофеїну та стресу.");
-    else if (p < 50) tips.push("Пульс занизький. Зверніться до лікаря, якщо відчуваєте слабкість.");
+    if (p > 100) tips.push(isRu?"Пульс высокий. Избегайте кофеина и стресса.":"Пульс високий. Уникайте кофеїну та стресу.");
+    else if (p < 50) tips.push(isRu?"Пульс слишком низкий. Обратитесь к врачу при слабости.":"Пульс занизький. Зверніться до лікаря, якщо відчуваєте слабкість.");
   }
-  if (tips.length === 0) tips.push("Показники в межах вашої норми.");
+  if (tips.length === 0) tips.push(isRu?"Показатели в пределах вашей нормы.":"Показники в межах вашої норми.");
   return tips.join(' ');
 }
 function renderRecommendations(){
+  const isRu=lang==='ru';
   const all=measurements;
-  if(!all.length){document.getElementById('recoList').innerHTML='<div class="empty-state" style="padding:12px"><div class="em"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg></div><p>Додайте виміри</p></div>';return}
+  if(!all.length){document.getElementById('recoList').innerHTML=`<div class="empty-state" style="padding:12px"><div class="em"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg></div><p>${isRu?'Добавьте измерения':'Додайте виміри'}</p></div>`;return}
   const last=all[0];
   const last7=all.filter(m=>new Date(m.time)>new Date(Date.now()-7*864e5));
   const aS=last7.length?avg(last7.map(m=>m.sys)):last.sys;
@@ -1965,34 +1981,102 @@ function renderRecommendations(){
   const n=getBPNorm();const age=parseInt(settings.age)||50;const bmi=calcBMI();
   const recos=[];
 
-  if(last.sys>=180||last.dia>=120)recos.push({t:'danger',i:'crisis',h:'Гіпертонічний криз!',s:'Зателефонуйте 103 ЗАРАЗ',detail:'Систолічний ≥180 або діастолічний ≥120 — небезпечний для життя стан. НЕ чекайте.',links:[{l:'📞 103 ШМД',u:'tel:103'},{l:'ВООЗ: Гіпертонія',u:'https://www.who.int/ru/news-room/fact-sheets/detail/hypertension'},{l:'Helsi',u:'https://helsi.me'}]});
-  else if(aS>=160||aD>=100)recos.push({t:'danger',i:'high_bp',h:'Стійкий підвищений тиск',s:`Середній ${aS}/${aD} — потрібен кардіолог`,detail:'Тиск ≥160/100 потребує медикаментозної терапії. Самолікування небезпечне.',links:[{l:'МОЗ: 8 міфів про гіпертензію',u:'https://moz.gov.ua/uk/8-mifiv-pro-arterialnu-gipertenziju-komentue-kardiolog'},{l:'ВООЗ: Гіпертонія',u:'https://www.who.int/ru/news-room/fact-sheets/detail/hypertension'},{l:'Helsi — запис до лікаря',u:'https://helsi.me'}]});
-  else if(aS>=n.sysWarn||aD>=n.diaWarn)recos.push({t:'warn',i:'warn_bp',h:'Гіпертензія 1 ступеня',s:`Тиск перевищує норму для ${age} р. (${n.note})`,detail:`Ціль для вашого віку: <${n.sysWarn}/${n.diaWarn}. Обмежте сіль до 5 г/день, фізактивність 150 хв/тиждень.`,links:[{l:'МОЗ: Як вимірювати тиск',u:'https://moz.gov.ua/uk/jak-pravilno-vimirjuvati-tisk-i-koli-zvertatis-do-likarja'},{l:'ЦГЗУ: Гіпертензія',u:'https://phc.org.ua/kontrol-zakhvoryuvan/neinfekciyni-zakhvoryuvannya/sercevo-sudinni-zakhvoryuvannya/arterialna-gipertenziya'},{l:'Helsi',u:'https://helsi.me'}]});
-  else if(aS<85||aD<55)recos.push({t:'warn',i:'low_bp',h:'Знижений тиск',s:'Можливе запаморочення та слабкість',detail:'Вживайте 2–2.5 л рідини/день. Солоніша їжа (без протипоказань). Уникайте різкого вставання.',links:[{l:'МОЗ: Чому тиск змінюється',u:'https://berezhy-sebe.com/nyzkyi-tysk/'}]});
-  else recos.push({t:'ok',i:'ok_bp',h:'Тиск в нормі!',s:`${aS}/${aD} — відповідає нормі (${n.note})`,detail:'Чудовий результат! Продовжуйте здоровий спосіб життя та регулярний моніторинг.',links:[{l:'МОЗ: Правила виміру',u:'https://moz.gov.ua/uk/jak-pravilno-vimirjuvati-tisk-i-koli-zvertatis-do-likarja'}]});
+  if(last.sys>=180||last.dia>=120)recos.push({t:'danger',i:'crisis',
+    h:isRu?'Гипертонический криз!':'Гіпертонічний криз!',
+    s:isRu?'Позвоните 103 СЕЙЧАС':'Зателефонуйте 103 ЗАРАЗ',
+    detail:isRu?'Систолическое ≥180 или диастолическое ≥120 — опасное для жизни состояние. НЕ ждите.':'Систолічний ≥180 або діастолічний ≥120 — небезпечний для життя стан. НЕ чекайте.',
+    links:[{l:'📞 103 ШМД',u:'tel:103'},{l:'ВОЗ: Гипертония',u:'https://www.who.int/ru/news-room/fact-sheets/detail/hypertension'},{l:'Helsi',u:'https://helsi.me'}]});
+  else if(aS>=160||aD>=100)recos.push({t:'danger',i:'high_bp',
+    h:isRu?'Стойкое повышенное давление':'Стійкий підвищений тиск',
+    s:isRu?`Среднее ${aS}/${aD} — нужен кардиолог`:`Середній ${aS}/${aD} — потрібен кардіолог`,
+    detail:isRu?'Давление ≥160/100 требует медикаментозной терапии. Самолечение опасно.':'Тиск ≥160/100 потребує медикаментозної терапії. Самолікування небезпечне.',
+    links:[{l:isRu?'ВОЗ: Гипертония':'МОЗ: 8 міфів про гіпертензію',u:isRu?'https://www.who.int/ru/news-room/fact-sheets/detail/hypertension':'https://moz.gov.ua/uk/8-mifiv-pro-arterialnu-gipertenziju-komentue-kardiolog'},{l:'Helsi',u:'https://helsi.me'}]});
+  else if(aS>=n.sysWarn||aD>=n.diaWarn)recos.push({t:'warn',i:'warn_bp',
+    h:isRu?'Гипертензия 1 степени':'Гіпертензія 1 ступеня',
+    s:isRu?`Давление превышает норму для ${age} л. (${n.note})`:`Тиск перевищує норму для ${age} р. (${n.note})`,
+    detail:isRu?`Цель для вашего возраста: <${n.sysWarn}/${n.diaWarn}. Ограничьте соль до 5 г/день, физактивность 150 мин/неделю.`:`Ціль для вашого віку: <${n.sysWarn}/${n.diaWarn}. Обмежте сіль до 5 г/день, фізактивність 150 хв/тиждень.`,
+    links:[{l:isRu?'ВОЗ: Гипертония':'МОЗ: Як вимірювати тиск',u:isRu?'https://www.who.int/ru/news-room/fact-sheets/detail/hypertension':'https://moz.gov.ua/uk/jak-pravilno-vimirjuvati-tisk-i-koli-zvertatis-do-likarja'},{l:'Helsi',u:'https://helsi.me'}]});
+  else if(aS<85||aD<55)recos.push({t:'warn',i:'low_bp',
+    h:isRu?'Пониженное давление':'Знижений тиск',
+    s:isRu?'Возможно головокружение и слабость':'Можливе запаморочення та слабкість',
+    detail:isRu?'Употребляйте 2–2.5 л жидкости/день. Солёная пища (без противопоказаний). Избегайте резкого вставания.':'Вживайте 2–2.5 л рідини/день. Солоніша їжа (без протипоказань). Уникайте різкого вставання.',
+    links:[{l:'Helsi',u:'https://helsi.me'}]});
+  else recos.push({t:'ok',i:'ok_bp',
+    h:isRu?'Давление в норме!':'Тиск в нормі!',
+    s:isRu?`${aS}/${aD} — соответствует норме (${n.note})`:`${aS}/${aD} — відповідає нормі (${n.note})`,
+    detail:isRu?'Отличный результат! Продолжайте здоровый образ жизни и регулярный мониторинг.':'Чудовий результат! Продовжуйте здоровий спосіб життя та регулярний моніторинг.',
+    links:[{l:isRu?'ВОЗ: Гипертония':'МОЗ: Правила виміру',u:isRu?'https://www.who.int/ru/news-room/fact-sheets/detail/hypertension':'https://moz.gov.ua/uk/jak-pravilno-vimirjuvati-tisk-i-koli-zvertatis-do-likarja'}]});
 
-  if(age>=60)recos.push({t:'info',i:'age',h:`Норми для ${age}-річних`,s:n.note,detail:`З віком артерії менш еластичні. Ціль: <${n.sysWarn}/${n.diaWarn}. Стежте за ортостатичним тиском.`,links:[{l:'ЦГЗУ: Артеріальна гіпертензія',u:'https://phc.org.ua/kontrol-zakhvoryuvan/neinfekciyni-zakhvoryuvannya/sercevo-sudinni-zakhvoryuvannya/arterialna-gipertenziya'}]});
+  if(age>=60)recos.push({t:'info',i:'age',
+    h:isRu?`Нормы для ${age}-летних`:`Норми для ${age}-річних`,
+    s:n.note,
+    detail:isRu?`С возрастом артерии менее эластичны. Цель: <${n.sysWarn}/${n.diaWarn}. Следите за ортостатическим давлением.`:`З віком артерії менш еластичні. Ціль: <${n.sysWarn}/${n.diaWarn}. Стежте за ортостатичним тиском.`,
+    links:[{l:'Helsi',u:'https://helsi.me'}]});
 
   const pp=last7.filter(m=>m.pulse).map(m=>m.pulse);
   if(pp.length){const aP=avg(pp);
-    if(aP>100)recos.push({t:'warn',i:'tachy',h:`Тахікардія (${aP} уд/хв)`,s:'Пульс вище 100 уд/хв',detail:'Причини: стрес, кофеїн, аритмія, щитовидна залоза. При постійній тахікардії — ЕКГ.',links:[{l:'Helsi — запис на ЕКГ',u:'https://helsi.me'}]});
-    else if(aP<55)recos.push({t:'warn',i:'brady',h:`Брадикардія (${aP} уд/хв)`,s:'Пульс нижче норми',detail:'Якщо є слабкість або запаморочення — кардіолог.',links:[{l:'Helsi',u:'https://helsi.me'}]});
-    else recos.push({t:'ok',i:'ok_pulse',h:`Пульс в нормі (${aP} уд/хв)`,s:'60–100 уд/хв',detail:'Нормальний ритм серця.',links:[]});}
+    if(aP>100)recos.push({t:'warn',i:'tachy',
+      h:isRu?`Тахикардия (${aP} уд/мин)`:`Тахікардія (${aP} уд/хв)`,
+      s:isRu?'Пульс выше 100 уд/мин':'Пульс вище 100 уд/хв',
+      detail:isRu?'Причины: стресс, кофеин, аритмия, щитовидная железа. При постоянной тахикардии — ЭКГ.':'Причини: стрес, кофеїн, аритмія, щитовидна залоза. При постійній тахікардії — ЕКГ.',
+      links:[{l:'Helsi',u:'https://helsi.me'}]});
+    else if(aP<55)recos.push({t:'warn',i:'brady',
+      h:isRu?`Брадикардия (${aP} уд/мин)`:`Брадикардія (${aP} уд/хв)`,
+      s:isRu?'Пульс ниже нормы':'Пульс нижче норми',
+      detail:isRu?'Если есть слабость или головокружение — кардиолог.':'Якщо є слабкість або запаморочення — кардіолог.',
+      links:[{l:'Helsi',u:'https://helsi.me'}]});
+    else recos.push({t:'ok',i:'ok_pulse',
+      h:isRu?`Пульс в норме (${aP} уд/мин)`:`Пульс в нормі (${aP} уд/хв)`,
+      s:isRu?'60–100 уд/мин':'60–100 уд/хв',
+      detail:isRu?'Нормальный ритм сердца.':'Нормальний ритм серця.',
+      links:[]});}
 
-  if(bmi&&bmi>27)recos.push({t:'warn',i:'bmi',h:'ІМТ та тиск',s:`ІМТ ${bmi} — знижує артеріальну регуляцію`,detail:'Кожні 5 кг надмірної ваги підвищують систолічний тиск на 2–3 мм рт.ст.',links:[{l:'МОЗ: Харчування',u:'https://moz.gov.ua/uk/scho-i-jak-isti-schob-zhiti-dovgo-rekomendacii-moz'}]});
+  if(bmi&&bmi>27)recos.push({t:'warn',i:'bmi',
+    h:isRu?'ИМТ и давление':'ІМТ та тиск',
+    s:isRu?`ИМТ ${bmi} — снижает артериальную регуляцию`:`ІМТ ${bmi} — знижує артеріальну регуляцію`,
+    detail:isRu?'Каждые 5 кг лишнего веса повышают систолическое давление на 2–3 мм рт.ст.':'Кожні 5 кг надмірної ваги підвищують систолічний тиск на 2–3 мм рт.ст.',
+    links:[{l:'Helsi',u:'https://helsi.me'}]});
 
   const dp=pills.filter(isPillDueToday);
   if(dp.length){const tc=Object.values(pillsTaken[today()]||{}).filter(Boolean).length;const miss=dp.filter(p=>!pillsTaken[today()]?.[p.id]);
-    if(miss.length)recos.push({t:'warn',i:'pill',h:`Не прийнято: ${miss.map(p=>p.name).join(', ')}`,s:'Пропущено препарати',detail:'Нерегулярний прийом антигіпертензивних ліків призводить до стрибків тиску.',links:[{l:'Tabletki.ua — довідник',u:'https://tabletki.ua'}]});
-    else recos.push({t:'ok',i:'ok_pill',h:'Всі ліки прийнято!',s:'100% виконання',detail:'Регулярний прийом — ключ до стабільного тиску.',links:[]});}
+    if(miss.length)recos.push({t:'warn',i:'pill',
+      h:isRu?`Не принято: ${miss.map(p=>p.name).join(', ')}`:`Не прийнято: ${miss.map(p=>p.name).join(', ')}`,
+      s:isRu?'Пропущены препараты':'Пропущено препарати',
+      detail:isRu?'Нерегулярный приём антигипертензивных лекарств приводит к скачкам давления.':'Нерегулярний прийом антигіпертензивних ліків призводить до стрибків тиску.',
+      links:[{l:'Tabletki.ua',u:'https://tabletki.ua'}]});
+    else recos.push({t:'ok',i:'ok_pill',
+      h:isRu?'Все лекарства приняты!':'Всі ліки прийнято!',
+      s:isRu?'100% выполнение':'100% виконання',
+      detail:isRu?'Регулярный приём — ключ к стабильному давлению.':'Регулярний прийом — ключ до стабільного тиску.',
+      links:[]});}
 
-  if(last7.length<5&&all.length>0)recos.push({t:'info',i:'calendar',h:'Частота вимірювань',s:`${last7.length} вим./тиждень — мало`,detail:'МОЗ рекомендує: 2 рази/день — вранці (7–9 год. до їди) та ввечері (19–21 год.). Завжди у спокої після 5 хв.',links:[{l:'МОЗ: Як вимірювати тиск',u:'https://moz.gov.ua/uk/jak-pravilno-vimirjuvati-tisk-i-koli-zvertatis-do-likarja'}]});
+  if(last7.length<5&&all.length>0)recos.push({t:'info',i:'calendar',
+    h:isRu?'Частота измерений':'Частота вимірювань',
+    s:isRu?`${last7.length} изм./неделю — мало`:`${last7.length} вим./тиждень — мало`,
+    detail:isRu?'Рекомендуется: 2 раза/день — утром (7–9 ч. до еды) и вечером (19–21 ч.). Всегда в покое после 5 мин.':'МОЗ рекомендує: 2 рази/день — вранці (7–9 год. до їди) та ввечері (19–21 год.). Завжди у спокої після 5 хв.',
+    links:[{l:'Helsi',u:'https://helsi.me'}]});
 
-  if(all.length>=5){const r=avg(all.slice(0,3).map(m=>m.sys)),o=avg(all.slice(-3).map(m=>m.sys));if(r-o>15)recos.push({t:'danger',i:'trend_up',h:'Тиск різко зростає',s:`+${r-o} мм рт.ст.`,detail:'Зростання тиску на >15 мм за цей час — необхідна консультація лікаря.',links:[{l:'Helsi',u:'https://helsi.me'}]})}
+  if(all.length>=5){const r=avg(all.slice(0,3).map(m=>m.sys)),o=avg(all.slice(-3).map(m=>m.sys));if(r-o>15)recos.push({t:'danger',i:'trend_up',
+    h:isRu?'Давление резко растёт':'Тиск різко зростає',
+    s:isRu?`+${r-o} мм рт.ст.`:`+${r-o} мм рт.ст.`,
+    detail:isRu?'Рост давления на >15 мм за это время — необходима консультация врача.':'Зростання тиску на >15 мм за цей час — необхідна консультація лікаря.',
+    links:[{l:'Helsi',u:'https://helsi.me'}]})}
 
-  recos.push({t:'info',i:'activity',h:'Фізична активність',s:'30 хв/день знижує тиск на 5–8 мм рт.ст.',detail:'Аеробні вправи 150 хв/тиждень — найефективніший немедикаментозний метод (рекомендація МОЗ України).',links:[{l:'МОЗ: Фізична активність',u:'https://moz.gov.ua/uk/categories/fizichni-aktivnosti'},{l:'ЦГЗУ: Інтенсивність активності',u:'https://phc.org.ua/news/oberi-intensivnist-svoei-fizichnoi-aktivnosti'}]});
-  recos.push({t:'info',i:'food',h:'Харчування та DASH-дієта',s:'Знижує тиск на 8–14 мм рт.ст.',detail:'Сіль <5 г/день, більше калію (банани, картопля), магнію (горіхи), кальцію (молоко). Менше жирного м\'яса.',links:[{l:'МОЗ: Що і як їсти',u:'https://moz.gov.ua/uk/scho-i-jak-isti-schob-zhiti-dovgo-rekomendacii-moz'},{l:'DASH-дієта',u:'https://berezhy-sebe.com/pryntsypy-dash-diiety/'}]});
-  recos.push({t:'info',i:'sleep',h:'Сон та управління стресом',s:'7–9 год. сну та дихальні вправи',detail:'Хронічний стрес підвищує кортизол → тиск. 10 хв дихальних вправ знижують систолічний на 3–5 мм рт.ст.',links:[{l:'МОЗ: Здоровий сон',u:'https://moz.gov.ua/uk/zdorovij-son-skilki-godin-treba-spati-i-chim-nebezpechne-nedosipannja-'},{l:'ЦГЗУ: 5 порад для сну',u:'https://phc.org.ua/news/pyat-porad-dlya-zdorovogo-snu'},{l:'МОЗ: Як впоратись зі стресом',u:'https://moz.gov.ua/uk/jak-vporatisja-zi-stresom-samostijno-posibnik-vid-vooz-vazhlivi-navichki-v-periodi-stresu'}]});
+  recos.push({t:'info',i:'activity',
+    h:isRu?'Физическая активность':'Фізична активність',
+    s:isRu?'30 мин/день снижает давление на 5–8 мм рт.ст.':'30 хв/день знижує тиск на 5–8 мм рт.ст.',
+    detail:isRu?'Аэробные упражнения 150 мин/неделю — наиболее эффективный немедикаментозный метод.':'Аеробні вправи 150 хв/тиждень — найефективніший немедикаментозний метод (рекомендація МОЗ України).',
+    links:[{l:isRu?'ВОЗ: Физическая активность':'МОЗ: Фізична активність',u:isRu?'https://www.who.int/ru/news-room/fact-sheets/detail/physical-activity':'https://moz.gov.ua/uk/categories/fizichni-aktivnosti'}]});
+  recos.push({t:'info',i:'food',
+    h:isRu?'Питание и DASH-диета':'Харчування та DASH-дієта',
+    s:isRu?'Снижает давление на 8–14 мм рт.ст.':'Знижує тиск на 8–14 мм рт.ст.',
+    detail:isRu?'Соль <5 г/день, больше калия (бананы, картофель), магния (орехи), кальция (молоко). Меньше жирного мяса.':'Сіль <5 г/день, більше калію (банани, картопля), магнію (горіхи), кальцію (молоко). Менше жирного м\'яса.',
+    links:[{l:isRu?'ВОЗ: Здоровое питание':'МОЗ: Що і як їсти',u:isRu?'https://www.who.int/ru/news-room/fact-sheets/detail/healthy-diet':'https://moz.gov.ua/uk/scho-i-jak-isti-schob-zhiti-dovgo-rekomendacii-moz'}]});
+  recos.push({t:'info',i:'sleep',
+    h:isRu?'Сон и управление стрессом':'Сон та управління стресом',
+    s:isRu?'7–9 ч. сна и дыхательные упражнения':'7–9 год. сну та дихальні вправи',
+    detail:isRu?'Хронический стресс повышает кортизол → давление. 10 мин дыхательных упражнений снижают систолическое на 3–5 мм рт.ст.':'Хронічний стрес підвищує кортизол → тиск. 10 хв дихальних вправ знижують систолічний на 3–5 мм рт.ст.',
+    links:[{l:isRu?'ВОЗ: Стресс':'МОЗ: Як впоратись зі стресом',u:isRu?'https://www.who.int/ru/news-room/fact-sheets/detail/mental-health-strengthening-our-response':'https://moz.gov.ua/uk/jak-vporatisja-zi-stresom-samostijno-posibnik-vid-vooz-vazhlivi-navichki-v-periodi-stresu'}]});
 
   document.getElementById('recoList').innerHTML=recos.map((r,i)=>`
     <div class="reco-item ri-${r.t}">
@@ -2015,10 +2099,11 @@ function toggleReco(i){const b=document.getElementById(`rbody-${i}`);const ch=do
 function openTrendModal(){
   document.getElementById('trendModal').classList.add('show');
   const all=measurements;
-  if(!all.length){document.getElementById('trendModalStats').innerHTML='<p style="color:var(--text2);font-size:13px">Немає даних</p>';return}
+  const isRu=lang==='ru';
+  if(!all.length){document.getElementById('trendModalStats').innerHTML=`<p style="color:var(--text2);font-size:13px">${isRu?'Нет данных':'Немає даних'}</p>`;return}
   const last14=all.slice(0,14).reverse();
   const aS=avg(last14.map(m=>m.sys)),aD=avg(last14.map(m=>m.dia));
-  document.getElementById('trendModalStats').innerHTML=`<div class="bento" style="margin-bottom:0"><div class="bento-card bc-blue"><div class="b-lbl">Середній 14 дн.</div><div class="b-val">${aS||'—'}/${aD||'—'}</div></div><div class="bento-card bc-${aS&&aS<140?'green':'red'}"><div class="b-lbl">Статус</div><div class="b-val sm">${aS&&aD?getBPStatus(aS,aD).label.replace(/[🚨▲⚠✓⬇️]/g,'').trim():'—'}</div></div></div>`;
+  document.getElementById('trendModalStats').innerHTML=`<div class="bento" style="margin-bottom:0"><div class="bento-card bc-blue"><div class="b-lbl">${isRu?'Среднее 14 дн.':'Середній 14 дн.'}</div><div class="b-val">${aS||'—'}/${aD||'—'}</div></div><div class="bento-card bc-${aS&&aS<140?'green':'red'}"><div class="b-lbl">${isRu?'Статус':'Статус'}</div><div class="b-val sm">${aS&&aD?getBPStatus(aS,aD).label.replace(/[🚨▲⚠✓⬇️]/g,'').trim():'—'}</div></div></div>`;
   setTimeout(()=>{
     const canvas=document.getElementById('trendChart');
     if(!canvas||!all.length)return;
@@ -2146,11 +2231,11 @@ function addPill(){
   const days=document.getElementById('pillDays').value;
   const date=document.getElementById('pillDate').value;
 
-  if(!name){showToast('⚠️ Введіть назву препарату');return}
-  if(!dose){showToast('⚠️ Введіть дозування (обов\'язково)');return}
+  if(!name){showToast(lang==='ru'?'⚠️ Введите название препарата':'⚠️ Введіть назву препарату');return}
+  if(!dose){showToast(lang==='ru'?'⚠️ Введите дозировку (обязательно)':'⚠️ Введіть дозування (обов\'язково)');return}
   if(days==='date'){
-    if(!date){showToast('⚠️ Виберіть дату прийому');return}
-    if(date<today()){showToast('⚠️ Дата не може бути в минулому');return}
+    if(!date){showToast(lang==='ru'?'⚠️ Выберите дату приёма':'⚠️ Виберіть дату прийому');return}
+    if(date<today()){showToast(lang==='ru'?'⚠️ Дата не может быть в прошлом':'⚠️ Дата не може бути в минулому');return}
   }
 
   // Check dangerous dose (strict: drug key must be inside name)
@@ -2174,7 +2259,7 @@ function addPill(){
 
 function searchPharmacy(site){
   const name=document.getElementById('pillName').value.trim()||'';
-  if(!name){showToast('⚠️ Введіть назву препарату для пошуку');return false}
+  if(!name){showToast(lang==='ru'?'⚠️ Введите название препарата для поиска':'⚠️ Введіть назву препарату для пошуку');return false}
   const q=encodeURIComponent(name);
   const urls={
     apteka:`https://apteka.ua/search/?q=${q}`,
@@ -2198,7 +2283,7 @@ function renderPills(){
 
   if(!due.length){
     const nextDueName=pills.length>0?`Всього препаратів: ${pills.length}. На сьогодні немає.`:'';
-    con.innerHTML=`<div class="empty-state"><div class="em"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></div><p>${pills.length?'Ліків на сьогодні немає':'Немає доданих ліків'}</p>${nextDueName?`<p style="font-size:11px;color:var(--blue2);margin-top:6px">${nextDueName}</p>`:''}</div>`;
+    con.innerHTML=`<div class="empty-state"><div class="em"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></div><p>${pills.length?(lang==='ru'?'Лекарств на сегодня нет':'Ліків на сьогодні немає'):(lang==='ru'?'Нет добавленных лекарств':'Немає доданих ліків')}</p>${nextDueName?`<p style="font-size:11px;color:var(--blue2);margin-top:6px">${nextDueName}</p>`:''}</div>`;
     // #15 total = all pills
     document.getElementById('cntTaken').textContent=0;
     document.getElementById('cntLeft').textContent=due.length;
@@ -2269,14 +2354,14 @@ function renderHistory(){
   if(historyPeriod==='week')data=data.filter(m=>new Date(m.time)>new Date(Date.now()-7*864e5));
   else if(historyPeriod==='month')data=data.filter(m=>new Date(m.time)>new Date(Date.now()-30*864e5));
   document.getElementById('historyCount').textContent=data.length;
-  if(!data.length){document.getElementById('historyList').innerHTML='<div class="empty-state"><div class="em"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg></div><p>Немає записів за цей період</p></div>';return}
+  if(!data.length){document.getElementById('historyList').innerHTML=`<div class="empty-state"><div class="em"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg></div><p>${lang==='ru'?'Нет записей за этот период':'Немає записів за цей період'}</p></div>`;return}
   document.getElementById('historyList').innerHTML=data.slice(0,100).map(m=>`
     <div class="history-item">
       <div class="history-dot ${getBPDotClass(m.sys)}"></div>
       <div class="history-data">
         <div class="history-main">${m.sys}/${m.dia} мм рт.ст.</div>
         <div class="history-sub">${getBPStatus(m.sys,m.dia).label.replace(/[🚨▲⚠✓⬇️]/g,'').trim()}${m.note?' · '+m.note:''}</div>
-        ${m.pulse?`<span class="badge ${getPulseStatus(m.pulse).cls}" style="font-size:11px;margin-top:3px;display:inline-block">${m.pulse} уд/хв — ${getPulseStatus(m.pulse).label}</span>`:''}
+        ${m.pulse?`<span class="badge ${getPulseStatus(m.pulse).cls}" style="font-size:11px;margin-top:3px;display:inline-block">${m.pulse} ${lang==='ru'?'уд/мин':'уд/хв'} — ${getPulseStatus(m.pulse).label}</span>`:''}
       </div>
       <div class="history-time">${formatDate(m.time)}<br>${formatTime(m.time)}</div>
       <button class="history-del" onclick="deleteMeasurement('${m.time}')" title="Видалити запис">
@@ -2373,7 +2458,7 @@ function scheduleNotifications(){
       if(!_firedReminders.has(key)){
         _firedReminders.add(key);
         if('Notification' in window&&Notification.permission==='granted'&&settings.notif){
-          try{new Notification('🩺 Вимір тиску',{body:'Час для щоденного виміру тиску',icon:'icons/icon-192.png',tag:'bp-reminder'});}catch(e){}
+          try{new Notification(lang==='ru'?'🩺 Измерение давления':'🩺 Вимір тиску',{body:lang==='ru'?'Время для ежедневного измерения давления':'Час для щоденного виміру тиску',icon:'icons/icon-192.png',tag:'bp-reminder'});}catch(e){}
         }
         showToast('🩺 Час для виміру тиску');
         if(navigator.vibrate){try{navigator.vibrate([300,100,300]);}catch(e){}}
@@ -2393,14 +2478,14 @@ const STEP_THRESHOLD=1.5;
 function toggleStepCounter(){
   if(!stepEnabled){
     if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){
-      DeviceMotionEvent.requestPermission().then(p=>{if(p==='granted'){enableSteps()}else showToast('❌ Немає дозволу на акселерометр')});
+      DeviceMotionEvent.requestPermission().then(p=>{if(p==='granted'){enableSteps()}else showToast(lang==='ru'?'❌ Нет разрешения на акселерометр':'❌ Немає дозволу на акселерометр')});
     }else enableSteps();
   }else{
     stepEnabled=false;settings.stepsEnabled=false;saveData();
     document.getElementById('stepToggle').classList.remove('on');
     document.getElementById('stepCard').style.display='none';
     window.removeEventListener('devicemotion',handleMotion);
-    showToast('🦶 Лічильник вимкнено');
+    showToast(lang==='ru'?'🦶 Счётчик выключен':'🦶 Лічильник вимкнено');
   }
 }
 function enableSteps(){
@@ -2409,7 +2494,7 @@ function enableSteps(){
   document.getElementById('stepCard').style.display='block';
   stepCount=DB.get('stepCount-'+today(),0);updateStepUI();
   window.addEventListener('devicemotion',handleMotion);
-  showToast('🦶 Лічильник кроків увімкнено!');
+  showToast(lang==='ru'?'🦶 Счётчик шагов включён!':'🦶 Лічильник кроків увімкнено!');
 }
 function handleMotion(e){
   if(!e.accelerationIncludingGravity)return;
@@ -3178,7 +3263,7 @@ function init(){
     const sub=document.querySelector('#stepToggle + * .settings-sub, [id="t-step-sub"]');
     // Add note that it requires app to be open
     const stepSubEl=document.getElementById('t-step-sub');
-    if(stepSubEl)stepSubEl.textContent='Через акселерометр. Працює лише коли додаток відкритий!';
+    if(stepSubEl)stepSubEl.textContent=lang==='ru'?'Через акселерометр. Работает только когда приложение открыто!':'Через акселерометр. Працює лише коли додаток відкритий!';
   }
 
   // Initialize pill date input state based on current selection
@@ -3196,52 +3281,52 @@ window.addEventListener('resize',()=>setTimeout(renderChart,50));
  <div id="healthTooltip" class="tooltip-overlay" onclick="toggleHealthTooltip()">
   <div class="tooltip-content" onclick="event.stopPropagation()">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-        <h3 style="font-size:16px; font-weight:800; margin:0; color:var(--text); display:flex; align-items:center; gap:8px;"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Деталі індексу</h3>
+        <h3 style="font-size:16px; font-weight:800; margin:0; color:var(--text); display:flex; align-items:center; gap:8px;"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span id="t-health-tooltip-title">Деталі індексу</span></h3>
         <button class="modal-close" onclick="toggleHealthTooltip()">×</button>
     </div>
 <ul class="score-list">
   <li>
     <span style="display:flex; align-items:center; gap:8px; color:var(--text2);">
       <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:var(--red);stroke-width:2;stroke-linecap:round;"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-      Тиск:
+      <span id="t-score-bp-lbl">Тиск:</span>
     </span>
     <div><strong id="score-bp">--</strong><small style="color:var(--text3)">/40</small></div>
   </li>
   <li>
     <span style="display:flex; align-items:center; gap:8px; color:var(--text2);">
       <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:var(--violet);stroke-width:2;stroke-linecap:round;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-      Пульс:
+      <span id="t-score-pulse-lbl">Пульс:</span>
     </span>
     <div><strong id="score-pulse">--</strong><small style="color:var(--text3)">/20</small></div>
   </li>
   <li>
     <span style="display:flex; align-items:center; gap:8px; color:var(--text2);">
       <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:var(--amber);stroke-width:2;stroke-linecap:round;"><path d="M18 8h1a4 4 0 0 1 0 8h-1M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8zM6 1v3M10 1v3M14 1v3"/></svg>
-      Ліки:
+      <span id="t-score-pills-lbl">Ліки:</span>
     </span>
     <div><strong id="score-pills">--</strong><small style="color:var(--text3)">/20</small></div>
   </li>
   <li>
     <span style="display:flex; align-items:center; gap:8px; color:var(--text2);">
       <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:var(--cyan);stroke-width:2;stroke-linecap:round;"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
-      Активність:
+      <span id="t-score-activity-lbl">Активність:</span>
     </span>
     <div><strong id="score-activity">--</strong><small style="color:var(--text3)">/10</small></div>
   </li>
   <li>
     <span style="display:flex; align-items:center; gap:8px; color:var(--text2);">
       <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:var(--green);stroke-width:2;stroke-linecap:round;"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>
-      ІМТ:
+      <span id="t-score-bmi-lbl">ІМТ:</span>
     </span>
     <div><strong id="score-bmi">--</strong><small style="color:var(--text3)">/10</small></div>
   </li>
 </ul>
     <div id="veto-status" class="veto-note" style="display: none;">
       <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;vertical-align:middle;margin-right:4px;stroke-linecap:round;"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      <strong>ВЕТО:</strong> Ваш останній тиск занадто високий. Загальний індекс автоматично знижено для вашої безпеки.
+      <strong id="t-veto-label">ВЕТО:</strong> <span id="t-veto-text">Ваш останній тиск занадто високий. Загальний індекс автоматично знижено для вашої безпеки.</span>
     </div>
 
-    <button class="btn btn-blue" style="margin-top:16px;" onclick="toggleHealthTooltip()">Зрозуміло</button>
+    <button class="btn btn-blue" style="margin-top:16px;" onclick="toggleHealthTooltip()" id="t-health-tooltip-ok">Зрозуміло</button>
   </div>
 </div>
  
