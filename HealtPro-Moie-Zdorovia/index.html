@@ -2435,10 +2435,13 @@ function exportData(){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='healthpro-'+today()+'.json';a.click();showToast('✅ JSON збережено');
 }
 function exportCSV(){
-  if(!measurements.length){showToast('⚠️ Немає даних');return}
-  const rows=[['Дата','Час','Систол.','Діастол.','Пульс','Статус','Нотатка'],...measurements.map(m=>{const d=new Date(m.time);return[d.toLocaleDateString('uk-UA'),d.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'}),m.sys,m.dia,m.pulse||'',getBPStatus(m.sys,m.dia).label.replace(/[^\wа-яёіїєА-ЯЁІЇЄ \.!]/gi,'').trim(),m.note||'']})];
-  const blob=new Blob(['\ufeff'+rows.map(r=>r.join(',')).join('\n')],{type:'text/csv;charset=utf-8'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='pressure-'+today()+'.csv';a.click();showToast('📊 CSV збережено');
+  if(!measurements.length){showToast(lang==='ru'?'⚠️ Нет данных':'⚠️ Немає даних');return}
+  const isRu=lang==='ru', loc=isRu?'ru-UA':'uk-UA';
+  const head=isRu?['Дата','Время','Систол.','Диастол.','Пульс','Статус','Заметка']:['Дата','Час','Систол.','Діастол.','Пульс','Статус','Нотатка'];
+  const esc=v=>{const s=String(v??'');return /[",\n;]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};
+  const rows=[head,...measurements.map(m=>{const d=new Date(m.time);return[d.toLocaleDateString(loc),d.toLocaleTimeString(loc,{hour:'2-digit',minute:'2-digit'}),m.sys,m.dia,m.pulse||'',getBPStatus(m.sys,m.dia).label.replace(/[^\wа-яёіїєА-ЯЁІЇЄ \.!]/gi,'').trim(),m.note||'']})];
+  const blob=new Blob(['\ufeff'+rows.map(r=>r.map(esc).join(',')).join('\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='pressure-'+today()+'.csv';a.click();showToast(isRu?'📊 CSV сохранён':'📊 CSV збережено');
 }
 
 // PDF via html2canvas + jsPDF (based on exportPDF.js)
@@ -2768,33 +2771,66 @@ function updateExportCount(){
 
 function exportReportCSV(){
   const filtered = getExportMeasurements();
-  if(!filtered.length){ showToast('⚠️ Немає даних за вибраний період'); return; }
-  const rows = [
-    ['Дата','Час','Систол.','Діастол.','Пульс','Статус','Нотатка'],
-    ...filtered.map(m => {
-      const d = new Date(m.time);
-      return [
-        d.toLocaleDateString('uk-UA'),
-        d.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'}),
-        m.sys, m.dia, m.pulse||'',
-        getBPStatus(m.sys,m.dia).label.replace(/[^\wа-яёіїєА-ЯЁІЇЄ \.!]/gi,'').trim(),
-        m.note||''
-      ];
-    })
-  ];
-  const blob = new Blob(['\ufeff'+rows.map(r=>r.join(',')).join('\n')],{type:'text/csv;charset=utf-8'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  const from = document.getElementById('expDateFrom').value;
-  const to   = document.getElementById('expDateTo').value;
-  a.download = `HealthPro_${from}_${to}.csv`;
-  a.click();
-  showToast('📊 CSV збережено');
+  const isRu=lang==='ru', loc=isRu?'ru-UA':'uk-UA';
+  if(!filtered.length){ showToast(isRu?'⚠️ Нет данных за выбранный период':'⚠️ Немає даних за вибраний період'); return; }
+  const head=isRu?['Дата','Время','Систол.','Диастол.','Пульс','Статус','Заметка']:['Дата','Час','Систол.','Діастол.','Пульс','Статус','Нотатка'];
+  const esc=v=>{const s=String(v??'');return /[",\n;]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};
+  const rows=[head,...filtered.map(m=>{const d=new Date(m.time);return[d.toLocaleDateString(loc),d.toLocaleTimeString(loc,{hour:'2-digit',minute:'2-digit'}),m.sys,m.dia,m.pulse||'',getBPStatus(m.sys,m.dia).label.replace(/[^\wа-яёіїєА-ЯЁІЇЄ \.!]/gi,'').trim(),m.note||'']})];
+  const blob=new Blob(['\ufeff'+rows.map(r=>r.map(esc).join(',')).join('\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  const from=document.getElementById('expDateFrom').value, to=document.getElementById('expDateTo').value;
+  a.download=`HealthPro_${from}_${to}.csv`;a.click();
+  showToast(isRu?'📊 CSV сохранён':'📊 CSV збережено');
 }
 
 function printReportPeriod(){
   const filtered = getExportMeasurements();
-  if(!filtered.length){ showToast('⚠️ Немає даних за вибраний період'); return; }
+  const isRu = lang==='ru';
+  const L = isRu ? {
+    noData:'⚠️ Нет данных за выбранный период',
+    week:'Неделя',w2:'2 недели',month:'Месяц',
+    title:'Медицинский отчёт',generated:'Сформирован',
+    age:'Возраст',phone:'Тел',
+    h_patient:'Информация о пациенте и контакты',
+    fio:'ФИО',ageL:'Возраст',gender:'Пол',male:'Мужской',female:'Женский',
+    height:'Рост',weight:'Вес',bmi:'ИМТ',normalBP:'Обычное давление',normalP:'Обычный пульс',period:'Период отчёта',
+    phoneL:'Телефон',email:'Email',emergency:'Экстренный контакт',
+    avgBP:'Среднее давление',avgP:'Средний пульс',totalM:'Всего измерений',
+    h_dyn:'Динамика давления',insufData:'Недостаточно данных для графика (нужно 2+ измерений)',
+    sys:'Систолическое',dia:'Диастолическое',
+    h_log:'Журнал измерений',
+    cDate:'Дата',cTime:'Время',cBP:'Давление',cP:'Пульс',cStatus:'Статус',cNote:'Заметка',
+    notes:'Заметки и рекомендации врача:',examDate:'Дата осмотра:',sign:'Подпись / Печать:',
+    important:'ВАЖНО:',disclTxt:'Отчёт сформирован приложением "HealthPro" на основе данных пользователя. Информация имеет исключительно ознакомительный характер и <b>не является медицинским диагнозом</b>.',
+    page:'Стр.',of:'из',
+    popup:'⚠️ Разрешите всплывающие окна в браузере',
+    repTitle:'HealthPro Отчёт',
+    yrs:' г.', cm:' см', kg:' кг', bpm:' уд/мин',
+    statusMap:{'Норма':'Норма','Підвищений':'Повышенное','Гіпертензія 1':'Гипертензия 1','Гіпертензія 2':'Гипертензия 2','Криза':'Криз','Гіпотензія':'Гипотензия'}
+  } : {
+    noData:'⚠️ Немає даних за вибраний період',
+    week:'Тиждень',w2:'2 тижні',month:'Місяць',
+    title:'Медичний звіт',generated:'Сформовано',
+    age:'Вік',phone:'Тел',
+    h_patient:'Інформація про пацієнта та контакти',
+    fio:'ПІБ',ageL:'Вік',gender:'Стать',male:'Чоловіча',female:'Жіноча',
+    height:'Зріст',weight:'Вага',bmi:'ІМТ',normalBP:'Звичайний тиск',normalP:'Звичайний пульс',period:'Період звіту',
+    phoneL:'Телефон',email:'Email',emergency:'Екстрений контакт',
+    avgBP:'Середній тиск',avgP:'Середній пульс',totalM:'Вимірів всього',
+    h_dyn:'Динаміка тиску',insufData:'Недостатньо даних для графіку (потрібно 2+ вимірів)',
+    sys:'Систолічний',dia:'Діастолічний',
+    h_log:'Журнал вимірів',
+    cDate:'Дата',cTime:'Час',cBP:'Тиск',cP:'Пульс',cStatus:'Статус',cNote:'Нотатка',
+    notes:'Нотатки та рекомендації лікаря:',examDate:'Дата огляду:',sign:'Підпис / Печатка:',
+    important:'ВАЖЛИВО:',disclTxt:'Звіт сформовано додатком "HealthPro" на основі даних користувача. Інформація має виключно ознайомчий характер і <b>не є медичним діагнозом</b>.',
+    page:'Стор.',of:'з',
+    popup:'⚠️ Дозвольте спливаючі вікна в браузері',
+    repTitle:'HealthPro Звіт',
+    yrs:' р.', cm:' см', kg:' кг', bpm:' уд/хв',
+    statusMap:{'Норма':'Норма','Підвищений':'Підвищений','Гіпертензія 1':'Гіпертензія 1','Гіпертензія 2':'Гіпертензія 2','Криза':'Криза','Гіпотензія':'Гіпотензія'}
+  };
+  if(!filtered.length){ showToast(L.noData); return; }
+  const loc = isRu?'ru-UA':'uk-UA';
   const from = document.getElementById('expDateFrom').value;
   const to   = document.getElementById('expDateTo').value;
   const name = settings.name || '—';
@@ -2803,11 +2839,11 @@ function printReportPeriod(){
   const aD   = filtered.length ? avg(filtered.map(m=>m.dia))  : '—';
   const pData= filtered.filter(m=>m.pulse);
   const aP   = pData.length   ? avg(pData.map(m=>m.pulse))    : '—';
-  const periodLabel = _expPeriod==='week'?'Тиждень':_expPeriod==='2weeks'?'2 тижні':_expPeriod==='month'?'Місяць':`${from} — ${to}`;
+  const periodLabel = _expPeriod==='week'?L.week:_expPeriod==='2weeks'?L.w2:_expPeriod==='month'?L.month:`${from} — ${to}`;
 
   // ── SVG chart ────────────────────────────────────────────────
   const chartData = filtered.slice().reverse(); // oldest → newest
-  let svgChart = '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;text-align:center;color:#94a3b8;font-size:12px;">Недостатньо даних для графіку (потрібно 2+ вимірів)</div>';
+  let svgChart = `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;text-align:center;color:#94a3b8;font-size:12px;">${L.insufData}</div>`;
   if(chartData.length >= 2){
     const W=680, H=160, ml=36, mr=12, mt=12, mb=32;
     const cw=W-ml-mr, ch=H-mt-mb;
@@ -2845,9 +2881,9 @@ function printReportPeriod(){
       <path d="${diaPath}" fill="none" stroke="#dc2626" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
       ${sysDots}${diaDots}
       <circle cx="${ml+16}" cy="${mt+8}" r="4" fill="#1e40af"/>
-      <text x="${ml+24}" y="${mt+12}" font-size="9" fill="#1e40af">Систолічний</text>
+      <text x="${ml+24}" y="${mt+12}" font-size="9" fill="#1e40af">${L.sys}</text>
       <circle cx="${ml+100}" cy="${mt+8}" r="4" fill="#dc2626"/>
-      <text x="${ml+108}" y="${mt+12}" font-size="9" fill="#dc2626">Діастолічний</text>
+      <text x="${ml+108}" y="${mt+12}" font-size="9" fill="#dc2626">${L.dia}</text>
     </svg>`;
   }
 
@@ -2855,19 +2891,41 @@ function printReportPeriod(){
     const d = new Date(m.time);
     const st = getBPStatus(m.sys,m.dia);
     const statusColors = {'Норма':'#166534','Підвищений':'#ca8a04','Гіпертензія 1':'#ea580c','Гіпертензія 2':'#dc2626','Криза':'#7f1d1d','Гіпотензія':'#1d4ed8'};
-    const col = statusColors[st.label.replace(/[^\wа-яёіїєА-ЯЁІЇЄ ]/gi,'').trim()] || '#334155';
+    const cleanLbl = st.label.replace(/[^\wа-яёіїєА-ЯЁІЇЄ ]/gi,'').trim();
+    const col = statusColors[cleanLbl] || '#334155';
+    const lbl = L.statusMap[cleanLbl] || cleanLbl;
     return `<tr>
-      <td>${d.toLocaleDateString('uk-UA')}</td>
-      <td>${d.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'})}</td>
+      <td>${d.toLocaleDateString(loc)}</td>
+      <td>${d.toLocaleTimeString(loc,{hour:'2-digit',minute:'2-digit'})}</td>
       <td><b>${m.sys}/${m.dia}</b></td>
       <td>${m.pulse||'—'}</td>
-      <td style="color:${col};font-weight:600">${st.label.replace(/[^\wа-яёіїєА-ЯЁІЇЄ \.!]/gi,'').trim()}</td>
+      <td style="color:${col};font-weight:600">${lbl}</td>
       <td style="color:#64748b;font-size:11px">${m.note||''}</td>
     </tr>`;
   }).join('');
 
-  const html = `<!DOCTYPE html><html lang="uk"><head><meta charset="utf-8">
-  <title>HealthPro Звіт — ${name}</title>
+  // Combined patient + contact info in ONE block
+  const infoCells = [
+    {l:L.fio,v:name},
+    {l:L.ageL,v:age+(age!=='—'?L.yrs:'')},
+    {l:L.gender,v:settings.gender==='m'?L.male:settings.gender==='f'?L.female:'—'},
+    {l:L.height,v:settings.height?settings.height+L.cm:'—'},
+    {l:L.weight,v:settings.weight?settings.weight+L.kg:'—'},
+    {l:L.bmi,v:(settings.height&&settings.weight)?(settings.weight/Math.pow(settings.height/100,2)).toFixed(1):'—'},
+    {l:L.normalBP,v:(settings.normalSys&&settings.normalDia)?settings.normalSys+'/'+settings.normalDia:'—'},
+    {l:L.normalP,v:settings.normalPulse?settings.normalPulse+L.bpm:'—'},
+    {l:L.period,v:periodLabel},
+    {l:L.phoneL,v:settings.phone||'—'},
+    {l:L.email,v:settings.email||'—'}
+  ];
+  if(settings.viber) infoCells.push({l:'Viber',v:settings.viber});
+  if(settings.telegram) infoCells.push({l:'Telegram',v:settings.telegram});
+  if(settings.whatsapp) infoCells.push({l:'WhatsApp',v:settings.whatsapp});
+  if(settings.emergencyName||settings.emergencyPhone) infoCells.push({l:L.emergency,v:`${settings.emergencyName||''} ${settings.emergencyPhone||''}`.trim(),emergency:true});
+  const infoHtml = infoCells.map(c=>`<div class="info-box${c.emergency?' info-emerg':''}"><label>${c.l}</label><span>${c.v}</span></div>`).join('');
+
+  const html = `<!DOCTYPE html><html lang="${isRu?'ru':'uk'}"><head><meta charset="utf-8">
+  <title>${L.repTitle} — ${name}</title>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#1e293b;background:#fff;padding:24px 32px}
@@ -2875,83 +2933,76 @@ function printReportPeriod(){
     .logo{font-size:22px;font-weight:900;color:#1e40af;letter-spacing:-0.5px}
     .logo span{color:#dc2626}
     .subtitle{font-size:11px;color:#64748b;margin-top:2px}
-    .info-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px}
-    .info-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px}
-    .info-box label{font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px}
-    .info-box span{font-size:14px;font-weight:800;color:#1e293b}
-    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
-    .stat-card{border-radius:8px;padding:12px;text-align:center}
+    .info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:14px}
+    .info-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:6px 9px;min-height:38px}
+    .info-box label{font-size:8px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:2px;line-height:1.1}
+    .info-box span{font-size:12px;font-weight:700;color:#1e293b;line-height:1.2;display:block;word-break:break-word}
+    .info-box.info-emerg{background:#fef2f2;border-color:#fecaca}
+    .info-box.info-emerg label{color:#b91c1c}
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+    .stat-card{border-radius:8px;padding:10px;text-align:center}
     .stat-card.blue{background:#eff6ff;border:1px solid #bfdbfe}
     .stat-card.green{background:#f0fdf4;border:1px solid #bbf7d0}
     .stat-card.amber{background:#fefce8;border:1px solid #fef08a}
-    .stat-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
-    .stat-val{font-size:20px;font-weight:900}
+    .stat-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
+    .stat-val{font-size:18px;font-weight:900}
     .blue .stat-lbl{color:#1e40af}.blue .stat-val{color:#1e40af}
     .green .stat-lbl{color:#166534}.green .stat-val{color:#166534}
     .amber .stat-lbl{color:#854d0e}.amber .stat-val{color:#854d0e}
-    h2{font-size:13px;font-weight:700;border-left:4px solid #1e40af;padding-left:9px;margin-bottom:10px;color:#1e293b}
+    h2{font-size:13px;font-weight:700;border-left:4px solid #1e40af;padding-left:9px;margin-bottom:8px;color:#1e293b}
     table{width:100%;border-collapse:collapse;margin-bottom:18px;font-size:11px}
+    thead{display:table-header-group}
+    tfoot{display:table-row-group}
+    tr{page-break-inside:avoid}
     th{background:#1e40af;color:#fff;padding:7px 8px;text-align:left;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
     td{padding:6px 8px;border-bottom:1px solid #e2e8f0}
     tr:nth-child(even) td{background:#f8fafc}
-    .notes-box{border:1px dashed #cbd5e1;padding:16px;border-radius:8px;margin-bottom:16px}
+    .notes-box{border:1px dashed #cbd5e1;padding:16px;border-radius:8px;margin-bottom:16px;page-break-inside:avoid}
     .notes-box label{font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
     .notes-line{border-top:1px solid #e2e8f0;margin-top:32px;padding-top:8px;display:flex;justify-content:space-between}
     .notes-line span{font-size:10px;color:#94a3b8}
-    .disclaimer{background:#fef2f2;border:1px solid #fee2e2;padding:10px 14px;border-radius:8px;font-size:9px;color:#991b1b;line-height:1.6;margin-top:12px}
-    @media print{body{padding:10mm 12mm}button{display:none}}
+    .disclaimer{background:#fef2f2;border:1px solid #fee2e2;padding:10px 14px;border-radius:8px;font-size:9px;color:#991b1b;line-height:1.6;margin-top:12px;page-break-inside:avoid}
+    @media print{
+      body{padding:10mm 12mm}
+      button{display:none}
+      thead{display:table-header-group}
+      tr{page-break-inside:avoid}
+      h2,.notes-box,.disclaimer,.stats{page-break-inside:avoid}
+    }
+    @page{margin:12mm}
   </style></head><body>
   <div class="header">
-    <div><div class="logo">Health<span>Pro</span></div><div class="subtitle">Медичний звіт · Сформовано: ${new Date().toLocaleDateString('uk-UA')}</div></div>
-    <div style="text-align:right;font-size:11px;color:#64748b"><div><b>${name}</b></div><div>Вік: ${age}</div><div>Тел: ${settings.phone||'—'}</div></div>
+    <div><div class="logo">Health<span>Pro</span></div><div class="subtitle">${L.title} · ${L.generated}: ${new Date().toLocaleDateString(loc)}</div></div>
+    <div style="text-align:right;font-size:11px;color:#64748b"><div><b>${name}</b></div><div>${L.age}: ${age}</div><div>${L.phone}: ${settings.phone||'—'}</div></div>
   </div>
-  <h2>Інформація про пацієнта</h2>
-  <div class="info-grid">
-    <div class="info-box"><label>ПІБ</label><span>${name}</span></div>
-    <div class="info-box"><label>Вік</label><span>${age}${age!=='—'?' р.':''}</span></div>
-    <div class="info-box"><label>Стать</label><span>${settings.gender==='m'?'Чоловіча':settings.gender==='f'?'Жіноча':'—'}</span></div>
-    <div class="info-box"><label>Зріст</label><span>${settings.height?settings.height+' см':'—'}</span></div>
-    <div class="info-box"><label>Вага</label><span>${settings.weight?settings.weight+' кг':'—'}</span></div>
-    <div class="info-box"><label>ІМТ</label><span>${(settings.height&&settings.weight)?(settings.weight/Math.pow(settings.height/100,2)).toFixed(1):'—'}</span></div>
-    <div class="info-box"><label>Звичайний тиск</label><span>${(settings.normalSys&&settings.normalDia)?settings.normalSys+'/'+settings.normalDia:'—'}</span></div>
-    <div class="info-box"><label>Звичайний пульс</label><span>${settings.normalPulse?settings.normalPulse+' уд/хв':'—'}</span></div>
-    <div class="info-box"><label>Період звіту</label><span>${periodLabel}</span></div>
-  </div>
-  <h2>Контактна інформація</h2>
-  <div class="info-grid">
-    <div class="info-box"><label>Телефон</label><span>${settings.phone||'—'}</span></div>
-    <div class="info-box"><label>Email</label><span>${settings.email||'—'}</span></div>
-    ${settings.viber?`<div class="info-box"><label>Viber</label><span>${settings.viber}</span></div>`:''}
-    ${settings.telegram?`<div class="info-box"><label>Telegram</label><span>${settings.telegram}</span></div>`:''}
-    ${settings.whatsapp?`<div class="info-box"><label>WhatsApp</label><span>${settings.whatsapp}</span></div>`:''}
-    ${(settings.emergencyName||settings.emergencyPhone)?`<div class="info-box" style="background:#fef2f2;border-color:#fecaca"><label style="color:#b91c1c">Екстрений контакт</label><span>${settings.emergencyName||''} ${settings.emergencyPhone||''}</span></div>`:''}
-  </div>
+  <h2>${L.h_patient}</h2>
+  <div class="info-grid">${infoHtml}</div>
   <div class="stats">
-    <div class="stat-card blue"><div class="stat-lbl">Середній тиск</div><div class="stat-val">${aS}/${aD}</div></div>
-    <div class="stat-card green"><div class="stat-lbl">Середній пульс</div><div class="stat-val">${aP}</div></div>
-    <div class="stat-card amber"><div class="stat-lbl">Вимірів всього</div><div class="stat-val">${filtered.length}</div></div>
+    <div class="stat-card blue"><div class="stat-lbl">${L.avgBP}</div><div class="stat-val">${aS}/${aD}</div></div>
+    <div class="stat-card green"><div class="stat-lbl">${L.avgP}</div><div class="stat-val">${aP}</div></div>
+    <div class="stat-card amber"><div class="stat-lbl">${L.totalM}</div><div class="stat-val">${filtered.length}</div></div>
   </div>
-  <h2>Динаміка тиску</h2>
+  <h2>${L.h_dyn}</h2>
   <div style="margin-bottom:18px">${svgChart}</div>
-  <h2>Журнал вимірів</h2>
+  <h2>${L.h_log}</h2>
   <table>
-    <thead><tr><th>Дата</th><th>Час</th><th>Тиск</th><th>Пульс</th><th>Статус</th><th>Нотатка</th></tr></thead>
+    <thead><tr><th>${L.cDate}</th><th>${L.cTime}</th><th>${L.cBP}</th><th>${L.cP}</th><th>${L.cStatus}</th><th>${L.cNote}</th></tr></thead>
     <tbody>${tableRows}</tbody>
   </table>
   <div class="notes-box">
-    <label>Нотатки та рекомендації лікаря:</label>
+    <label>${L.notes}</label>
     <div class="notes-line">
-      <span>Дата огляду: _____________</span>
-      <span>Підпис / Печатка: _____________</span>
+      <span>${L.examDate} _____________</span>
+      <span>${L.sign} _____________</span>
     </div>
   </div>
-  <div class="disclaimer"><b>ВАЖЛИВО:</b> Звіт сформовано додатком "HealthPro" на основі даних користувача. Інформація має виключно ознайомчий характер і <b>не є медичним діагнозом</b>.</div>
+  <div class="disclaimer"><b>${L.important}</b> ${L.disclTxt}</div>
   <script>window.onload=function(){window.print()}<\/script>
   </body></html>`;
 
   const w = window.open('','_blank','width=900,height=700');
   if(w){ w.document.write(html); w.document.close(); }
-  else { showToast('⚠️ Дозвольте спливаючі вікна в браузері'); }
+  else { showToast(L.popup); }
 }
 
 function importData(e){
