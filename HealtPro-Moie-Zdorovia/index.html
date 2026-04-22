@@ -501,6 +501,28 @@ select.text-input{cursor:pointer;-webkit-appearance:none;background-image:url("d
 .disclaimer-body .risk-table td:first-child{color:#fff;font-weight:600;width:38%}
 .disclaimer-body .accent-box{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:10px;padding:12px;margin-top:14px;color:#fbbf24;font-size:12.5px;font-weight:600;line-height:1.45}
 .disclaimer-version{text-align:center;font-size:11px;color:#475569;margin-bottom:14px;padding-top:6px}
+
+/* Disclaimer status (acceptance + history) */
+.discl-status{border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;flex-direction:column;gap:8px}
+.discl-status.ok{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25)}
+.discl-status.warn{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3)}
+.discl-status-row{display:flex;align-items:center;gap:10px}
+.discl-status-ico{width:24px;height:24px;flex-shrink:0;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.discl-status.ok .discl-status-ico{stroke:#10b981}
+.discl-status.warn .discl-status-ico{stroke:#f59e0b}
+.discl-status-title{font-size:13px;font-weight:700;color:#e2e8f0;line-height:1.2}
+.discl-status-date{font-size:12px;color:#94a3b8;margin-top:2px}
+.discl-status-warn{font-size:12px;color:#fbbf24;font-weight:600;line-height:1.4;padding-top:4px;border-top:1px solid rgba(245,158,11,.2)}
+.discl-hist-block{margin-bottom:14px;border:1px solid rgba(99,140,255,.15);border-radius:10px;overflow:hidden}
+.discl-hist-block summary{cursor:pointer;padding:10px 14px;font-size:12px;color:#94a3b8;font-weight:600;background:rgba(255,255,255,.03);user-select:none;list-style:none;display:flex;align-items:center;gap:6px}
+.discl-hist-block summary::-webkit-details-marker{display:none}
+.discl-hist-block summary::before{content:'▸';display:inline-block;transition:transform .2s;color:#60a5fa}
+.discl-hist-block[open] summary::before{transform:rotate(90deg)}
+.discl-hist-list{padding:8px 14px 12px;display:flex;flex-direction:column;gap:6px}
+.discl-hist-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;padding:6px 0;border-bottom:1px dashed rgba(99,140,255,.1)}
+.discl-hist-row:last-child{border-bottom:none}
+.discl-hist-v{font-weight:700;color:#60a5fa;background:rgba(59,130,246,.1);padding:2px 8px;border-radius:6px;font-size:11px}
+.discl-hist-d{color:#94a3b8;text-align:right}
 </style>
 </head>
 <body>
@@ -562,6 +584,7 @@ select.text-input{cursor:pointer;-webkit-appearance:none;background-image:url("d
     </div>
     <div class="disclaimer-body">
       <div class="disclaimer-version">МЕДИЧНИЙ ДИСКЛЕЙМЕР ТА ВІДМОВА ВІД ВІДПОВІДАЛЬНОСТІ · Версія 1.0</div>
+      <div id="disclaimerStatus"></div>
 
       <h4><span class="num">1</span>Загальні положення</h4>
       <p>Цей Додаток призначений виключно для ведення щоденника показників артеріального тиску та обліку прийому лікарських засобів. Вміст Додатка надається лише для інформаційних цілей і <b>не може розцінюватися як медична консультація або діагноз</b>.</p>
@@ -2945,10 +2968,63 @@ function loadProfileFields(){
 // WELCOME / DISCLAIMER
 // ══════════════════════════════════════════
 const DISCLAIMER_VERSION='1.0';
-function openDisclaimerModal(){document.getElementById('disclaimerModal').classList.add('show');document.body.style.overflow='hidden'}
+const DISCLAIMER_HISTORY_KEY='healthpro_disclaimer_history';
+
+function getDisclaimerHistory(){
+  try{return JSON.parse(localStorage.getItem(DISCLAIMER_HISTORY_KEY)||'[]')}catch(e){return []}
+}
+function saveDisclaimerHistory(arr){
+  try{localStorage.setItem(DISCLAIMER_HISTORY_KEY,JSON.stringify(arr))}catch(e){}
+}
+function isCurrentDisclaimerAccepted(){
+  return getDisclaimerHistory().some(h=>h.version===DISCLAIMER_VERSION);
+}
+function fmtAcceptDate(iso){
+  try{
+    const d=new Date(iso);
+    return d.toLocaleDateString(lang==='ru'?'ru-UA':'uk-UA',{day:'2-digit',month:'long',year:'numeric'})
+      +' '+d.toLocaleTimeString(lang==='ru'?'ru-UA':'uk-UA',{hour:'2-digit',minute:'2-digit'});
+  }catch(e){return iso}
+}
+
+function renderDisclaimerStatus(){
+  const el=document.getElementById('disclaimerStatus');
+  if(!el)return;
+  const hist=getDisclaimerHistory();
+  if(!hist.length){el.innerHTML='';return}
+  const latest=hist[hist.length-1];
+  const isCurrent=latest.version===DISCLAIMER_VERSION;
+  const isRu=lang==='ru';
+  const labelAccepted=isRu?'Принято':'Прийнято';
+  const labelVersion=isRu?'Версия':'Версія';
+  const labelHistory=isRu?'История согласий':'Історія погоджень';
+  const warnTxt=isRu?'⚠ Доступна новая версия дисклеймера. Пожалуйста, ознакомьтесь.':'⚠ Доступна нова версія дисклеймера. Будь ласка, ознайомтеся.';
+  const histRows=hist.slice().reverse().map(h=>`<div class="discl-hist-row"><span class="discl-hist-v">v${h.version}</span><span class="discl-hist-d">${fmtAcceptDate(h.acceptedAt)}</span></div>`).join('');
+  el.innerHTML=`
+    <div class="discl-status ${isCurrent?'ok':'warn'}">
+      <div class="discl-status-row">
+        <svg viewBox="0 0 24 24" class="discl-status-ico">${isCurrent?'<polyline points="20 6 9 17 4 12"/>':'<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>'}</svg>
+        <div>
+          <div class="discl-status-title">${labelAccepted}: ${labelVersion} ${latest.version}</div>
+          <div class="discl-status-date">${fmtAcceptDate(latest.acceptedAt)}</div>
+        </div>
+      </div>
+      ${isCurrent?'':`<div class="discl-status-warn">${warnTxt}</div>`}
+    </div>
+    ${hist.length>1?`<details class="discl-hist-block"><summary>${labelHistory} (${hist.length})</summary><div class="discl-hist-list">${histRows}</div></details>`:''}
+  `;
+}
+
+function openDisclaimerModal(){
+  renderDisclaimerStatus();
+  document.getElementById('disclaimerModal').classList.add('show');
+  document.body.style.overflow='hidden';
+}
 function closeDisclaimerModal(){document.getElementById('disclaimerModal').classList.remove('show');document.body.style.overflow=''}
 function acceptDisclaimer(){
-  try{localStorage.setItem('healthpro_disclaimer_v'+DISCLAIMER_VERSION,'accepted_'+new Date().toISOString())}catch(e){}
+  const hist=getDisclaimerHistory();
+  hist.push({version:DISCLAIMER_VERSION,acceptedAt:new Date().toISOString()});
+  saveDisclaimerHistory(hist);
   const w=document.getElementById('welcomeScreen');
   w.style.transition='opacity .35s ease';
   w.style.opacity='0';
@@ -2956,9 +3032,17 @@ function acceptDisclaimer(){
   closeDisclaimerModal();
 }
 function checkDisclaimer(){
-  let accepted=false;
-  try{accepted=!!localStorage.getItem('healthpro_disclaimer_v'+DISCLAIMER_VERSION)}catch(e){}
-  if(accepted){document.getElementById('welcomeScreen').classList.add('hidden')}
+  // One-time migration from old key
+  try{
+    const oldKey='healthpro_disclaimer_v'+DISCLAIMER_VERSION;
+    const oldVal=localStorage.getItem(oldKey);
+    if(oldVal&&!getDisclaimerHistory().length){
+      const iso=oldVal.replace(/^accepted_/,'');
+      saveDisclaimerHistory([{version:DISCLAIMER_VERSION,acceptedAt:iso||new Date().toISOString()}]);
+      localStorage.removeItem(oldKey);
+    }
+  }catch(e){}
+  if(isCurrentDisclaimerAccepted()){document.getElementById('welcomeScreen').classList.add('hidden')}
 }
 
 function init(){
