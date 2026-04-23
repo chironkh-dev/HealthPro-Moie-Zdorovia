@@ -3,15 +3,18 @@
 // Cache-first strategy + offline support
 // ============================================================
 
-const CACHE_NAME = 'healthpro-v5.7';
+const CACHE_NAME = 'healthpro-v6.1';
 const STATIC_ASSETS = [
   './index.html',
   './manifest.json',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-  './icons/icon-maskable.png',
-  './icons/icon-144.png',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap'
+  './icons/favicon.svg',
+  './icons/favicon-96x96.png',
+  './icons/web-app-manifest-192x192.png',
+  './icons/web-app-manifest-512x512.png',
+  './styles/app.css', 
+  './icons/favicon.ico',
+  './icons/site.webmanifest', 
+    'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap'
 ];
 
 // ─── INSTALL ───────────────────────────────────────────────
