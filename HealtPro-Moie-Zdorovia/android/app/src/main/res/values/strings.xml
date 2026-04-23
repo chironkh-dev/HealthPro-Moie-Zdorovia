@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">HealthPro</string>
+    <string name="title_activity_main">HealthPro</string>
+    <string name="package_name">ua.healthpro.app</string>
+    <string name="custom_url_scheme">ua.healthpro.app</string>
+</resources>
