@@ -507,3 +507,17 @@ select.text-input{cursor:pointer;-webkit-appearance:none;background-image:url("d
 .discl-hist-row:last-child{border-bottom:none}
 .discl-hist-v{font-weight:700;color:#60a5fa;background:rgba(59,130,246,.1);padding:2px 8px;border-radius:6px;font-size:11px}
 .discl-hist-d{color:#94a3b8;text-align:right}
+
+/* ВСТАВИТИ В САМИЙ КІНЕЦЬ ФАЙЛУ */
+img[src*="logo"], 
+.header-logo img, 
+.header-logo,
+#logo img {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    max-width: 36px !important;
+    object-fit: cover !important;
+    border-radius: 9px !important;
+    display: block !important;
+}
