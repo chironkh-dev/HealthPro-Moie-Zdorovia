@@ -1,4 +1,4 @@
-window.WELCOME_T = {
+export const WELCOME_T = {
   uk: {
     subtitle: "Моє Здоров'я",
     tagline: "Ваш персональний щоденник здоров'я",
@@ -23,7 +23,7 @@ window.WELCOME_T = {
   },
 };
 
-window.DISCLAIMER_T = {
+export const DISCLAIMER_T = {
   uk: {
     title: 'Медичний дисклеймер',
     version: 'МЕДИЧНИЙ ДИСКЛЕЙМЕР ТА ВІДМОВА ВІД ВІДПОВІДАЛЬНОСТІ · Версія 1.0',

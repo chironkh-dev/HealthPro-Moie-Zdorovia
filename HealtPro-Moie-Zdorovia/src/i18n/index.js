@@ -1,23 +1,8 @@
-import './ui.uk.js';
-import './ui.ru.js';
-import './welcome-disclaimer.js';
-import './pdf.js';
+import { T_UK } from './ui.uk.js';
+import { T_RU } from './ui.ru.js';
+import { WELCOME_T, DISCLAIMER_T } from './welcome-disclaimer.js';
+import { PDF_LABELS } from './pdf.js';
 
-export function getDictionaries() {
-  return {
-    uk: window.T_UK || {},
-    ru: window.T_RU || {},
-  };
-}
+export { T_UK, T_RU, WELCOME_T, DISCLAIMER_T, PDF_LABELS };
 
-export function getWelcomeTranslations() {
-  return window.WELCOME_T || { uk: {}, ru: {} };
-}
-
-export function getDisclaimerTranslations() {
-  return window.DISCLAIMER_T || { uk: {}, ru: {} };
-}
-
-export function getPdfLabels() {
-  return window.PDF_LABELS || { uk: {}, ru: {} };
-}
+export const T = { uk: T_UK, ru: T_RU };

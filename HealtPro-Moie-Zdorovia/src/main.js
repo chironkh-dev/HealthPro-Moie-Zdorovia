@@ -1,23 +1,17 @@
-import { createAppState } from './core/state.js';
-import { createStorage } from './core/storage.js';
-import { createPlatform } from './core/platform.js';
-import { registerServiceWorker } from './pwa/sw-register.js';
-import { getDictionaries } from './i18n/index.js';
+import { bootstrapStorage } from './core/storage.js';
+import { bootApp } from './app.js';
+import './features/meds/index.js';
+import './features/steps/index.js';
 
-const appState = createAppState();
-const storage = createStorage();
-const platform = createPlatform();
-const dictionaries = getDictionaries();
+// Kick off async storage migration (LS → IDB) in background.
+bootstrapStorage();
 
-window.__HP_STORAGE_KEYS = storage.keys;
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootApp);
+} else {
+  bootApp();
+}
 
-// Temporary bridge: keep legacy inline-script app untouched
-// while exposing modular primitives for incremental migration.
-window.HealthProModules = {
-  appState,
-  storage,
-  platform,
-  dictionaries,
-};
-
-registerServiceWorker(platform);
+window.addEventListener('resize', () => {
+  // Chart re-render is handled inside app.js via its own resize listener.
+});

@@ -1,4 +1,4 @@
-window.T_UK={
+export const T_UK ={
   'nt-pressure':'Тиск','nt-analytics':'Аналіз','nt-pills':'Ліки','nt-history':'Журнал','nt-profile':'Профіль','nt-settings':'Налашт.',
   't-install':'Встановіть додаток на телефон!','t-install-btn':'Встановити','t-update':'Доступне оновлення','t-update-btn':'Оновити','t-offline':'Офлайн режим — дані зберігаються локально',
   't-last-bp':'Останній тиск','t-last-pulse':'Пульс','t-bpm':'уд/хв','t-new-meas':'Новий вимір',

@@ -1,4 +1,4 @@
-window.PDF_LABELS = {
+export const PDF_LABELS = {
   ru: {
     subtitle: 'Персональный мониторинг здоровья',
     title: 'МЕДИЦИНСКИЙ ОТЧЁТ',

@@ -1,12 +1,9 @@
-modules = ["nodejs-24", "python-3.11"]
+modules = ["nodejs-24"]
 
 [deployment]
-router = "application"
-deploymentTarget = "autoscale"
-
-[deployment.postBuild]
-args = ["pnpm", "store", "prune"]
-env = { "CI" = "true" }
+deploymentTarget = "static"
+publicDir = "dist"
+build = ["npm", "run", "build"]
 
 [workflows]
 runButton = "Project"
@@ -29,25 +26,9 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python3 -m http.server 8000"
-waitForPort = 8000
-
-[agent]
-stack = "PNPM_WORKSPACE"
-expertMode = true
-
-[postMerge]
-path = "scripts/post-merge.sh"
-timeoutMs = 20000
+args = "npm run dev"
+waitForPort = 5000
 
 [[ports]]
-localPort = 8000
-externalPort = 8000
-
-[[ports]]
-localPort = 8080
-externalPort = 8080
-
-[[ports]]
-localPort = 8081
+localPort = 5000
 externalPort = 80

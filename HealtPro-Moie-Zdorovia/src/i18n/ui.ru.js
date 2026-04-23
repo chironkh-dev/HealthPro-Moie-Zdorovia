@@ -1,4 +1,4 @@
-window.T_RU={
+export const T_RU ={
   'nt-pressure':'Давление','nt-analytics':'Анализ','nt-pills':'Лекарства','nt-history':'Журнал','nt-profile':'Профиль','nt-settings':'Настр.',
   't-install':'Установите приложение!','t-install-btn':'Установить','t-update':'Доступно обновление','t-update-btn':'Обновить','t-offline':'Офлайн режим — данные хранятся локально',
   't-last-bp':'Последнее давление','t-last-pulse':'Пульс','t-bpm':'уд/мин','t-new-meas':'Новое измерение',
