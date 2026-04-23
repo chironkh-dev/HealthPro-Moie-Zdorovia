@@ -2,14 +2,39 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { T_UK, T_RU, WELCOME_T, DISCLAIMER_T, PDF_LABELS } from './i18n/index.js';
-import { STORAGE_KEYS as STORAGE_KEYS_IMPORTED, DB as stateStorageDB, loadState, saveState, saveTheme } from './core/storage.js';
-
-const stateStorage = {
-  DB: stateStorageDB,
-  loadState,
-  saveState,
-  saveTheme,
-};
+import { STORAGE_KEYS as STORAGE_KEYS_IMPORTED, defaultSettings } from './core/storage.js';
+import {
+  state,
+  saveData,
+  persistTheme,
+  persistLang,
+  setToast,
+  showToast as showToastShared,
+  on,
+  today as todayShared,
+  DB,
+} from './core/state.js';
+import {
+  DRUG_DB,
+  isPillDueToday,
+  getDayName,
+  fmtPillDate,
+  onPillDaysChange,
+  checkDrugName,
+  validateDosageAmount,
+  addPill,
+  searchPharmacy,
+  renderPills,
+  togglePill,
+  deletePill,
+} from './features/meds/index.js';
+import {
+  toggleStepCounter,
+  enableSteps,
+  updateStepUI,
+  saveStepGoal,
+  restoreSteps,
+} from './features/steps/index.js';
 
 // ══════════════════════════════════════════
 // TRANSLATIONS (#8)
@@ -59,9 +84,9 @@ function renderWelcomeText(){
 
 const STORAGE_KEYS=STORAGE_KEYS_IMPORTED;
 
-let lang=localStorage.getItem(STORAGE_KEYS.lang)||'uk';
+let lang=state.lang;
 function setLang(l){
-  lang=l;localStorage.setItem(STORAGE_KEYS.lang,l);
+  lang=l;persistLang(l);
   // Settings page lang buttons
   const lu=document.getElementById('lang-uk'),lr=document.getElementById('lang-ru');
   if(lu)lu.classList.toggle('active',l==='uk');
@@ -87,8 +112,7 @@ function setLang(l){
   // Re-render dynamic views that depend on lang
   try{renderAnalytics()}catch(e){}
   try{renderHistory()}catch(e){}
-  try{renderTodayPills&&renderTodayPills()}catch(e){}
-  try{renderAllPills&&renderAllPills()}catch(e){}
+  try{renderPills()}catch(e){}
   try{renderRecommendations&&renderRecommendations()}catch(e){}
   try{renderBMI&&renderBMI()}catch(e){}
   try{updateHeader&&updateHeader()}catch(e){}
@@ -101,35 +125,36 @@ function t(id){
 }
 
 // ══════════════════════════════════════════
-// DATA
+// DATA — bare-name aliases share refs with the central state container
+// (src/core/state.js). Mutate via push/splice; do NOT reassign these
+// locals — instead mutate state.X in place so feature modules stay in sync.
 // ══════════════════════════════════════════
-const DB = stateStorage.DB;
-const initialState = stateStorage.loadState();
-let measurements = initialState.measurements;
-let pills = initialState.pills;
-let pillsTaken = initialState.pillsTaken;
-let settings = initialState.settings;
-function saveData(){stateStorage.saveState({measurements,pills,pillsTaken,settings})}
+let measurements = state.measurements;
+let pills = state.pills;
+let pillsTaken = state.pillsTaken;
+let settings = state.settings;
 
 // ══════════════════════════════════════════
 // THEME
 // ══════════════════════════════════════════
-let isDark = initialState.isDark;
+let isDark = state.isDark;
 function applyTheme(){
   document.documentElement.setAttribute('data-theme',isDark?'dark':'light');
   const ic=document.getElementById('themeIcon');
   ic.innerHTML=isDark?'<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>':'<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
 }
-function toggleTheme(){isDark=!isDark;stateStorage.saveTheme(isDark);applyTheme()}
+function toggleTheme(){isDark=!isDark;persistTheme(isDark);applyTheme()}
 
 // ══════════════════════════════════════════
 // UTILS
 // ══════════════════════════════════════════
-function today(){return new Date().toISOString().split('T')[0]}
+function today(){return todayShared()}
 function formatTime(s){return new Date(s).toLocaleTimeString(lang==='ru'?'ru-UA':'uk-UA',{hour:'2-digit',minute:'2-digit'})}
 function formatDate(s){return new Date(s).toLocaleDateString(lang==='ru'?'ru-UA':'uk-UA',{day:'numeric',month:'short'})}
 function avg(arr){return arr.length?Math.round(arr.reduce((a,b)=>a+b,0)/arr.length):null}
-function showToast(msg,dur=2500){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),dur)}
+function showToast(msg,dur=2500){const t=document.getElementById('toast');if(!t)return;t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),dur)}
+// Register so feature modules can use the same DOM-bound implementation.
+setToast(showToast);
 
 function getBPNorm(){
   const isRu=lang==='ru';
@@ -165,42 +190,7 @@ function getWHOCategory(s,d){
   return{label:isRu?'Гипертензия ІІІ ст.':'Гіпертензія ІІІ ст.',sub:'≥180/110',c:'var(--rose)',key:'ht3'};
 }
 
-function isPillDueToday(p){
-  if(p.days==='daily')return true;
-  if(p.days==='date')return !!p.date && p.date===today();
-  // legacy support for old saved pills (weekdays/mon..sun)
-  const d=new Date().getDay(); // 0=Sun
-  const m={weekdays:d>=1&&d<=5,mon:d===1,tue:d===2,wed:d===3,thu:d===4,fri:d===5,sat:d===6,sun:d===0};
-  return m[p.days]===true;
-}
-function fmtPillDate(iso){
-  if(!iso)return'';
-  const [y,mo,da]=iso.split('-');
-  return `${da}.${mo}.${y.slice(2)}`;
-}
-function getDayName(p){
-  const isRu=lang==='ru';
-  if(typeof p==='string')p={days:p};
-  if(p.days==='daily')return isRu?'Ежедневно':'Щодня';
-  if(p.days==='date')return p.date?fmtPillDate(p.date):(isRu?'Дата':'Дата');
-  const map=isRu?
-    {weekdays:'Пн–Пт',mon:'Понедельник',tue:'Вторник',wed:'Среда',thu:'Четверг',fri:'Пятница',sat:'Суббота',sun:'Воскресенье'}:
-    {weekdays:'Пн–Пт',mon:'Понеділок',tue:'Вівторок',wed:'Середа',thu:'Четвер',fri:'П\'ятниця',sat:'Субота',sun:'Неділя'};
-  return map[p.days]||p.days;
-}
-function onPillDaysChange(){
-  const sel=document.getElementById('pillDays');
-  const dt=document.getElementById('pillDate');
-  if(!sel||!dt)return;
-  if(sel.value==='date'){
-    dt.disabled=false;
-    dt.min=today();
-    if(!dt.value)dt.value=today();
-  } else {
-    dt.disabled=true;
-    dt.value='';
-  }
-}
+// (Day-helpers, drug DB, pill CRUD & rendering moved to src/features/meds/)
 
 // ══════════════════════════════════════════
 // CRITICAL ALERT + SMS
@@ -893,224 +883,6 @@ function openTrendModal(){
 }
 function closeTrendModal(e){if(e.target===document.getElementById('trendModal'))document.getElementById('trendModal').classList.remove('show')}
 
-// ══════════════════════════════════════════
-// DRUG DATABASE (#3 fix — extended, validation)
-// ══════════════════════════════════════════
-const DRUG_DB={
-  // ACE-inhibitors
-  'аспірин':{max:100,unit:'мг',warn:'не натщесерце, обережно з антикоагулянтами'},
-  'аспирин':{max:100,unit:'мг',warn:'не натщесерце, обережно з антикоагулянтами'},
-  'ацетилсаліцилова':{max:100,unit:'мг',warn:'кардіологічна доза — не натщесерце'},
-  'еналаприл':{max:40,unit:'мг',warn:'контроль калію та нирок, можливий кашель'},
-  'эналаприл':{max:40,unit:'мг',warn:'контроль калію та нирок'},
-  'берліприл':{max:40,unit:'мг',warn:'=еналаприл, контроль нирок'},
-  'ренітек':{max:40,unit:'мг',warn:'=еналаприл'},
-  'лізиноприл':{max:40,unit:'мг',warn:'можливий кашель, не при вагітності'},
-  'лизиноприл':{max:40,unit:'мг',warn:'можливий кашель, не при вагітності'},
-  'лізорил':{max:40,unit:'мг',warn:'=лізиноприл'},
-  'раміприл':{max:10,unit:'мг',warn:'можливий кашель, контроль нирок'},
-  'рамімак':{max:10,unit:'мг',warn:'=раміприл'},
-  'хартил':{max:10,unit:'мг',warn:'=раміприл'},
-  'перидоприл':{max:10,unit:'мг',warn:'вранці до їжі, контроль калію'},
-  'перинева':{max:10,unit:'мг',warn:'=периндоприл'},
-  'каптоприл':{max:150,unit:'мг',warn:'3 рази/добу до їжі'},
-  // ARBs
-  'лозартан':{max:100,unit:'мг',warn:'контроль калію, не при вагітності'},
-  'козаар':{max:100,unit:'мг',warn:'=лозартан'},
-  'лориста':{max:100,unit:'мг',warn:'=лозартан'},
-  'валсартан':{max:320,unit:'мг',warn:'не при вагітності'},
-  'вальсакор':{max:320,unit:'мг',warn:'=валсартан'},
-  'діован':{max:320,unit:'мг',warn:'=валсартан'},
-  'телмісартан':{max:80,unit:'мг',warn:'1 раз/день незалежно від їжі'},
-  'мікардіс':{max:80,unit:'мг',warn:'=телмісартан'},
-  'ірбесартан':{max:300,unit:'мг',warn:'не при вагітності'},
-  'кандесартан':{max:32,unit:'мг',warn:'1 раз/день'},
-  // CCBs
-  'амлодипін':{max:10,unit:'мг',warn:'можливі набряки ніг'},
-  'амлодипин':{max:10,unit:'мг',warn:'можливі набряки ніг'},
-  'норваск':{max:10,unit:'мг',warn:'=амлодипін, набряки ніг'},
-  'амловас':{max:10,unit:'мг',warn:'=амлодипін'},
-  'ніфедипін':{max:120,unit:'мг',warn:'не жувати, може спричинити рефлекторну тахікардію'},
-  'нифедипин':{max:120,unit:'мг',warn:'не жувати'},
-  'кордафлекс':{max:120,unit:'мг',warn:'=ніфедипін'},
-  'лерканідипін':{max:20,unit:'мг',warn:'1 раз/день до їжі'},
-  // Beta-blockers
-  'бісопролол':{max:10,unit:'мг',warn:'не різко відміняти, обережно при астмі'},
-  'бисопролол':{max:10,unit:'мг',warn:'не різко відміняти, обережно при астмі'},
-  'конкор':{max:10,unit:'мг',warn:'=бісопролол'},
-  'бісокард':{max:10,unit:'мг',warn:'=бісопролол'},
-  'метопролол':{max:200,unit:'мг',warn:'не різко відміняти, з їжею'},
-  'беталок':{max:200,unit:'мг',warn:'=метопролол'},
-  'атенолол':{max:100,unit:'мг',warn:'не різко відміняти'},
-  'карведилол':{max:50,unit:'мг',warn:'не різко відміняти, з їжею'},
-  'коріол':{max:50,unit:'мг',warn:'=карведилол'},
-  // Diuretics
-  'індапамід':{max:2.5,unit:'мг',warn:'вранці, контроль електролітів'},
-  'индапамид':{max:2.5,unit:'мг',warn:'вранці, контроль електролітів'},
-  'аріфон':{max:2.5,unit:'мг',warn:'=індапамід'},
-  'гідрохлоротіазид':{max:25,unit:'мг',warn:'вранці, контроль K+'},
-  'фуросемід':{max:80,unit:'мг',warn:'контроль K+, обережно при нирковій недостатності'},
-  'спіронолактон':{max:200,unit:'мг',warn:'контроль K+, може підвищувати K+'},
-  'верошпірон':{max:200,unit:'мг',warn:'=спіронолактон'},
-  // Others
-  'нітрогліцерин':{max:1,unit:'мг разово',warn:'тільки при нападі, не більше 3 таб.'},
-  'нитроглицерин':{max:1,unit:'мг разово',warn:'тільки при нападі, не більше 3 таб.'},
-  'варфарин':{max:10,unit:'мг',warn:'контроль МНВ, обережно з їжею та ліками'},
-  'метформін':{max:3000,unit:'мг',warn:'при діабеті, з їжею, контроль нирок'},
-  'метформин':{max:3000,unit:'мг',warn:'при діабеті, з їжею'},
-  'ібупрофен':{max:2400,unit:'мг',warn:'⚠️ ПІДВИЩУЄ ТИСК! Не при серцевій недостатності'},
-  'ибупрофен':{max:2400,unit:'мг',warn:'⚠️ ПІДВИЩУЄ ТИСК!'},
-  'нурофен':{max:2400,unit:'мг',warn:'=ібупрофен, підвищує тиск'},
-};
-
-function checkDrugName(){
-  const name=document.getElementById('pillName').value.toLowerCase().trim();
-  const warnEl=document.getElementById('pillNameWarn');
-  if(!name||name.length<3){warnEl.style.display='none';return}
-  // Strict: drug key must be substring of what user typed (not the reverse — avoids false positives)
-  const found=Object.keys(DRUG_DB).find(k=>name.includes(k));
-  if(found){
-    const info=DRUG_DB[found];
-    warnEl.innerHTML=`<div class="drug-warn">⚠️ <strong>${found.charAt(0).toUpperCase()+found.slice(1)}</strong>: Добова доза — макс. <strong>${info.max} ${info.unit}</strong>. ${info.warn}. <a href="https://tabletki.ua/search/?q=${encodeURIComponent(found)}" target="_blank" class="pill-link">Довідник →</a></div>`;
-    warnEl.style.display='block';
-  } else warnEl.style.display='none';
-}
-
-function validateDosageAmount(dose,drug){
-  const num=parseFloat(dose.replace(/[^\d.]/g,''));
-  if(!num)return null;
-  // Generic guard: > 5000 mg is almost certainly a data entry error
-  if(num>5000)return{level:'danger',msg:`⛔ Введена доза ${num} мг здається помилкою. Перевірте: 5000+ мг будь-якого препарату є небезпечним!`};
-  if(!drug)return null;
-  const info=DRUG_DB[drug];
-  if(!info)return null;
-  if(num>info.max*3)return{level:'danger',msg:`⛔ НЕБЕЗПЕЧНА доза! Введено ${num} ${info.unit} — максимум ${info.max} ${info.unit}/добу! Це може призвести до отруєння.`};
-  if(num>info.max)return{level:'warn',msg:`⚠️ Введена доза (${num}) перевищує максимальну добову (${info.max} ${info.unit}). Уточніть у лікаря.`};
-  return null;
-}
-
-// ══════════════════════════════════════════
-// PILLS (#3 fixes)
-// ══════════════════════════════════════════
-function addPill(){
-  const name=document.getElementById('pillName').value.trim();
-  const dose=document.getElementById('pillDose').value.trim();
-  const time=document.getElementById('pillTime').value;
-  const days=document.getElementById('pillDays').value;
-  const date=document.getElementById('pillDate').value;
-
-  if(!name){showToast(lang==='ru'?'⚠️ Введите название препарата':'⚠️ Введіть назву препарату');return}
-  if(!dose){showToast(lang==='ru'?'⚠️ Введите дозировку (обязательно)':'⚠️ Введіть дозування (обов\'язково)');return}
-  if(days==='date'){
-    if(!date){showToast(lang==='ru'?'⚠️ Выберите дату приёма':'⚠️ Виберіть дату прийому');return}
-    if(date<today()){showToast(lang==='ru'?'⚠️ Дата не может быть в прошлом':'⚠️ Дата не може бути в минулому');return}
-  }
-
-  // Check dangerous dose (strict: drug key must be inside name)
-  const foundDrug=Object.keys(DRUG_DB).find(k=>name.toLowerCase().includes(k));
-  const validation=validateDosageAmount(dose,foundDrug||null);
-  if(validation){
-    const msg=`${validation.msg}\n\nПродовжити все одно?`;
-    if(!confirm(msg))return;
-  }
-
-  pills.push({id:Date.now(),name,dose,time,days,date:days==='date'?date:''});
-  saveData();
-  ['pillName','pillDose'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('pillTime').value='08:00';
-  document.getElementById('pillDays').value='daily';
-  document.getElementById('pillDate').value='';
-  document.getElementById('pillDate').disabled=true;
-  document.getElementById('pillNameWarn').style.display='none';
-  renderPills();showToast(`💊 ${name} додано!`);scheduleNotifications();
-}
-
-function searchPharmacy(site){
-  const name=document.getElementById('pillName').value.trim()||'';
-  if(!name){showToast(lang==='ru'?'⚠️ Введите название препарата для поиска':'⚠️ Введіть назву препарату для пошуку');return false}
-  const q=encodeURIComponent(name);
-  const urls={
-    apteka:`https://apteka.ua/search/?q=${q}`,
-    liki:`https://liki.ua/search/?q=${q}`,
-    tabletki:`https://tabletki.ua/search/?q=${q}`,
-    nine11:`https://911.ua/search?q=${q}`
-  };
-  if(urls[site])window.open(urls[site],'_blank');
-  return false;
-}
-
-function renderPills(){
-  const con=document.getElementById('todayPills');
-  const td=today();
-  if(!pillsTaken[td])pillsTaken[td]={};
-  const due=pills.filter(isPillDueToday).sort((a,b)=>a.time.localeCompare(b.time));
-  document.getElementById('adherenceWrap').style.display=due.length?'block':'none';
-
-  // #15 — cntTotal = ALL scheduled pills (not just today)
-  document.getElementById('cntTotal').textContent=pills.length;
-
-  if(!due.length){
-    const nextDueName=pills.length>0?`Всього препаратів: ${pills.length}. На сьогодні немає.`:'';
-    con.innerHTML=`<div class="empty-state"><div class="em"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></div><p>${pills.length?(lang==='ru'?'Лекарств на сегодня нет':'Ліків на сьогодні немає'):(lang==='ru'?'Нет добавленных лекарств':'Немає доданих ліків')}</p>${nextDueName?`<p style="font-size:11px;color:var(--blue2);margin-top:6px">${nextDueName}</p>`:''}</div>`;
-    // #15 total = all pills
-    document.getElementById('cntTaken').textContent=0;
-    document.getElementById('cntLeft').textContent=due.length;
-  } else {
-    const now=new Date(),nm=now.getHours()*60+now.getMinutes();
-    let tc=0;
-    con.innerHTML=due.map(p=>{
-      const taken=!!pillsTaken[td][p.id];if(taken)tc++;
-      const[h,m]=p.time.split(':').map(Number);
-      const ov=!taken&&(h*60+m)<nm-30;
-      const foundDrug=Object.keys(DRUG_DB).find(k=>p.name.toLowerCase().includes(k)||k.includes(p.name.toLowerCase()));
-      const dInfo=foundDrug?DRUG_DB[foundDrug]:null;
-      const warn=dInfo?`<div class="drug-warn" style="margin-top:4px">⚠️ Макс: ${dInfo.max} ${dInfo.unit}/добу · ${dInfo.warn}</div>`:'';
-      const overdueChip=ov?` · <svg class="pill-meta-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Пропущено`:'';
-      return `<div class="pill-item ${taken?'taken':ov?'overdue':''}" id="pill-${p.id}">
-        <div class="pill-chk" data-action="togglePill" data-id="${p.id}"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-        <div class="pill-info"><div class="pill-name">${p.name}</div><div class="pill-dose">${p.dose}${overdueChip}</div><div class="pill-schedule-badge"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${getDayName(p)}</div>${warn}</div>
-        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0"><div class="pill-time">${p.time}</div><button class="pill-del" data-action="deletePill" data-id="${p.id}">×</button></div>
-      </div>`;
-    }).join('');
-    document.getElementById('cntTotal').textContent=due.length;
-    document.getElementById('cntTaken').textContent=tc;
-    document.getElementById('cntLeft').textContent=due.length-tc;
-    const pct=Math.round(tc/due.length*100);
-    document.getElementById('adherencePct').textContent=pct+'%';
-    document.getElementById('adherenceFill').style.width=pct+'%';
-  }
-
-  // All pills section (#3 fix — show all scheduled pills)
-  const allCard=document.getElementById('allPillsCard');
-  const allList=document.getElementById('allPillsList');
-  if(pills.length>0){
-    allCard.style.display='block';
-    const sortedAll=[...pills].sort((a,b)=>{
-      // daily first, then by date asc
-      if(a.days==='daily'&&b.days!=='daily')return -1;
-      if(b.days==='daily'&&a.days!=='daily')return 1;
-      if(a.days==='date'&&b.days==='date')return (a.date||'').localeCompare(b.date||'');
-      return (a.time||'').localeCompare(b.time||'');
-    });
-    allList.innerHTML=sortedAll.map(p=>{
-      const isPast=p.days==='date'&&p.date&&p.date<today();
-      const opacity=isPast?'opacity:.55':'';
-      const pastBadge=isPast?'<span class="pill-past-badge"><svg viewBox="0 0 24 24"><path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>минула</span>':'';
-      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);${opacity}">
-        <div style="flex:1"><div style="font-size:14px;font-weight:700">${p.name}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${p.dose} · ${p.time}${pastBadge}</div><div class="pill-schedule-badge"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${getDayName(p)}</div></div>
-        <button class="pill-del" data-action="deletePill" data-id="${p.id}">×</button>
-      </div>`;
-    }).join('');
-  } else allCard.style.display='none';
-}
-
-function togglePill(id){
-  const td=today();if(!pillsTaken[td])pillsTaken[td]={};
-  pillsTaken[td][id]=!pillsTaken[td][id];saveData();renderPills();
-  const p=pills.find(p=>p.id===id);
-  if(p&&pillsTaken[td][id])showToast(`✅ ${p.name} прийнято!`);
-}
-function deletePill(id){if(!confirm('Видалити препарат?'))return;pills=pills.filter(p=>p.id!==id);saveData();renderPills();showToast('🗑 Видалено')}
 
 // ══════════════════════════════════════════
 // HISTORY
@@ -1177,7 +949,6 @@ function saveReminderTimes(){
   settings.eveningTime=document.getElementById('eveningTime').value;
   saveData();showToast('✅ Час збережено');
 }
-function saveStepGoal(){settings.stepGoal=parseInt(document.getElementById('stepGoalInput').value)||10000;saveData()}
 
 function toggleNotifications(){
   if(!settings.notif){
@@ -1235,55 +1006,18 @@ function scheduleNotifications(){
   }
 }
 
-function clearAllData(){if(!confirm('Видалити ВСІ дані? Незворотно!'))return;measurements=[];pills=[];pillsTaken={};settings={name:'',age:'',height:'',weight:'',gender:'',phone:'',email:'',viber:'',telegram:'',whatsapp:'',normalSys:'',normalDia:'',normalPulse:'',notif:false,measureReminder:false,emergencyPhone:'',emergencyName:'',morningTime:'08:00',eveningTime:'20:00',stepGoal:10000,stepsEnabled:false};saveData();location.reload()}
+function clearAllData(){
+  if(!confirm('Видалити ВСІ дані? Незворотно!'))return;
+  // Mutate in place so feature modules (which hold the same array refs) stay in sync.
+  state.measurements.length=0;
+  state.pills.length=0;
+  Object.keys(state.pillsTaken).forEach(k=>delete state.pillsTaken[k]);
+  Object.keys(state.settings).forEach(k=>delete state.settings[k]);
+  Object.assign(state.settings, defaultSettings);
+  saveData();
+  location.reload();
+}
 
-// ══════════════════════════════════════════
-// STEP COUNTER (#12)
-// ══════════════════════════════════════════
-let stepCount=0,lastAcc=0,stepEnabled=false;
-const STEP_THRESHOLD=1.5;
-
-function toggleStepCounter(){
-  if(!stepEnabled){
-    if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){
-      DeviceMotionEvent.requestPermission().then(p=>{if(p==='granted'){enableSteps()}else showToast(lang==='ru'?'❌ Нет разрешения на акселерометр':'❌ Немає дозволу на акселерометр')});
-    }else enableSteps();
-  }else{
-    stepEnabled=false;settings.stepsEnabled=false;saveData();
-    document.getElementById('stepToggle').classList.remove('on');
-    document.getElementById('stepCard').style.display='none';
-    window.removeEventListener('devicemotion',handleMotion);
-    showToast(lang==='ru'?'🦶 Счётчик выключен':'🦶 Лічильник вимкнено');
-  }
-}
-function enableSteps(){
-  stepEnabled=true;settings.stepsEnabled=true;saveData();
-  document.getElementById('stepToggle').classList.add('on');
-  document.getElementById('stepCard').style.display='block';
-  stepCount=DB.get('stepCount-'+today(),0);updateStepUI();
-  window.addEventListener('devicemotion',handleMotion);
-  showToast(lang==='ru'?'🦶 Счётчик шагов включён!':'🦶 Лічильник кроків увімкнено!');
-}
-function handleMotion(e){
-  if(!e.accelerationIncludingGravity)return;
-  const{x,y,z}=e.accelerationIncludingGravity;
-  const acc=Math.sqrt((x||0)**2+(y||0)**2+(z||0)**2);
-  if(acc>STEP_THRESHOLD*1.3&&lastAcc<=STEP_THRESHOLD){stepCount++;DB.set('stepCount-'+today(),stepCount);updateStepUI()}
-  lastAcc=acc;
-}
-function updateStepUI(){
-  const stepCountEl = document.getElementById('stepCount');
-  const stepPctEl = document.getElementById('stepPct');
-  const stepBarEl = document.getElementById('stepBar');
-  const stepGoalEl = document.getElementById('t-step-goal');
-  if(!stepCountEl || !stepPctEl || !stepBarEl) return;
-  stepCountEl.textContent=stepCount.toLocaleString();
-  const goal=settings.stepGoal||10000;
-  const pct=Math.min(100,Math.round(stepCount/goal*100));
-  stepPctEl.textContent=pct+'%';
-  stepBarEl.style.width=pct+'%';
-  if(stepGoalEl) stepGoalEl.textContent=`ціль: ${goal.toLocaleString()}`;
-}
 
 // ══════════════════════════════════════════
 // EXPORT
@@ -1869,8 +1603,13 @@ function importData(e){
       const data=JSON.parse(ev.target.result);
       if(!data.measurements&&!data.pills)throw new Error('Невірний формат');
       if(!confirm(`Відновити?\nВиміри: ${data.measurements?.length||0}, Ліки: ${data.pills?.length||0}`))return;
-      measurements=data.measurements||[];pills=data.pills||[];pillsTaken=data.pillsTaken||{};
-      settings={...settings,...(data.settings||{})};saveData();location.reload();
+      // Replace in place so saveData() writes via the shared state container.
+      state.measurements.length=0;state.measurements.push(...(data.measurements||[]));
+      state.pills.length=0;state.pills.push(...(data.pills||[]));
+      Object.keys(state.pillsTaken).forEach(k=>delete state.pillsTaken[k]);
+      Object.assign(state.pillsTaken, data.pillsTaken||{});
+      Object.assign(state.settings, data.settings||{});
+      saveData();location.reload();
     }catch(err){showToast('❌ Помилка: '+err.message)}
   };
   reader.readAsText(file);e.target.value='';
