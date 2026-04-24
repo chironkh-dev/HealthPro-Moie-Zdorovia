@@ -3,10 +3,10 @@
 // Cache-first strategy + offline support
 // ============================================================
 
-const CACHE_NAME = 'healthpro-v6.6';
+const CACHE_NAME = 'healthpro-v6.7';
 const STATIC_ASSETS = [
   './index.html',
-  './icons/site.webmanifest',
+  './manifest.json',
   './icons/favicon.svg',
   './icons/favicon-96x96.png',
   './icons/web-app-manifest-192x192.png',
@@ -53,6 +53,11 @@ self.addEventListener('fetch', event => {
   if (url.protocol === 'chrome-extension:') return;
 
   if (url.hostname.includes('fonts.g') || url.hostname.includes('fonts.s')) {
+    event.respondWith(networkFirst(event.request));
+    return;
+  }
+  // HTML — завжди з мережі, щоб не кешувати битий index.html
+  if (event.request.mode === 'navigate' || url.pathname.endsWith('.html')) {
     event.respondWith(networkFirst(event.request));
     return;
   }

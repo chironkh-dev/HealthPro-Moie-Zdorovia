@@ -7,12 +7,9 @@ export default defineConfig({
     port: 5000,
     strictPort: true,
     allowedHosts: true,
+    hmr: false,  // Replit блокує WebSocket — HMR вимкнено
     headers: {
       'Cache-Control': 'no-store',
-    },
-    hmr: {
-      clientPort: 443,   // Replit завжди проксює через HTTPS/443
-      protocol: 'wss',   // WebSocket через SSL
     },
   },
   preview: {
