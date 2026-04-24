@@ -10,6 +10,10 @@ export default defineConfig({
     headers: {
       'Cache-Control': 'no-store',
     },
+    hmr: {
+      clientPort: 443,   // Replit завжди проксює через HTTPS/443
+      protocol: 'wss',   // WebSocket через SSL
+    },
   },
   preview: {
     host: '0.0.0.0',
