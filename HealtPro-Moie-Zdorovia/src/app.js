@@ -1623,6 +1623,14 @@ window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPro
 function installApp(){if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null;document.getElementById('installBanner').classList.remove('show')})}}
 function registerSW(){
   if(!('serviceWorker' in navigator))return;
+  // Skip SW in dev: prevents stale cache of HMR-wrapped modules.
+  const host=location.hostname;
+  const isDev=host==='localhost'||host==='127.0.0.1'||host.endsWith('.replit.dev')||host.endsWith('.replit.co')||host.endsWith('.repl.co');
+  if(isDev){
+    navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister()));
+    if(window.caches)caches.keys().then(ks=>ks.forEach(k=>caches.delete(k)));
+    return;
+  }
   navigator.serviceWorker.register('./sw.js').then(reg=>{
     reg.addEventListener('updatefound',()=>{newWorker=reg.installing;newWorker.addEventListener('statechange',()=>{if(newWorker.state==='installed'&&navigator.serviceWorker.controller)document.getElementById('updateBanner').classList.add('show')})});
   }).catch(e=>console.warn('[SW]',e));

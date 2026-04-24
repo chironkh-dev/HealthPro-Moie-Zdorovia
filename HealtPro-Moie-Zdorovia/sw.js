@@ -1,135 +1,18 @@
 // ============================================================
-// SERVICE WORKER — HealthPro v4.0
-// Cache-first strategy + offline support
+// SERVICE WORKER — HealthPro v7.0 (dev kill-switch)
+// Self-unregisters and clears all caches. Re-enable after dev.
 // ============================================================
 
-const CACHE_NAME = 'healthpro-v6.7';
-const STATIC_ASSETS = [
-  './index.html',
-  './manifest.json',
-  './icons/favicon.svg',
-  './icons/favicon-96x96.png',
-  './icons/web-app-manifest-192x192.png',
-  './icons/web-app-manifest-512x512.png',
-  './styles/app.css', 
-  './icons/favicon.ico',
-  './icons/site.webmanifest', 
-    'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap'
-];
+self.addEventListener('install', () => self.skipWaiting());
 
-// ─── INSTALL ───────────────────────────────────────────────
-self.addEventListener('install', event => {
-  console.log('[SW] Install', CACHE_NAME);
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache =>
-      Promise.allSettled(
-        STATIC_ASSETS.map(url =>
-          cache.add(url).catch(e => console.warn('[SW] Cannot cache:', url, e))
-        )
-      )
-    ).then(() => self.skipWaiting())
-  );
-});
-
-// ─── ACTIVATE ──────────────────────────────────────────────
 self.addEventListener('activate', event => {
-  console.log('[SW] Activate', CACHE_NAME);
-  event.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => {
-          console.log('[SW] Delete old cache:', k);
-          return caches.delete(k);
-        })
-      ))
-      .then(() => self.clients.claim())
-  );
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.map(k => caches.delete(k)));
+    await self.registration.unregister();
+    const clients = await self.clients.matchAll({ type: 'window' });
+    clients.forEach(c => c.navigate(c.url));
+  })());
 });
 
-// ─── FETCH ─────────────────────────────────────────────────
-self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') return;
-  const url = new URL(event.request.url);
-  if (url.protocol === 'chrome-extension:') return;
-
-  if (url.hostname.includes('fonts.g') || url.hostname.includes('fonts.s')) {
-    event.respondWith(networkFirst(event.request));
-    return;
-  }
-  // HTML — завжди з мережі, щоб не кешувати битий index.html
-  if (event.request.mode === 'navigate' || url.pathname.endsWith('.html')) {
-    event.respondWith(networkFirst(event.request));
-    return;
-  }
-  event.respondWith(cacheFirst(event.request));
-});
-
-async function cacheFirst(request) {
-  const cached = await caches.match(request);
-  if (cached) return cached;
-  try {
-    const response = await fetch(request);
-    if (response.ok) {
-      const cache = await caches.open(CACHE_NAME);
-      cache.put(request, response.clone());
-    }
-    return response;
-  } catch {
-    if (request.mode === 'navigate') {
-      const fallback = await caches.match('./index.html');
-      if (fallback) return fallback;
-    }
-    return new Response('Офлайн. Перевірте з\'єднання.', {
-      status: 503,
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' }
-    });
-  }
-}
-
-async function networkFirst(request) {
-  try {
-    const response = await fetch(request);
-    if (response.ok) {
-      const cache = await caches.open(CACHE_NAME);
-      cache.put(request, response.clone());
-    }
-    return response;
-  } catch {
-    return caches.match(request) || new Response('', { status: 503 });
-  }
-}
-
-// ─── SKIP WAITING (for update banner) ──────────────────────
-self.addEventListener('message', event => {
-  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
-});
-
-// ─── PUSH NOTIFICATIONS ────────────────────────────────────
-self.addEventListener('push', event => {
-  if (!event.data) return;
-  let data = {};
-  try { data = event.data.json(); } catch { data = { title: event.data.text() }; }
-  event.waitUntil(
-    self.registration.showNotification(data.title || '💊 HealthPro', {
-      body: data.body || '',
-      icon: './icons/icon-192.png',
-      badge: './icons/icon-96.png',
-      vibrate: [200, 100, 200],
-      tag: data.tag || 'healthpro',
-      renotify: true,
-      data: { url: data.url || './' }
-    })
-  );
-});
-
-self.addEventListener('notificationclick', event => {
-  event.notification.close();
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-      for (const client of list) {
-        if ('focus' in client) return client.focus();
-      }
-      return clients.openWindow(event.notification.data?.url || './');
-    })
-  );
-});
+self.addEventListener('fetch', () => { /* pass through to network */ });
