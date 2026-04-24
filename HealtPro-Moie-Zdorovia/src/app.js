@@ -35,6 +35,24 @@ import {
   saveStepGoal,
   restoreSteps,
 } from './features/steps/index.js';
+import {
+  saveMeasurement,
+  previewBP,
+  updateLastReading,
+  updateHeaderStatus,
+  attachPressureListeners,
+  getBPNorm,
+  getBPStatus,
+  getBPDotClass,
+  getPulseStatus,
+  WHO_INFO,
+  getWHOCategory,
+  openWHOInfo,
+  checkCritical,
+  sendCriticalSMS,
+  testEmergency,
+} from './features/pressure/index.js';
+import { formatTime as formatTimeShared, formatDate as formatDateShared } from './core/utils.js';
 
 // ══════════════════════════════════════════
 // TRANSLATIONS (#8)
@@ -149,102 +167,14 @@ function toggleTheme(){isDark=!isDark;persistTheme(isDark);applyTheme()}
 // UTILS
 // ══════════════════════════════════════════
 function today(){return todayShared()}
-function formatTime(s){return new Date(s).toLocaleTimeString(lang==='ru'?'ru-UA':'uk-UA',{hour:'2-digit',minute:'2-digit'})}
-function formatDate(s){return new Date(s).toLocaleDateString(lang==='ru'?'ru-UA':'uk-UA',{day:'numeric',month:'short'})}
+function formatTime(s){return formatTimeShared(s)}
+function formatDate(s){return formatDateShared(s)}
 function avg(arr){return arr.length?Math.round(arr.reduce((a,b)=>a+b,0)/arr.length):null}
 function showToast(msg,dur=2500){const t=document.getElementById('toast');if(!t)return;t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),dur)}
 // Register so feature modules can use the same DOM-bound implementation.
 setToast(showToast);
 
-function getBPNorm(){
-  const isRu=lang==='ru';
-  const ns=parseInt(settings.normalSys), nd=parseInt(settings.normalDia);
-  if(ns&&nd)return{sysOk:ns+5,diaOk:nd+5,sysWarn:ns+15,diaWarn:nd+10,note:(isRu?`личная норма ${ns}/${nd}`:`особиста норма ${ns}/${nd}`),personal:true};
-  const age=parseInt(settings.age)||50;
-  if(age<18)return{sysOk:110,diaOk:70,sysWarn:130,diaWarn:85,note:(isRu?'нормы до 17 л.':'норми до 17 р.')};
-  if(age<=59)return{sysOk:120,diaOk:80,sysWarn:130,diaWarn:80,note:(isRu?'нормы 18–59 л.':'норми 18–59 р.')};
-  if(age<=79)return{sysOk:130,diaOk:85,sysWarn:140,diaWarn:90,note:(isRu?'нормы 60–79 л.':'норми 60–79 р.')};
-  return{sysOk:140,diaOk:90,sysWarn:150,diaWarn:90,note:(isRu?'нормы 80+ л.':'норми 80+ р.')};
-}
-function getBPStatus(s,d){
-  const isRu=lang==='ru';
-  if(s<80||d<50)return{label:isRu?'⬇️ Очень низкое':'⬇️ Дуже низький',cls:'badge-warn'};
-  if(s<90||d<60)return{label:isRu?'⬇️ Пониженное':'⬇️ Знижений тиск',cls:'badge-warn'};
-  const n=getBPNorm();
-  if(s<=n.sysOk&&d<=n.diaOk)return{label:isRu?'✓ Норма':'✓ Норма',cls:'badge-ok'};
-  if(s<n.sysWarn&&d<n.diaWarn)return{label:isRu?'⚠ Повышенное':'⚠ Підвищений',cls:'badge-warn'};
-  if(s<160&&d<100)return{label:isRu?'⚠ Гипертензия І':'⚠ Гіпертензія І',cls:'badge-warn'};
-  if(s<180&&d<120)return{label:isRu?'▲ Гипертензия ІІ':'▲ Гіпертензія ІІ',cls:'badge-bad'};
-  return{label:isRu?'🚨 Криз!':'🚨 Криз!',cls:'badge-crit'};
-}
-function getBPDotClass(s){if(s<90)return'd-warn';if(s<140)return'd-ok';if(s<160)return'd-warn';return'd-bad'}
-
-// WHO classification (#1 fix — Ukrainian context)
-function getWHOCategory(s,d){
-  const isRu=lang==='ru';
-  if(s<120&&d<80)return{label:isRu?'Оптимальное':'Оптимальний',sub:'<120/80 мм рт.ст.',c:'var(--green)',key:'optimal'};
-  if(s<130&&d<85)return{label:isRu?'Нормальное':'Нормальний',sub:'120–129/80–84',c:'var(--green)',key:'normal'};
-  if(s<140&&d<90)return{label:isRu?'Высоко-нормальное':'Високо-нормальний',sub:'130–139/85–89',c:'var(--amber)',key:'high-normal'};
-  if(s<160&&d<100)return{label:isRu?'Гипертензия І ст.':'Гіпертензія І ст.',sub:'140–159/90–99',c:'var(--amber)',key:'ht1'};
-  if(s<180&&d<110)return{label:isRu?'Гипертензия ІІ ст.':'Гіпертензія ІІ ст.',sub:'160–179/100–109',c:'var(--red)',key:'ht2'};
-  return{label:isRu?'Гипертензия ІІІ ст.':'Гіпертензія ІІІ ст.',sub:'≥180/110',c:'var(--rose)',key:'ht3'};
-}
-
-// (Day-helpers, drug DB, pill CRUD & rendering moved to src/features/meds/)
-
-// ══════════════════════════════════════════
-// CRITICAL ALERT + SMS
-// ══════════════════════════════════════════
-function checkCritical(s,d){
-  if(s>=180||d>=120){
-    document.getElementById('criticalText').textContent=lang==='ru'?`Критическое давление: ${s}/${d}! Немедленно обратитесь к врачу или вызовите 103.`:`Критичний тиск: ${s}/${d}! Негайно зверніться до лікаря або викличте 103.`;
-    document.getElementById('criticalAlert').classList.add('show');
-    if(settings.notif&&'Notification' in window&&Notification.permission==='granted')
-      new Notification(lang==='ru'?'🚨 Критическое давление!':'🚨 Критичний тиск!',{body:lang==='ru'?`Давление ${s}/${d} — вызывайте 103!`:`Тиск ${s}/${d} — виклич 103!`,icon:'icons/icon-192.png',requireInteraction:true,vibrate:[500,100,500,100,500]});
-  }
-}
-function sendCriticalSMS(){
-  const phone=settings.emergencyPhone;
-  if(!phone){showToast(lang==='ru'?'⚠️ Укажите телефон в Профиле':'⚠️ Вкажіть телефон у Профілі');return}
-  const last=measurements[0];
-  const msg=encodeURIComponent(`${settings.emergencyName||'Увага'}! Критичний тиск ${last?.sys||''}/${last?.dia||''} о ${new Date().toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'})}. HealthPro.`);
-  window.location.href=`sms:${phone}?body=${msg}`;
-}
-function testEmergency(){
-  const phone=document.getElementById('emergencyPhone').value||settings.emergencyPhone;
-  if(!phone){showToast(lang==='ru'?'⚠️ Введите номер':'⚠️ Введіть номер');return}
-  window.location.href=`sms:${phone}?body=${encodeURIComponent('Тест HealthPro — перевірка зв\'язку. Все гаразд!')}`;
-}
-
-// ══════════════════════════════════════════
-// WHO INFO MODAL (#1 fix)
-// ══════════════════════════════════════════
-const WHO_INFO={
-  optimal:{title:'Оптимальний тиск (<120/80)',body:'Оптимальний тиск — найнижчий ризик серцево-судинних захворювань. Підтримуйте здоровий спосіб життя.',advice:['Регулярні виміри 2 рази/рік','Фізична активність 150 хв/тиждень','Здорове харчування — DASH-дієта'],links:[{l:'МОЗ: 8 міфів про гіпертензію',u:'https://moz.gov.ua/uk/8-mifiv-pro-arterialnu-gipertenziju-komentue-kardiolog'},{l:'МОЗ: Правила виміру тиску',u:'https://moz.gov.ua/uk/jak-pravilno-vimirjuvati-tisk-i-koli-zvertatis-do-likarja'}]},
-  normal:{title:'Нормальний тиск (120–129/80–84)',body:'Нормальний рівень тиску. Ризик ускладнень мінімальний при дотриманні здорового способу життя.',advice:['Вимірюйте тиск щорічно','Контроль ваги та харчування','Відмова від куріння'],links:[{l:'МОЗ: Правила виміру тиску',u:'https://moz.gov.ua/uk/jak-pravilno-vimirjuvati-tisk-i-koli-zvertatis-do-likarja'},{l:'Гіпертензія — ЦГЗУ МОЗ',u:'https://phc.org.ua/kontrol-zakhvoryuvan/neinfekciyni-zakhvoryuvannya/sercevo-sudinni-zakhvoryuvannya/arterialna-gipertenziya'}]},
-  'high-normal':{title:'Високо-нормальний (130–139/85–89)',body:'Тиск у верхній межі норми. Рекомендується спостереження та профілактичні заходи.',advice:['Виміри 2 рази/день протягом 1 тижня','Обмежте сіль до 5 г/день','Зменшіть споживання алкоголю','Збільшіть фізичну активність'],links:[{l:'МОЗ: 8 міфів про гіпертензію',u:'https://moz.gov.ua/uk/8-mifiv-pro-arterialnu-gipertenziju-komentue-kardiolog'},{l:'ЦГЗУ: Артеріальна гіпертензія',u:'https://phc.org.ua/kontrol-zakhvoryuvan/neinfekciyni-zakhvoryuvannya/sercevo-sudinni-zakhvoryuvannya/arterialna-gipertenziya'}]},
-  ht1:{title:'Гіпертензія І ступеня (140–159/90–99)',body:'Перший ступінь гіпертонічної хвороби. Підвищений ризик інфаркту та інсульту. Необхідна консультація лікаря.',advice:['Консультація терапевта/кардіолога','Виміри щодня вранці та ввечері','DASH-дієта (сіль <5 г/день)','Можливе призначення медикаментів'],links:[{l:'МОЗ: 8 міфів про гіпертензію',u:'https://moz.gov.ua/uk/8-mifiv-pro-arterialnu-gipertenziju-komentue-kardiolog'},{l:'ВООЗ: Гіпертонія',u:'https://www.who.int/ru/news-room/fact-sheets/detail/hypertension'},{l:'Helsi — запис до лікаря',u:'https://helsi.me'}]},
-  ht2:{title:'Гіпертензія ІІ ступеня (160–179/100–109)',body:'Значно підвищений тиск. Серйозний ризик серцево-судинних ускладнень. Необхідне лікування.',advice:['Негайна консультація кардіолога','Медикаментозна терапія обов\'язкова','Суворе обмеження солі та алкоголю','Регулярний моніторинг тиску'],links:[{l:'ВООЗ: Гіпертонія',u:'https://www.who.int/ru/news-room/fact-sheets/detail/hypertension'},{l:'ЦГЗУ: Артеріальна гіпертензія',u:'https://phc.org.ua/kontrol-zakhvoryuvan/neinfekciyni-zakhvoryuvannya/sercevo-sudinni-zakhvoryuvannya/arterialna-gipertenziya'},{l:'Helsi',u:'https://helsi.me'}]},
-  ht3:{title:'Гіпертензія ІІІ ступеня (≥180/110)',body:'Критичний рівень тиску! Необхідна невідкладна медична допомога.',advice:['НЕГАЙНО викличте 103','Не займайтеся самолікуванням','Виміряйте тиск на обох руках','Сповістіть близьких'],links:[{l:'Виклик 103',u:'tel:103'},{l:'ВООЗ: Гіпертонія',u:'https://www.who.int/ru/news-room/fact-sheets/detail/hypertension'},{l:'Helsi',u:'https://helsi.me'}]},
-};
-
-function openWHOInfo(){
-  const isRu=lang==='ru';
-  if(!measurements.length){showToast(isRu?'⚠️ Нет измерений':'⚠️ Немає вимірів');return}
-  const who=getWHOCategory(measurements[0].sys,measurements[0].dia);
-  const info=WHO_INFO[who.key];
-  if(!info)return;
-  document.getElementById('whoModalContent').innerHTML=`
-    <div style="padding:12px;border-radius:12px;background:rgba(6,182,212,.08);border:1px solid rgba(6,182,212,.2);margin-bottom:12px">
-      <div style="font-size:16px;font-weight:800;color:${who.c};margin-bottom:4px">${info.title}</div>
-      <div style="font-size:12px;color:var(--text2);line-height:1.6">${info.body}</div>
-    </div>
-    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">${isRu?'Рекомендации:':'Рекомендації:'}</div>
-    ${info.advice.map(a=>`<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:7px;font-size:12px;color:var(--text2);line-height:1.5"><span style="color:var(--blue2);font-size:14px;flex-shrink:0">›</span>${a}</div>`).join('')}
-    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin:12px 0 8px">${isRu?'Ссылки (🇺🇦 Ukraine):':'Посилання (🇺🇦 Ukraine):'}</div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px">${info.links.map(l=>`<a href="${l.u}" target="_blank" class="reco-link">${l.l}</a>`).join('')}</div>`;
-  document.getElementById('whoModal').classList.add('show');
-}
+// (BP norms, WHO classification, critical alert/SMS moved to src/features/pressure/)
 
 // ══════════════════════════════════════════
 // NAVIGATION
@@ -260,65 +190,11 @@ function showPage(name){
   if(name==='analytics')renderAnalytics();
 }
 
-// ══════════════════════════════════════════
-// PRESSURE PAGE
-// ══════════════════════════════════════════
-function saveMeasurement(){
-  const s=parseInt(document.getElementById('sys').value);
-  const d=parseInt(document.getElementById('dia').value);
-  const p=parseInt(document.getElementById('pulse').value);
-  const note=document.getElementById('note').value.trim();
-
-  if(!s||!d){showToast(lang==='ru'?'Введите систолическое и диастолическое давление':'Введіть систолічний та діастолічний тиск');return}
-  if(s<60||s>300){showToast(lang==='ru'?'Проверьте значение систолического давления':'Перевірте значення систолічного тиску');return}
-  if(d<40||d>200){showToast(lang==='ru'?'Проверьте значение диастолического давления':'Перевірте значення діастолічного тиску');return}
-  
-  // Додано жорстку перевірку пульсу
-  if(p && (p<30 || p>250)){showToast(lang==='ru'?'Недопустимое значение пульса (допустимо от 30 до 250)':'Неприпустиме значення пульсу (допустимо від 30 до 250)');return}
-
-  measurements.unshift({sys:s,dia:d,pulse:p||null,note:note||null,time:new Date().toISOString()});
-  if(measurements.length>500)measurements.pop();
-  saveData();
-  ['sys','dia','pulse','note'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('bpStatus').innerHTML='';
-  updateLastReading();renderChart();updateHeaderStatus();
-  checkCritical(s,d);
-  showToast(lang==='ru'?'Измерение сохранено!':'Вимір збережено!');
-}
-function updateLastReading(){
-  if(!measurements.length)return;
-  const last=measurements[0];
-  document.getElementById('lastReadingDisplay').style.display='flex';
-  document.getElementById('lastBP').textContent=last.sys+'/'+last.dia;
-  document.getElementById('lastBPTime').textContent=formatTime(last.time);
-  document.getElementById('lastPulse').textContent=last.pulse||'—';
-}
-function updateHeaderStatus(){
-  if(!measurements.length){document.getElementById('hdrBP').textContent='—';document.getElementById('hdrPulse').textContent='';return}
-  const last=measurements[0];
-  document.getElementById('hdrBP').textContent=last.sys+'/'+last.dia;
-  document.getElementById('hdrPulse').textContent=last.pulse?last.pulse+(lang==='ru'?' уд/мин':' уд/хв'):'';
-}
-
-document.getElementById('sys').addEventListener('input',previewBP);
-document.getElementById('dia').addEventListener('input',previewBP);
-function previewBP(){
-  const s=parseInt(document.getElementById('sys').value);
-  const d=parseInt(document.getElementById('dia').value);
-  const el=document.getElementById('bpStatus');
-  if(s&&d){const st=getBPStatus(s,d);el.innerHTML=`<div class="status-badge ${st.cls}">${st.label}</div>`}
-  else el.innerHTML='';
-}
-
-function getPulseStatus(p) {
-  const isRu=lang==='ru';
-  if (!p) return { label: '', cls: '' };
-  if (p < 45) return { label: isRu?'Брадикардия':'Брадикардія', cls: 'badge-bad' };
-  if (p < 60) return { label: isRu?'Пониженный':'Знижений', cls: 'badge-warn' };
-  if (p <= 85) return { label: isRu?'Норма':'Норма', cls: 'badge-ok' };
-  if (p <= 100) return { label: isRu?'Повышенный':'Підвищений', cls: 'badge-warn' };
-  return { label: isRu?'Тахикардия':'Тахікардія', cls: 'badge-bad' };
-}
+// (PRESSURE PAGE — saveMeasurement / previewBP / updateLastReading / updateHeaderStatus / getPulseStatus
+// moved to src/features/pressure/. Re-renders are wired via the 'measurement:saved' event below.)
+on('measurement:saved', () => {
+  try { renderChart(); } catch (e) {}
+});
 
 // ══════════════════════════════════════════
 // CHART (#2 fix — no fill, interactive tooltips)
@@ -1753,6 +1629,7 @@ function init(){
     settings.notif=false;saveData();document.getElementById('notifToggle').classList.remove('on');
   }
 
+  attachPressureListeners();
   updateLastReading();updateHeaderStatus();
   setTimeout(()=>{renderChart();setupChartTooltip()},100);
   renderPills();registerSW();
