@@ -12,3 +12,9 @@ id = "SANQdPfo8o2sc8X9h1NSi"
 uri = "file://attached_assets/HealthPro_Refactor_Report_Stage_4.pdf"
 type = "pdf"
 title = "Звіт про рефакторинг — Етап 4 (А + Б)"
+
+[[outputs]]
+id = "9P7SQLkOLr6HZkDWX33KU"
+uri = "file://attached_assets/HealthPro_Refactor_Report_Stage_4_complete.pdf"
+type = "pdf"
+title = "HealthPro · Звіт про завершення Етапу 4 + рекомендація БД для Етапу 5"

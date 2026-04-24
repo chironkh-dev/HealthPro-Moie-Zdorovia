@@ -79,3 +79,7 @@ export function updateStepUI() {
 export function restoreSteps() {
   stepCount = DB.get('stepCount-' + today(), 0);
 }
+
+export function getStepCount() {
+  return stepCount;
+}
