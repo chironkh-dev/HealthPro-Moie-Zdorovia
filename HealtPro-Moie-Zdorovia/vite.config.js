@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  root: 'HealtPro-Moie-Zdorovia',  // правильна папка з index.html
+  root: '.',  // правильна папка з index.html
   server: {
     host: '0.0.0.0',
     port: 5000,
