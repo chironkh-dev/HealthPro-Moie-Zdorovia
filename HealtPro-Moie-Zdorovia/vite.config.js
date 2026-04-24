@@ -1,13 +1,13 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  root: '.',
+  root: 'HealtPro-Moie-Zdorovia',  // правильна папка з index.html
   server: {
     host: '0.0.0.0',
     port: 5000,
     strictPort: true,
     allowedHosts: true,
-    hmr: false,  // Replit блокує WebSocket — HMR вимкнено
+    hmr: false,
     headers: {
       'Cache-Control': 'no-store',
     },
@@ -19,7 +19,7 @@ export default defineConfig({
     allowedHosts: true,
   },
   build: {
-    outDir: 'dist',
+    outDir: '../dist',   // dist відносно root → в корені репо
     emptyOutDir: true,
     target: 'es2020',
   },
