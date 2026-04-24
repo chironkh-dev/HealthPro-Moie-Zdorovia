@@ -53,6 +53,12 @@ import {
   testEmergency,
 } from './features/pressure/index.js';
 import { formatTime as formatTimeShared, formatDate as formatDateShared } from './core/utils.js';
+import {
+  renderChart,
+  setChartPeriod,
+  togglePulseChart,
+  setupChartTooltip,
+} from './features/charts/index.js';
 
 // ══════════════════════════════════════════
 // TRANSLATIONS (#8)
@@ -196,118 +202,8 @@ on('measurement:saved', () => {
   try { renderChart(); } catch (e) {}
 });
 
-// ══════════════════════════════════════════
-// CHART (#2 fix — no fill, interactive tooltips)
-// ══════════════════════════════════════════
-let chartPeriod=7, showPulse=true;
-let chartDataCache=[], chartPointsCache=[];
-
-function setChartPeriod(days,btn){chartPeriod=days;document.querySelectorAll('.cp-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderChart()}
-function togglePulseChart(){
-  showPulse=!showPulse;
-  document.getElementById('pulseToggleDot').classList.toggle('off',!showPulse);
-  document.getElementById('pulseLegend').style.opacity=showPulse?'1':'.35';
-  document.getElementById('cttPulseRow').style.display=showPulse?'flex':'none';
-  renderChart();
-}
-
-function renderChart(){
-  const canvas=document.getElementById('bpChart');
-  if(!canvas)return;
-  const ctx=canvas.getContext('2d');
-  const dpr=window.devicePixelRatio||1;
-  const W=canvas.offsetWidth||300;
-  const H=155;
-  canvas.width=W*dpr;canvas.height=H*dpr;
-  canvas.style.width=W+'px';canvas.style.height=H+'px';
-  ctx.scale(dpr,dpr);
-  ctx.clearRect(0,0,W,H);
-
-  let data=measurements.slice();
-  if(chartPeriod>0){const cutoff=new Date(Date.now()-chartPeriod*864e5);data=data.filter(m=>new Date(m.time)>cutoff)}
-  data=data.reverse();
-  chartDataCache=data;
-
-  if(data.length<2){ctx.fillStyle='#64748b';ctx.font='600 12px Inter,sans-serif';ctx.textAlign='center';ctx.fillText(lang==='ru'?'Недостаточно данных':'Недостатньо даних',W/2,H/2);chartPointsCache=[];return}
-
-  const pad={l:34,r:8,t:10,b:22};
-  const gW=W-pad.l-pad.r,gH=H-pad.t-pad.b;
-  const all=data.flatMap(d=>[d.sys,d.dia,...(showPulse&&d.pulse?[d.pulse]:[])]).filter(Boolean);
-  const minV=Math.max(40,Math.min(...all)-12),maxV=Math.max(...all)+12;
-  function xP(i){return pad.l+(data.length<2?gW/2:(i/(data.length-1))*gW)}
-  function yP(v){return pad.t+gH-((v-minV)/(maxV-minV))*gH}
-
-  // Grid lines
-  ctx.setLineDash([]);
-  for(let i=0;i<=4;i++){
-    const yy=pad.t+(i/4)*gH;
-    ctx.beginPath();ctx.strokeStyle='rgba(99,140,255,.07)';ctx.lineWidth=1;
-    ctx.moveTo(pad.l,yy);ctx.lineTo(W-pad.r,yy);ctx.stroke();
-    ctx.fillStyle='#4a5568';ctx.font='600 9px Inter,sans-serif';ctx.textAlign='right';
-    ctx.fillText(Math.round(maxV-(i/4)*(maxV-minV)),pad.l-3,yy+3);
-  }
-
-  // Draw lines without fill (#2 fix)
-  function drawLine(color,glow,getData){
-    const pts=data.map((d,i)=>{const v=getData(d);return v!=null?{x:xP(i),y:yP(v),v,i}:null}).filter(Boolean);
-    if(pts.length<1)return pts;
-    ctx.save();ctx.shadowColor=glow;ctx.shadowBlur=5;
-    ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=2.5;ctx.lineJoin='round';ctx.lineCap='round';
-    pts.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
-    ctx.stroke();ctx.restore();
-    // Dots
-    pts.forEach(p=>{
-      ctx.beginPath();ctx.arc(p.x,p.y,3.5,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();
-      ctx.beginPath();ctx.arc(p.x,p.y,1.5,0,Math.PI*2);ctx.fillStyle=isDark?'#080d1a':'#ffffff';ctx.fill();
-    });
-    return pts;
-  }
-
-  const sysPts=drawLine('#ef4444','rgba(239,68,68,.4)',d=>d.sys);
-  const diaPts=drawLine('#3b82f6','rgba(59,130,246,.4)',d=>d.dia);
-  const pulsPts=showPulse?drawLine('#10b981','rgba(16,185,129,.4)',d=>d.pulse):[];
-
-  // Cache points for tooltip
-  chartPointsCache=data.map((d,i)=>({d,x:xP(i),sys:d.sys,dia:d.dia,pulse:d.pulse,time:d.time}));
-
-  // X labels
-  ctx.fillStyle='#4a5568';ctx.font='600 9px Inter,sans-serif';ctx.textAlign='center';
-  const step=Math.max(1,Math.floor(data.length/5));
-  data.forEach((d,i)=>{if(i%step===0||i===data.length-1)ctx.fillText(formatDate(d.time),xP(i),H-4)});
-}
-
-// Chart tooltip handlers (#2 fix)
-function setupChartTooltip(){
-  const canvas=document.getElementById('bpChart');
-  const tooltip=document.getElementById('chartTooltip');
-  function handleInteraction(e){
-    if(!chartPointsCache.length){tooltip.classList.remove('show');return}
-    const rect=canvas.getBoundingClientRect();
-    const cx=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
-    // Find nearest point
-    let nearest=null,minDist=Infinity;
-    chartPointsCache.forEach(p=>{const d=Math.abs(p.x-cx);if(d<minDist){minDist=d;nearest=p}});
-    if(!nearest||minDist>30){tooltip.classList.remove('show');return}
-    document.getElementById('cttDate').textContent=formatDate(nearest.time)+' '+formatTime(nearest.time);
-    const isRu=lang==='ru';
-    document.getElementById('cttSys').textContent=(isRu?'Сис.: ':'Сис.: ')+nearest.sys+' мм';
-    document.getElementById('cttDia').textContent=(isRu?'Диас.: ':'Діас.: ')+nearest.dia+' мм';
-    document.getElementById('cttPulse').textContent=(isRu?'Пульс: ':'Пульс: ')+(nearest.pulse||'—');
-    // Position tooltip
-    const canvasW=rect.width;
-    const left=nearest.x<canvasW/2?nearest.x+10:nearest.x-125;
-    tooltip.style.left=Math.max(0,Math.min(left,canvasW-120))+'px';
-    tooltip.style.top='5px';
-    tooltip.classList.add('show');
-    e.preventDefault();
-  }
-  function hideTooltip(){tooltip.classList.remove('show')}
-  canvas.addEventListener('mousemove',handleInteraction);
-  canvas.addEventListener('mouseleave',hideTooltip);
-  canvas.addEventListener('touchstart',handleInteraction,{passive:false});
-  canvas.addEventListener('touchmove',handleInteraction,{passive:false});
-  canvas.addEventListener('touchend',()=>setTimeout(hideTooltip,1200));
-}
+// (CHART — renderChart / setChartPeriod / togglePulseChart / setupChartTooltip
+// moved to src/features/charts/. State (period, showPulse, caches) lives there too.)
 
 // ══════════════════════════════════════════
 // ANALYTICS

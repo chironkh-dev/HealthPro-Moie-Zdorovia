@@ -6,3 +6,9 @@ id = "qgYAJUmb0GBnSTO54Hhh3"
 uri = "file://HealtPro-Moie-Zdorovia/Capacitor_Modular_Structure.pdf"
 type = "pdf"
 title = "HealthPro - Модульна структура для Capacitor"
+
+[[outputs]]
+id = "SANQdPfo8o2sc8X9h1NSi"
+uri = "file://attached_assets/HealthPro_Refactor_Report_Stage_4.pdf"
+type = "pdf"
+title = "Звіт про рефакторинг — Етап 4 (А + Б)"
