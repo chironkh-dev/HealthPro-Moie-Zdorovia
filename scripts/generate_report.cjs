@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { jsPDF } = require(path.join(__dirname, '..', 'HealtPro-Moie-Zdorovia', 'node_modules', 'jspdf'));
+const { jsPDF } = require(path.join(__dirname, '..', 'HealthPro-Moie-Zdorovia', 'node_modules', 'jspdf'));
 
 const FONT_REG_PATH  = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf';
 const FONT_BOLD_PATH = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf';
@@ -166,7 +166,7 @@ doc.setFontSize(10);
 doc.setTextColor(...COLOR_GRAY);
 const today = new Date().toLocaleDateString('uk-UA', { day: '2-digit', month: 'long', year: 'numeric' });
 doc.text(`Дата: ${today}`, MARGIN, y);
-doc.text('Проєкт: HealtPro-Moie-Zdorovia (PWA, Vite + Capacitor)', MARGIN, y + 14);
+doc.text('Проєкт: HealthPro-Moie-Zdorovia (PWA, Vite + Capacitor)', MARGIN, y + 14);
 y += 40;
 
 badge('Етап 4 повністю завершено', COLOR_OK);

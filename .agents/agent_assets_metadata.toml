@@ -3,7 +3,7 @@ generated = []
 
 [[outputs]]
 id = "qgYAJUmb0GBnSTO54Hhh3"
-uri = "file://HealtPro-Moie-Zdorovia/Capacitor_Modular_Structure.pdf"
+uri = "file://HealthPro-Moie-Zdorovia/Capacitor_Modular_Structure.pdf"
 type = "pdf"
 title = "HealthPro - Модульна структура для Capacitor"
 

@@ -9,7 +9,7 @@
 - jsPDF + html2canvas — експорт звітів
 - Capacitor 8 — нативна обгортка (плагіни поки не підключені)
 
-## Структура `HealtPro-Moie-Zdorovia/src/`
+## Структура `HealthPro-Moie-Zdorovia/src/`
 
 ```
 src/
@@ -34,7 +34,7 @@ src/
 
 ## Workflow
 
-- `Start application` → `cd HealtPro-Moie-Zdorovia && npm run dev -- --host 0.0.0.0 --port 5000`
+- `Start application` → `cd HealthPro-Moie-Zdorovia && npm run dev -- --host 0.0.0.0 --port 5000`
 
 ## Конвенції
 

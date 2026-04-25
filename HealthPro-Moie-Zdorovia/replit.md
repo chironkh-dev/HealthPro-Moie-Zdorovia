@@ -15,7 +15,7 @@ PWA-щоденник здоров'я (тиск, пульс, ліки, кроки
 
 ## Структура
 ```
-HealtPro-Moie-Zdorovia/
+HealthPro-Moie-Zdorovia/
 ├── index.html              # розмітка (без inline JS, без CDN)
 ├── manifest.json           # PWA-маніфест
 ├── service-worker.js       # SW
