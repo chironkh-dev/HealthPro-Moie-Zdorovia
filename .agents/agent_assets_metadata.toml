@@ -24,3 +24,9 @@ id = "u9YK5G81L84Ks2S7qywFt"
 uri = "file://attached_assets/HealthPro_Phase1_Refactor_Final_Report.pdf"
 type = "pdf"
 title = "HealthPro · Фінальний звіт Фази 1 (рефакторинг завершено)"
+
+[[outputs]]
+id = "ob6gfJMOnvCZnRlboWzRA"
+uri = "file://attached_assets/HealthPro_PrePhase2_Final_Report.pdf"
+type = "pdf"
+title = "HealthPro · Звіт підготовки до Фази 2 — обидві задачі виконано"
