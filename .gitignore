@@ -4,3 +4,4 @@ dist/
 **/dist/
 .cache/
 .local/
+node_modules/
