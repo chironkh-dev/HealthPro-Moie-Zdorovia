@@ -14,11 +14,15 @@ export function fmtPillDate(iso) {
 }
 
 export function isPillDueToday(p) {
+  if (!p || p.days == null) return false;
   if (p.days === 'daily') return true;
   if (p.days === 'date') return !!p.date && p.date === today();
-  // legacy support for old saved pills (weekdays/mon..sun)
+  // legacy support for old saved pills (weekdays/mon..sun); also comma-separated like 'mon,wed'
   const d = new Date().getDay(); // 0=Sun
   const m = { weekdays: d >= 1 && d <= 5, mon: d === 1, tue: d === 2, wed: d === 3, thu: d === 4, fri: d === 5, sat: d === 6, sun: d === 0 };
+  if (typeof p.days === 'string' && p.days.includes(',')) {
+    return p.days.split(',').some((k) => m[k.trim()] === true);
+  }
   return m[p.days] === true;
 }
 
