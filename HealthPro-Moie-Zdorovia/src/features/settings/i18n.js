@@ -1,82 +1,18 @@
-// Language switching: applies T_UK / T_RU strings + placeholders + re-renders dynamic views.
+// Backward-compatible re-export shim.
+// The real i18n implementation now lives in src/i18n/index.js.
+// Existing imports like
+//   import { setLang } from '../../features/settings/index.js';
+// keep working without changes.
 
-import { state, persistLang } from '../../core/state.js';
-import { T_UK, T_RU, WELCOME_T, DISCLAIMER_T } from '../../i18n/index.js';
-
-const T = { uk: T_UK, ru: T_RU };
-
-const PLACEHOLDER_MAP = {
-  'p-sys': 'sys', 'p-dia': 'dia', 'p-pulse': 'pulse', 'p-note': 'note',
-  'p-pillName': 'pillName', 'p-pillDose': 'pillDose',
-  'p-userName': 'userName', 'p-userAge': 'userAge', 'p-userHeight': 'userHeight', 'p-userWeight': 'userWeight',
-  'p-normalSys': 'normalSys', 'p-normalDia': 'normalDia', 'p-normalPulse': 'normalPulse',
-  'p-userPhone': 'userPhone', 'p-userEmail': 'userEmail',
-  'p-userViber': 'userViber', 'p-userTelegram': 'userTelegram', 'p-userWhatsapp': 'userWhatsapp',
-  'p-emergencyPhone': 'emergencyPhone', 'p-emergencyName': 'emergencyName',
-};
-
-// Hooks for re-rendering pages on language change. Caller registers these
-// to avoid circular imports between settings, analytics, history, meds.
-const reRenderers = [];
-export function registerReRender(fn) { reRenderers.push(fn); }
-
-export function renderDisclaimerBody() {
-  const dict = DISCLAIMER_T;
-  const d = dict[state.lang] || dict.uk || {};
-  const el = document.getElementById('disclaimerBody');
-  if (!el) return;
-  const sec = (n, s) => `<h4><span class="num">${n}</span>${s.h}</h4><p>${s.p}</p>${s.li ? '<ul>' + s.li.map((x) => `<li>${x}</li>`).join('') + '</ul>' : ''}`;
-  el.innerHTML = `
-    <div class="disclaimer-version">${d.version}</div>
-    <div id="disclaimerStatus"></div>
-    ${sec(1, d.s1)}${sec(2, d.s2)}${sec(3, d.s3)}${sec(4, d.s4)}
-    <h4><span class="num">5</span>${d.s5.h}</h4>
-    <table class="risk-table"><thead><tr><th>${d.s5.th1}</th><th>${d.s5.th2}</th></tr></thead><tbody>
-      ${d.s5.rows.map((r) => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')}
-    </tbody></table>
-    <div class="accent-box">${d.accept}</div>`;
-  const tt = document.getElementById('d-title');
-  if (tt) tt.textContent = d.title;
-}
-
-export function renderWelcomeText() {
-  const dict = WELCOME_T;
-  const w = dict[state.lang] || dict.uk || {};
-  const map = {
-    'w-subtitle': w.subtitle, 'w-tagline': w.tagline,
-    'w-feat1': w.feat1, 'w-feat2': w.feat2, 'w-feat3': w.feat3, 'w-feat4': w.feat4,
-    'w-discl-link': w.discl, 'w-accept': w.accept, 'w-version': w.version,
-  };
-  Object.keys(map).forEach((id) => { const el = document.getElementById(id); if (el) el.textContent = map[id]; });
-}
-
-export function setLang(l) {
-  state.lang = l;
-  persistLang(l);
-  const lu = document.getElementById('lang-uk'), lr = document.getElementById('lang-ru');
-  if (lu) lu.classList.toggle('active', l === 'uk');
-  if (lr) lr.classList.toggle('active', l === 'ru');
-  const wu = document.getElementById('wlang-uk'), wr = document.getElementById('wlang-ru');
-  if (wu) wu.classList.toggle('active', l === 'uk');
-  if (wr) wr.classList.toggle('active', l === 'ru');
-  document.documentElement.setAttribute('lang', l);
-  const t = T[l];
-  Object.keys(t).forEach((id) => {
-    if (id.startsWith('p-')) return;
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = t[id];
-  });
-  Object.keys(PLACEHOLDER_MAP).forEach((k) => {
-    const el = document.getElementById(PLACEHOLDER_MAP[k]);
-    if (el && t[k] != null) el.setAttribute('placeholder', t[k]);
-  });
-  renderWelcomeText();
-  renderDisclaimerBody();
-  reRenderers.forEach((fn) => { try { fn(); } catch (e) { /* noop */ } });
-}
-
-export function t(id) {
-  const current = T[state.lang] || {};
-  const fallback = T.uk || {};
-  return current[id] || fallback[id] || id;
-}
+export {
+  T,
+  T_UK,
+  T_RU,
+  WELCOME_T,
+  DISCLAIMER_T,
+  registerReRender,
+  renderDisclaimerBody,
+  renderWelcomeText,
+  setLang,
+  t,
+} from '../../i18n/index.js';

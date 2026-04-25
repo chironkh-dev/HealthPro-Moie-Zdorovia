@@ -18,3 +18,9 @@ id = "9P7SQLkOLr6HZkDWX33KU"
 uri = "file://attached_assets/HealthPro_Refactor_Report_Stage_4_complete.pdf"
 type = "pdf"
 title = "HealthPro · Звіт про завершення Етапу 4 + рекомендація БД для Етапу 5"
+
+[[outputs]]
+id = "u9YK5G81L84Ks2S7qywFt"
+uri = "file://attached_assets/HealthPro_Phase1_Refactor_Final_Report.pdf"
+type = "pdf"
+title = "HealthPro · Фінальний звіт Фази 1 (рефакторинг завершено)"
