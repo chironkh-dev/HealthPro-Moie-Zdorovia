@@ -1,6 +1,7 @@
 // User profile fields (name, age, height, weight, contacts, normals).
 
 import { state, saveData, showToast } from '../../core/state.js';
+import { DEFAULT_STEP_GOAL } from '../../core/constants.js';
 
 export function saveProfile() {
   const settings = state.settings;
@@ -48,5 +49,5 @@ export function loadProfileFields() {
   const e = document.getElementById('eveningTime');
   if (e) e.value = settings.eveningTime || '20:00';
   const sg = document.getElementById('stepGoalInput');
-  if (sg) sg.value = settings.stepGoal || 10000;
+  if (sg) sg.value = settings.stepGoal || DEFAULT_STEP_GOAL;
 }

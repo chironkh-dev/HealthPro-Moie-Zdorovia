@@ -2,6 +2,7 @@
 // Reads pressure / pills / BMI / steps from shared state.
 
 import { state, today } from '../../core/state.js';
+import { DEFAULT_STEP_GOAL } from '../../core/constants.js';
 import { isPillDueToday } from '../meds/index.js';
 import { getStepCount } from '../steps/index.js';
 import { calcBMI } from './bmi.js';
@@ -72,7 +73,7 @@ export function calcHealthScore() {
   // 5. Activity (max 10)
   let activityScore = 0;
   if (settings.stepsEnabled) {
-    const goal = settings.stepGoal || 10000;
+    const goal = settings.stepGoal || DEFAULT_STEP_GOAL;
     const progress = getStepCount() / goal;
     if (progress >= 1) activityScore = 10;
     else if (progress >= 0.5) activityScore = 6;

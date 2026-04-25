@@ -1,9 +1,14 @@
 // Welcome screen disclaimer + version history.
 
 import { state } from '../../core/state.js';
+import {
+  DISCLAIMER_VERSION,
+  DISCLAIMER_HISTORY_KEY,
+  LEGACY_DISCLAIMER_KEY_PREFIX,
+} from '../../core/constants.js';
 
-export const DISCLAIMER_VERSION = '1.0';
-const DISCLAIMER_HISTORY_KEY = 'healthpro_disclaimer_history';
+// Re-export for modules that import DISCLAIMER_VERSION from this file.
+export { DISCLAIMER_VERSION };
 
 export function getDisclaimerHistory() {
   try { return JSON.parse(localStorage.getItem(DISCLAIMER_HISTORY_KEY) || '[]'); }
@@ -85,7 +90,7 @@ export function acceptDisclaimer() {
 export function checkDisclaimer() {
   // One-time migration from old key
   try {
-    const oldKey = 'healthpro_disclaimer_v' + DISCLAIMER_VERSION;
+    const oldKey = LEGACY_DISCLAIMER_KEY_PREFIX + DISCLAIMER_VERSION;
     const oldVal = localStorage.getItem(oldKey);
     if (oldVal && !getDisclaimerHistory().length) {
       const iso = oldVal.replace(/^accepted_/, '');

@@ -2,8 +2,9 @@
 // Shares state with the rest of the app via src/core/state.js.
 
 import { state, saveData, showToast, today, DB } from '../../core/state.js';
+import { DEFAULT_STEP_GOAL, STEP_ACCEL_THRESHOLD } from '../../core/constants.js';
 
-const STEP_THRESHOLD = 1.5;
+const STEP_THRESHOLD = STEP_ACCEL_THRESHOLD;
 
 let stepCount = 0;
 let lastAcc = 0;
@@ -13,7 +14,7 @@ function isRu() { return state.lang === 'ru'; }
 
 export function saveStepGoal() {
   const el = document.getElementById('stepGoalInput');
-  state.settings.stepGoal = parseInt(el && el.value, 10) || 10000;
+  state.settings.stepGoal = parseInt(el && el.value, 10) || DEFAULT_STEP_GOAL;
   saveData();
   updateStepUI();
 }
@@ -68,7 +69,7 @@ export function updateStepUI() {
   const stepGoalEl = document.getElementById('t-step-goal');
   if (!stepCountEl || !stepPctEl || !stepBarEl) return;
   stepCountEl.textContent = stepCount.toLocaleString();
-  const goal = state.settings.stepGoal || 10000;
+  const goal = state.settings.stepGoal || DEFAULT_STEP_GOAL;
   const pct = Math.min(100, Math.round(stepCount / goal * 100));
   stepPctEl.textContent = pct + '%';
   stepBarEl.style.width = pct + '%';
