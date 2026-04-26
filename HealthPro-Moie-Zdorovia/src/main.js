@@ -1,4 +1,3 @@
-import '../styles/app.css';
 import { bootstrapStorage } from './core/storage.js';
 import { bootApp } from './app.js';
 import './features/meds/index.js';
