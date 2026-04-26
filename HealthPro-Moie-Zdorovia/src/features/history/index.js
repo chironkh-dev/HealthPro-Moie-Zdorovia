@@ -48,14 +48,15 @@ export function deleteMeasurement(time) {
   saveData();
   renderHistory();
   emit('measurement:deleted');
-  showToast('🗑 Запис видалено');
+  showToast(state.lang === 'ru' ? '🗑 Запись удалена' : '🗑 Запис видалено');
 }
 
 export function clearHistory() {
-  if (!confirm(state.lang === 'ru' ? 'Удалить все измерения?' : 'Видалити всі виміри?')) return;
+  const isRu = state.lang === 'ru';
+  if (!confirm(isRu ? 'Удалить все измерения?' : 'Видалити всі виміри?')) return;
   state.measurements.length = 0;
   saveData();
   renderHistory();
   emit('measurement:deleted');
-  showToast('🗑 Очищено');
+  showToast(isRu ? '🗑 Очищено' : '🗑 Очищено');
 }

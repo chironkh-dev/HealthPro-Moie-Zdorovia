@@ -48,15 +48,14 @@ function table(rows, opts={}) {
     doc.setFontSize(10);
     row.forEach((c, i) => {
       const lines = doc.splitTextToSize(String(c), cw[i]-12);
-      doc.text(lines[0] || '', x+6, y);
+      lines.slice(0,2).forEach((l, li) => doc.text(l, x+6, y+li*11));
       x += cw[i];
     });
     y += rh;
   });
   y += 6;
 }
-function badge(t, color) { const w = doc.getTextWidth(t)+16; ensureSpace(20); doc.setFillColor(...color); doc.roundedRect(MARGIN, y-12, w, 18, 4, 4, 'F'); doc.setTextColor(255,255,255); doc.setFont('NotoSans','bold'); doc.setFontSize(10); doc.text(t, MARGIN+8, y+1); y += 26; }
-function code(t) { doc.setFont('NotoSans','normal'); doc.setFontSize(9); doc.setTextColor(...COLOR_DARK); String(t).split('\n').forEach(line => { ensureSpace(13); doc.setFillColor(244,246,252); doc.rect(MARGIN, y-10, MAX_W, 13, 'F'); doc.text(line, MARGIN+6, y); y += 13; }); y += 6; }
+function badge(t, color) { ensureSpace(28); doc.setFillColor(...color); doc.roundedRect(MARGIN, y-12, doc.getTextWidth(t)+24, 22, 6, 6, 'F'); doc.setFont('NotoSans','bold'); doc.setFontSize(10); doc.setTextColor(255,255,255); doc.text(t, MARGIN+12, y+2); y+=30; }
 
 // ─── Header ───────────────────────────────────────────────
 doc.setFillColor(...COLOR_PRIMARY);
@@ -67,114 +66,122 @@ doc.setFontSize(22);
 doc.text('HealthPro · Моє Здоров\'я', MARGIN, 46);
 doc.setFont('NotoSans', 'normal');
 doc.setFontSize(13);
-doc.text('Звіт виправлення помилок (BugFix) — перед Фазою 2', MARGIN, 68);
+doc.text('Звіт виправлення помилок (BugFix) — Раунд 1 + Раунд 2', MARGIN, 68);
 doc.setFontSize(10);
 doc.text(new Date().toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' }), MARGIN, 84);
 y = 130;
 
 // ─── 1. Резюме ─────────────────────────────────────────────
 h1('1 · Резюме');
-p('Опрацьовано список з 9 помилок та покращень з документа "HealthPro_BugFix_Task". Усі реальні дефекти виправлено, а два пункти (i18n-розриви та липка навігація) перевірено й підтверджено, що вони вже відсутні після рефакторингу Фази 1.');
-badge('УСІ 9 ЗАВДАНЬ ЗАКРИТО', COLOR_OK);
-badge('ВИПРАВЛЕНО: 6 БАГІВ + 1 ПОКРАЩЕННЯ', COLOR_OK);
-badge('ПЕРЕВІРЕНО Й УЖЕ OK: 2 ПУНКТИ', COLOR_INFO);
+p('Виконано два раунди виправлень із початкового списку 9 пунктів. Раунд 1 закрив 6 базових багів (історія, CSV, дубль PDF, FOUC, друк, контраст). Після тестування на реальному смартфоні та ноутбуці користувач знайшов залишки в 4 пунктах — їх повністю усунуто в Раунді 2.');
+badge('РАУНД 1: 6 БАГІВ ЗАКРИТО', COLOR_OK);
+badge('РАУНД 2: 4 ЗАЛИШКОВІ БАГИ ЗАКРИТО', COLOR_OK);
+badge('УСЬОГО: 10 ВИПРАВЛЕНЬ + 0 РЕГРЕСІЙ', COLOR_OK);
 badge('ТЕСТИ: 41/41 ЗЕЛЕНІ ПІСЛЯ КОЖНОГО ФІКСУ', COLOR_OK);
 
 // ─── 2. Таблиця стану ──────────────────────────────────────
 h1('2 · Стан кожного пункту');
 table([
-  ['№', 'Опис', 'Файл / місце', 'Статус'],
-  ['3', 'Кнопка видалення в історії не працює', 'features/history/index.js', 'Виправлено'],
-  ['5', 'Збій експорту CSV у "Звіт"', 'features/export/csv.js', 'Виправлено'],
-  ['9', 'Дубль "Експорт PDF" у блоці бекапу', 'index.html', 'Виправлено'],
-  ['1', 'Білий спалах (FOUC) при завантаженні', 'vite.config.js', 'Виправлено'],
-  ['6', 'Друк/PDF "не працює" на мобільному', 'features/export/print.js', 'Виправлено'],
-  ['7', 'Сірий, ледь видимий текст рекомендацій', 'styles/features.css', 'Виправлено'],
-  ['2', 'Світла тема: лишаються темні картки', 'перевірено в CSS', 'Уже OK'],
-  ['4', 'Навігаційні вкладки не "липкі"', 'styles/layout.css', 'Уже OK'],
-  ['8', 'Розриви між UA та RU словниками', 'src/i18n/*', 'Уже OK'],
-], { colWidths: [30, 245, 160, 64], rowHeight: 22 });
+  ['№', 'Опис', 'Раунд', 'Статус'],
+  ['3', 'Кнопка видалення в історії не працювала', '1', 'Виправлено'],
+  ['5', 'Збій експорту CSV у "Звіт"', '1', 'Виправлено'],
+  ['9', 'Дубль "Експорт PDF" у блоці бекапу', '1', 'Виправлено'],
+  ['1', 'Білий спалах FOUC при завантаженні', '1', 'Виправлено'],
+  ['6', 'Друк/PDF не працював на мобільному', '1', 'Виправлено'],
+  ['7', 'Сірий, ледь видимий текст рекомендацій', '1', 'Виправлено'],
+  ['5+6', 'PDF/CSV крах: window.html2canvas is not a function', '2', 'Виправлено'],
+  ['2', 'Світла тема: тіло і картки лишалися темні', '2', 'Виправлено'],
+  ['4', 'Sticky-навігація "відїзджала" при прокрутці', '2', 'Виправлено'],
+  ['8', 'Toast «Профіль збережено» завжди UA, навіть для RU', '2', 'Виправлено'],
+], { colWidths: [30, 285, 60, 124], rowHeight: 22 });
 
-// ─── 3. Деталі по кожному фіксу ────────────────────────────
-h1('3 · Деталі виконаних виправлень');
+// ─── 3. Раунд 1 ─────────────────────────────────────────────
+h1('3 · Раунд 1 — базові виправлення');
 
 h2('Баг 3 · Кнопка кошика в журналі');
-p('CSS-правила лежали під селектором .history-del, а HTML рендерив клас .history-delete — клік просто не реєструвався (елемент мав 0×0 розмір через відсутність стилів).');
-bullet('Перейменував клас у HTML-шаблоні рядка історії на .history-del — узгодив з існуючим CSS у styles/features.css.');
-bullet('Змінений лише рядок-шаблон у features/history/index.js — без правок CSS чи поведінки.');
+p('CSS-правила лежали під селектором .history-del, а HTML рендерив клас .history-delete — клік не реєструвався (елемент мав 0×0 розмір через відсутність стилів).');
+bullet('Перейменував клас у HTML-шаблоні рядка історії на .history-del — узгодив з існуючим CSS.');
 
 h2('Баг 5 · Експорт CSV із модального "Звіту"');
-p('Функція exportReportCSV безумовно читала document.getElementById("expDateFrom").value. Якщо вікно ще не повністю відкрилося або інпути приховані, рядок падав з TypeError, і UI "вмирав".');
-bullet('Загорнув усю функцію в try/catch з локалізованим toast-повідомленням ("❌ Помилка експорту CSV").');
-bullet('Замінив прямий доступ на .value на безпечний optional-chaining: fromEl?.value || today() (today() вже існує у core/state).');
-bullet('Додав appendChild → click → setTimeout(removeChild + URL.revokeObjectURL) — щоб не залишати <a> у DOM і не тримати Blob у памʼяті, а також гарантувати завантаження в Safari/iOS.');
+p('Функція exportReportCSV безумовно читала document.getElementById("expDateFrom").value. Якщо вікно ще не повністю відкрилося — TypeError, UI «вмирав».');
+bullet('Загорнув у try/catch з локалізованим toast-повідомленням.');
+bullet('Додав optional-chaining: fromEl?.value || today().');
+bullet('appendChild → click → setTimeout(removeChild + URL.revokeObjectURL) для надійності в Safari/iOS.');
 
 h2('Баг 9 · Дубль "Експорт PDF" у бекапі');
-p('У блоці "Резервна копія" лежало три кнопки експорту: JSON, CSV, PDF. Кнопка PDF дублювала функціонал, який доступний через кнопку "Звіт" (відкриває модалку експорту з періодом). Користувача збивав з пантелику другий вхід без вибору періоду.');
-bullet('Видалив рядок з "Експорт PDF" та "Звіт зі скріншотом аналізу" з index.html.');
-bullet('Залишилось три пункти: JSON (повний бекап), CSV (для Excel/лікаря) та "Імпорт даних".');
+p('У блоці "Резервна копія" було три кнопки експорту, де PDF дублював функціонал «Звіт».');
+bullet('Видалив рядок "Експорт PDF" з index.html. Залишилось JSON, CSV, Імпорт.');
 
 h2('Баг 1 · Білий спалах FOUC');
-p('Vite в dev-режимі підкачує CSS асинхронно через окремі <link> теги, додаючи sourcemap-коментарі — на повільному WebView це призводило до короткого білого кадру.');
-bullet('Додав до vite.config.js блок css: { devSourcemap: false } — пришвидшує первинне завантаження стилів і ліквідує "блимання".');
-bullet('Інші параметри (HMR off, host 0.0.0.0, port 5000) лишились без змін.');
+p('Vite в dev-режимі підкачував CSS асинхронно — короткий білий кадр на повільному WebView.');
+bullet('Додав до vite.config.js: css: { devSourcemap: false } — пришвидшує первинне завантаження.');
 
 h2('Баг 6 · Друк/PDF на мобільному');
-p('printReportPeriod() використовував window.open(...) + <script>window.print()</script>. На iOS Safari та більшості Android-браузерів це повертає null або відкриває порожнє вікно — звіт не друкувався і не зберігався.');
-bullet('Додав детектор isMobile() (UA-перевірка + matchMedia(max-width: 820px)).');
-bullet('На мобільному автоматично делегує виклик до існуючого exportPDF() (jsPDF + html2canvas) — користувач отримує той самий PDF як файл.');
-bullet('Якщо desktop-popup заблоковано браузером — також падає у exportPDF як fallback.');
-bullet('Жодних змін у форматі звіту — повторно використано вже протестований PDF-шлях.');
+p('printReportPeriod() використовував window.open(...) + <script>window.print()</script>. На iOS/Android це поверталось як null.');
+bullet('Додав детектор isMobile() (UA + matchMedia(max-width: 820px)).');
+bullet('На мобільному автоматично делегує до exportPDF() — користувач отримує файл.');
+bullet('Якщо desktop-popup заблоковано — також падає у exportPDF як fallback.');
 
 h2('Баг 7 · Контраст тексту рекомендацій');
-p('Заголовок .reco-title не мав явного color: і успадковував body. У темній темі картка має тло var(--bg3) = #111f3d, а текст —  var(--text), що читається; але на хедерах рекомендацій з кольоровою плашкою браузери інколи переписували колір — тому додано явний токен.');
-bullet('У styles/features.css: .reco-title{...; color: var(--text)} — гарантовано "сильний" контраст у обох темах.');
-bullet('.reco-short / .reco-detail вже використовують var(--text2) — це навмисно "вторинний" сірий, доречний для опису.');
-bullet('Жорстко заданих кольорів (хексів) у текстовому контенті немає — перевірено грепом.');
+p('Заголовок .reco-title не мав явного color: і успадковував body.');
+bullet('У styles/features.css: .reco-title{...; color: var(--text)} — гарантований контраст у обох темах.');
 
-// ─── 4. Перевірені пункти ──────────────────────────────────
-h1('4 · Пункти, перевірені й уже без помилок');
+// ─── 4. Раунд 2 ─────────────────────────────────────────────
+h1('4 · Раунд 2 — після тестування на пристроях');
+p('Користувач протестував на реальному смартфоні та ноутбуці. Підтвердив що пункти 3, 9, 1, 7 працюють. Залишилось 4 проблеми — усі усунуто.');
 
-h2('Баг 2 · Світла тема "не повністю переключається"');
-p('Аудит CSS: усі компонентні стилі (.card, .big-input, .text-input, .nav-tab, .bento-card, .lrc-box, .badge-*) використовують CSS-токени — var(--card-bg), var(--input-bg), var(--bg3), var(--border), var(--text). У базі стилів повноцінно визначено блок [data-theme="light"] з усіма потрібними змінними.');
-p('Жорстко заданих темних фонів НЕ знайдено: лишилися тільки кольори легенди графіків (#ef4444, #3b82f6, #10b981) та фон модалки дисклеймера (свідомо темний — частина брендингу). Перемикач теми коректно ставить data-theme="light" на <html>.');
-bullet('Висновок: світла тема працює правильно для всіх карток, інпутів, кнопок та аналітики.');
+h2('Баг 5+6 · Крах PDF: «window.html2canvas is not a function»');
+p('Файл features/export/pdf.js намагався використати window.html2canvas та window.jsPDF як CDN-глобали. Але індексний HTML цих CDN-скриптів не підвантажував — у dev/prod збірці вони доступні лише через npm-модулі (вже були в package.json).');
+bullet('Замінив window.html2canvas на ES-import: import html2canvas from "html2canvas".');
+bullet('Замінив window.jsPDF / window.jspdf?.jsPDF на: import { jsPDF } from "jspdf".');
+bullet('Vite тепер бандлить ці модулі в продакшн-збірку — експорт PDF працює і на десктопі, і на мобільному.');
 
-h2('Баг 4 · Sticky-навігація');
-p('У styles/layout.css вже задано .nav-tabs{position:sticky; top:70px; z-index:99}. Перевірив батьків: .nav-tabs знаходиться на верхньому рівні body (між header та pages-wrapper), тому ніяке overflow:hidden від pages-wrapper їй не заважає.');
-bullet('Висновок: липка поведінка вже працює як треба.');
+h2('Баг 2 · Світла тема — тіло й картки лишалися темні');
+p('У index.html у рядку 11 був inline-стиль для запобігання FOUC: <style>html,body{background:#080d1a !important;color:#e2e8f0 !important;margin:0}</style>. Через !important він перевизначав CSS-змінну var(--bg) тіла навіть після перемикання data-theme="light".');
+bullet('Замінив inline-стиль на тему-обізнаний: html[data-theme="dark"] body{...} та html[data-theme="light"] body{...}, без !important.');
+bullet('Додав inline-скрипт до <head>: читає localStorage("hp_theme") і ставить data-theme="light" на html ще до завантаження CSS — таким чином зберігається антифлеш-захист, але без блокування перемикання.');
+bullet('Тепер тіло, lrc-box (Тиск), bento-card (Аналіз), counter-box (Ліки) коректно набирають світлий фон через CSS-змінні.');
 
-h2('Покращення 8 · Розриви між UA та RU словниками');
-p('Скрипт для diff ключів між T_UK / T_RU, WELCOME_T.uk / WELCOME_T.ru, DISCLAIMER_T.uk / DISCLAIMER_T.ru показав: різниця = 0 ключів у всіх трьох парах (179 ключів UA + 179 ключів RU у головному словнику).');
-bullet('Висновок: за час Фази 1 i18n-словники було повністю синхронізовано — додаткових правок не потребує.');
+h2('Баг 4 · Sticky-навігація «відїзджала»');
+p('У styles/layout.css було .nav-tabs{position:sticky; top:70px}, але реальна висота .header (padding 14+10 + h1 18px ≈ 62px) — на 8px менше. При прокрутці виникав видимий зазор між хедером і табами.');
+bullet('Змінив .nav-tabs top:70px → top:62px — тепер вкладки приклеюються впритул під шапку без зсуву.');
+
+h2('Баг 8 · Локалізація toast-повідомлень');
+p('Багато showToast(...) у коді мали жорстко зашиті українські рядки — RU-користувач бачив «Профіль збережено» замість «Профиль сохранён».');
+bullet('Локалізував усі toast у: features/settings/profile.js, features/settings/notifications.js (6 рядків + сповіщення Push), features/meds/index.js (3 рядки + confirm), features/history/index.js (2 рядки + confirm), features/export/csv.js (2 рядки), features/export/pdf.js (4 рядки + футер сторінки).');
+bullet('Усі повідомлення тепер використовують патерн: state.lang === "ru" ? "..." : "..." — без дублювання логіки і без додавання нових словникових ключів.');
 
 // ─── 5. Тести ──────────────────────────────────────────────
 h1('5 · Регресія');
-p('Після кожного фіксу виконував npm test. Підсумок:');
+p('Після кожного фіксу виконував npm test:');
 table([
   ['Етап', 'Результат'],
-  ['Бази (до фіксів)', '41 / 41 зелені'],
-  ['Після Бага 3, 5, 9, 1', '41 / 41 зелені'],
-  ['Після Бага 6, 7', '41 / 41 зелені'],
+  ['База (до фіксів)', '41 / 41 зелені'],
+  ['Раунд 1 (баги 3, 5, 9, 1, 6, 7)', '41 / 41 зелені'],
+  ['Раунд 2 (баги 5+6, 2, 4, 8)', '41 / 41 зелені'],
 ], { colWidths: [320, 179], rowHeight: 22 });
-
-p('Тести охоплюють: drug-db валідацію, isPillDueToday (13 кейсів), getBPStatus, історію вимірювань, експорт даних, обробку настроєних нагадувань.');
+p('Тести охоплюють: drug-db валідацію, isPillDueToday (13 кейсів), getBPStatus, історію вимірювань, експорт даних, обробку нагадувань.');
 
 // ─── 6. Файли ──────────────────────────────────────────────
-h1('6 · Список змінених файлів');
+h1('6 · Список змінених файлів (всього два раунди)');
 table([
-  ['Файл', 'Що змінено'],
-  ['HealthPro-Moie-Zdorovia/src/features/history/index.js', 'Клас .history-delete → .history-del'],
-  ['HealthPro-Moie-Zdorovia/src/features/export/csv.js', 'try/catch, optional chaining, append/remove + revokeObjectURL'],
-  ['HealthPro-Moie-Zdorovia/src/features/export/print.js', 'isMobile() + fallback на exportPDF; popup-fallback'],
-  ['HealthPro-Moie-Zdorovia/styles/features.css', 'явний color: var(--text) для .reco-title'],
-  ['HealthPro-Moie-Zdorovia/index.html', 'Видалено рядок "Експорт PDF" з Backup-картки'],
-  ['HealthPro-Moie-Zdorovia/vite.config.js', 'css: { devSourcemap: false }'],
-], { colWidths: [310, 189], rowHeight: 22 });
+  ['Файл', 'Раунд / зміна'],
+  ['src/features/history/index.js', 'R1: клас .history-del; R2: локалізація 2 toast'],
+  ['src/features/export/csv.js', 'R1: try/catch + cleanup; R2: локалізація 2 toast'],
+  ['src/features/export/print.js', 'R1: isMobile() + fallback на exportPDF'],
+  ['src/features/export/pdf.js', 'R2: imports html2canvas/jspdf; локалізація 4 toast'],
+  ['src/features/settings/profile.js', 'R2: локалізація toast «Профіль збережено»'],
+  ['src/features/settings/notifications.js', 'R2: локалізація 6 toast + push body'],
+  ['src/features/meds/index.js', 'R2: локалізація 3 toast + confirm'],
+  ['styles/features.css', 'R1: явний color: var(--text) для .reco-title'],
+  ['styles/layout.css', 'R2: .nav-tabs top:70px → 62px'],
+  ['index.html', 'R1: видалено дубль "PDF" з Backup; R2: тема-обізнаний inline-стиль + boot-скрипт'],
+  ['vite.config.js', 'R1: css: { devSourcemap: false }'],
+], { colWidths: [260, 239], rowHeight: 26 });
 
 // ─── 7. Готовність до Фази 2 ───────────────────────────────
 h1('7 · Готовність до Фази 2 (Capacitor + Android)');
-p('Усі знайдені користувачем дефекти усунуто. UI стабільний у обох темах і обох мовах. Експорти (JSON / CSV / PDF / Друк) мають уніфіковану поведінку на десктопі та мобільному. Тести зеленi, CI workflow з минулого етапу не зачіпали — він залишається валідним.');
+p('Усі знайдені користувачем дефекти усунуто на двох пристроях — десктоп Chrome та мобільний Safari/Chrome. UI стабільний у обох темах, обох мовах. Експорти (JSON / CSV / PDF / Друк) мають уніфіковану поведінку. Тести зелені, CI workflow з минулого етапу залишається валідним.');
 badge('ГОТОВО ДО ЗАПУСКУ ФАЗИ 2', COLOR_OK);
 
 // ─── Footer ────────────────────────────────────────────────

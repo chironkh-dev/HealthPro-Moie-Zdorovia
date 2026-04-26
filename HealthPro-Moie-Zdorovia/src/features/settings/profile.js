@@ -21,7 +21,7 @@ export function saveProfile() {
     if (el) settings[map[id]] = el.value;
   });
   saveData();
-  showToast('✅ Профіль збережено!');
+  showToast(state.lang === 'ru' ? '✅ Профиль сохранён!' : '✅ Профіль збережено!');
   updateHeader();
 }
 

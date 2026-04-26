@@ -4,11 +4,12 @@ import { state, saveData, showToast, today } from '../../core/state.js';
 import { isPillDueToday } from '../meds/index.js';
 
 const _firedReminders = new Set();
+const isRu = () => state.lang === 'ru';
 
 export function toggleNotifications() {
   if (!state.settings.notif) {
     if (!('Notification' in window)) {
-      showToast('❌ Браузер не підтримує сповіщення');
+      showToast(isRu() ? '❌ Браузер не поддерживает уведомления' : '❌ Браузер не підтримує сповіщення');
       return;
     }
     Notification.requestPermission().then((p) => {
@@ -16,15 +17,18 @@ export function toggleNotifications() {
         state.settings.notif = true;
         document.getElementById('notifToggle').classList.add('on');
         saveData();
-        showToast('🔔 Сповіщення увімкнено!');
-        setTimeout(() => new Notification('✅ HealthPro', { body: 'Сповіщення налаштовані!', icon: 'icons/icon-192.png' }), 800);
-      } else showToast('❌ Дозвіл відхилено');
+        showToast(isRu() ? '🔔 Уведомления включены!' : '🔔 Сповіщення увімкнено!');
+        setTimeout(() => new Notification('✅ HealthPro', {
+          body: isRu() ? 'Уведомления настроены!' : 'Сповіщення налаштовані!',
+          icon: 'icons/icon-192.png',
+        }), 800);
+      } else showToast(isRu() ? '❌ Доступ отклонён' : '❌ Дозвіл відхилено');
     });
   } else {
     state.settings.notif = false;
     document.getElementById('notifToggle').classList.remove('on');
     saveData();
-    showToast('🔕 Вимкнено');
+    showToast(isRu() ? '🔕 Выключено' : '🔕 Вимкнено');
   }
 }
 
@@ -32,14 +36,16 @@ export function toggleMeasureReminder() {
   state.settings.measureReminder = !state.settings.measureReminder;
   document.getElementById('measureToggle').classList.toggle('on', state.settings.measureReminder);
   saveData();
-  showToast(state.settings.measureReminder ? '🔔 Нагадування про вимір увімкнено!' : '🔕 Вимкнено');
+  showToast(state.settings.measureReminder
+    ? (isRu() ? '🔔 Напоминания об измерении включены!' : '🔔 Нагадування про вимір увімкнено!')
+    : (isRu() ? '🔕 Выключено' : '🔕 Вимкнено'));
 }
 
 export function saveReminderTimes() {
   state.settings.morningTime = document.getElementById('morningTime').value;
   state.settings.eveningTime = document.getElementById('eveningTime').value;
   saveData();
-  showToast('✅ Час збережено');
+  showToast(isRu() ? '✅ Время сохранено' : '✅ Час збережено');
 }
 
 function _firePillReminder(p) {
@@ -50,7 +56,7 @@ function _firePillReminder(p) {
   if (canPush) {
     try {
       new Notification(`💊 ${p.name}`, {
-        body: `Час прийому ${p.time}${p.dose ? ' · ' + p.dose : ''}`,
+        body: (isRu() ? 'Время приёма ' : 'Час прийому ') + p.time + (p.dose ? ' · ' + p.dose : ''),
         icon: 'icons/icon-192.png',
         tag: 'pill-' + p.id,
         vibrate: [200, 100, 200],
@@ -58,7 +64,7 @@ function _firePillReminder(p) {
       });
     } catch (e) { /* noop */ }
   }
-  showToast(`💊 Час прийняти: ${p.name}${p.dose ? ' (' + p.dose + ')' : ''}`);
+  showToast((isRu() ? '💊 Время принять: ' : '💊 Час прийняти: ') + p.name + (p.dose ? ' (' + p.dose + ')' : ''));
   if (navigator.vibrate) {
     try { navigator.vibrate([200, 100, 200, 100, 200]); } catch (e) { /* noop */ }
   }
@@ -83,14 +89,14 @@ export function scheduleNotifications() {
         _firedReminders.add(key);
         if ('Notification' in window && Notification.permission === 'granted' && state.settings.notif) {
           try {
-            new Notification(state.lang === 'ru' ? '🩺 Измерение давления' : '🩺 Вимір тиску', {
-              body: state.lang === 'ru' ? 'Время для ежедневного измерения давления' : 'Час для щоденного виміру тиску',
+            new Notification(isRu() ? '🩺 Измерение давления' : '🩺 Вимір тиску', {
+              body: isRu() ? 'Время для ежедневного измерения давления' : 'Час для щоденного виміру тиску',
               icon: 'icons/icon-192.png',
               tag: 'bp-reminder',
             });
           } catch (e) { /* noop */ }
         }
-        showToast('🩺 Час для виміру тиску');
+        showToast(isRu() ? '🩺 Время измерить давление' : '🩺 Час для виміру тиску');
         if (navigator.vibrate) {
           try { navigator.vibrate([300, 100, 300]); } catch (e) { /* noop */ }
         }

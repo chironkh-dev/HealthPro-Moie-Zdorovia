@@ -107,7 +107,7 @@ export function addPill() {
   document.getElementById('pillDate').disabled = true;
   document.getElementById('pillNameWarn').style.display = 'none';
   renderPills();
-  showToast(`💊 ${name} додано!`);
+  showToast((state.lang === 'ru' ? '💊 ' : '💊 ') + name + (state.lang === 'ru' ? ' добавлен!' : ' додано!'));
   emit('pills:changed');
 }
 
@@ -194,15 +194,16 @@ export function togglePill(id) {
   saveData();
   renderPills();
   const p = state.pills.find((p) => p.id === id);
-  if (p && state.pillsTaken[td][id]) showToast(`✅ ${p.name} прийнято!`);
+  if (p && state.pillsTaken[td][id]) showToast('✅ ' + p.name + (state.lang === 'ru' ? ' принято!' : ' прийнято!'));
 }
 
 export function deletePill(id) {
-  if (!confirm('Видалити препарат?')) return;
+  const isRu = state.lang === 'ru';
+  if (!confirm(isRu ? 'Удалить препарат?' : 'Видалити препарат?')) return;
   const i = state.pills.findIndex((p) => p.id === id);
   if (i >= 0) state.pills.splice(i, 1);
   saveData();
   renderPills();
-  showToast('🗑 Видалено');
+  showToast(isRu ? '🗑 Удалено' : '🗑 Видалено');
   emit('pills:changed');
 }

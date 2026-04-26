@@ -1,5 +1,7 @@
-// PDF generation via html2canvas + jsPDF (CDN globals).
+// PDF generation via html2canvas + jsPDF (npm modules, bundled by Vite).
 
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import { state, showToast, today } from '../../core/state.js';
 import { PDF_LABELS } from '../../i18n/index.js';
 import { getBPStatus } from '../pressure/index.js';
@@ -13,7 +15,8 @@ let _showPage = null;
 export function setShowPage(fn) { _showPage = fn; }
 
 export async function exportPDF() {
-  showToast('⏳ Формування звіту для лікаря…', 8000);
+  const isRu = state.lang === 'ru';
+  showToast(isRu ? '⏳ Формирование отчёта для врача…' : '⏳ Формування звіту для лікаря…', 8000);
 
   const printEl = document.getElementById('printContent');
   const pagePrint = document.getElementById('page-print');
@@ -187,13 +190,12 @@ export async function exportPDF() {
   try {
     await new Promise((r) => setTimeout(r, 300));
     const wrapper = document.getElementById('pdf-wrapper');
-    const canvas = await window.html2canvas(wrapper, {
+    const canvas = await html2canvas(wrapper, {
       scale: 2, useCORS: true, allowTaint: true,
       backgroundColor: '#ffffff', logging: false,
       width: 750, windowWidth: 830,
     });
-    const J = window.jsPDF || window.jspdf?.jsPDF;
-    const doc = new J('p', 'mm', 'a4');
+    const doc = new jsPDF('p', 'mm', 'a4');
     const pdfW = doc.internal.pageSize.getWidth();
     const pdfH = doc.internal.pageSize.getHeight();
     const pageHeightPx = Math.floor((pdfH / pdfW) * canvas.width);
@@ -207,15 +209,18 @@ export async function exportPDF() {
       const sliceMmH = (sliceH / canvas.width) * pdfW;
       doc.addImage(slice.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, pdfW, sliceMmH);
       doc.setFontSize(7); doc.setTextColor(148, 163, 184);
-      doc.text(`HealthPro v4.0 · ${today()} · Стор. ${pageNum + 1} · Не є медичним діагнозом`, 10, pdfH - 3);
+      const pageLbl = isRu
+        ? `HealthPro v4.0 · ${today()} · Стр. ${pageNum + 1} · Не является медицинским диагнозом`
+        : `HealthPro v4.0 · ${today()} · Стор. ${pageNum + 1} · Не є медичним діагнозом`;
+      doc.text(pageLbl, 10, pdfH - 3);
       srcY += pageHeightPx; pageNum++;
     }
     const fname = `HealthReport_${(settings.name || 'Patient').replace(/\s/g, '_')}_${today()}.pdf`;
     doc.save(fname);
-    showToast('Звіт збережено: ' + fname);
+    showToast((isRu ? 'Отчёт сохранён: ' : 'Звіт збережено: ') + fname);
   } catch (err) {
     console.error('[PDF]', err);
-    showToast('Помилка генерації PDF: ' + err.message);
+    showToast((isRu ? 'Ошибка генерации PDF: ' : 'Помилка генерації PDF: ') + err.message);
   } finally {
     pagePrint.style.display = 'none';
     printEl.innerHTML = '';

@@ -16,7 +16,7 @@ export function exportData() {
   a.href = URL.createObjectURL(blob);
   a.download = 'healthpro-' + today() + '.json';
   a.click();
-  showToast('✅ JSON збережено');
+  showToast(state.lang === 'ru' ? '✅ JSON сохранён' : '✅ JSON збережено');
 }
 
 export function exportCSV() {
@@ -123,7 +123,7 @@ export function importData(e) {
       saveData();
       location.reload();
     } catch (err) {
-      showToast('❌ Помилка: ' + err.message);
+      showToast((state.lang === 'ru' ? '❌ Ошибка: ' : '❌ Помилка: ') + err.message);
     }
   };
   reader.readAsText(file);

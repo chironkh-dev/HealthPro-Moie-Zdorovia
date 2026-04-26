@@ -8,7 +8,18 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="HealthPro">
 <meta name="theme-color" content="#0d1630">
-<style>html,body{background:#080d1a !important;color:#e2e8f0 !important;margin:0}</style>
+<script>
+  // Restore saved theme before CSS loads — fixes both FOUC and theme-flash on reload.
+  try {
+    var _t = localStorage.getItem('hp_theme');
+    if (_t === 'false' || _t === '"false"') document.documentElement.setAttribute('data-theme', 'light');
+  } catch (e) {}
+</script>
+<style>
+  html, body { margin: 0 }
+  html[data-theme="dark"], html[data-theme="dark"] body { background: #080d1a; color: #e2e8f0 }
+  html[data-theme="light"], html[data-theme="light"] body { background: #f0f4ff; color: #1e293b }
+</style>
 <link rel="stylesheet" href="./styles/app.css">
 <link rel="icon" type="image/png" href="icons/favicon-96x96.png" sizes="96x96" />
 <link rel="icon" type="image/svg+xml" href="icons/favicon.svg" />

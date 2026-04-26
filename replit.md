@@ -53,9 +53,12 @@ src/
 - [x] Етап 4-В — features/analytics (health-score, BMI, рекомендації, тренди)
 - [x] Етап 4-Г — features/history + features/export (CSV / JSON / друк / PDF)
 - [x] Етап 4-Д — features/settings + features/pwa
+- [x] BugFix Раунд 1 (6 багів): історія, CSV, дубль PDF, FOUC, друк, контраст
+- [x] BugFix Раунд 2 (4 баги): крах PDF (CDN→npm imports), світла тема (FOUC-стиль з !important), sticky-навігація (top:62), локалізація toast (профіль/ліки/нагадування/експорт)
 - [ ] Етап 5 — локальна БД (рекомендація: @capacitor-community/sqlite)
 - [ ] Підключення Capacitor-плагінів (Notifications, Health)
 
 ## Скрипти
 
 - `scripts/generate_report.cjs` — генерує `attached_assets/HealthPro_Refactor_Report_Stage_4_complete.pdf` через jsPDF + DejaVu Sans (підтримка кирилиці). Запуск: `node scripts/generate_report.cjs`.
+- `scripts/generate_bugfix_report.cjs` — генерує `attached_assets/HealthPro_BugFix_Report.pdf` (Раунд 1+2). Запуск: `node scripts/generate_bugfix_report.cjs`.
