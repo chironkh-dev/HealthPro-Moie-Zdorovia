@@ -1,12 +1,25 @@
 // Print-friendly HTML report opened in a new browser window for medical printing.
+// On mobile devices the new-window + window.print() flow is unreliable, so we
+// transparently fall back to the PDF exporter, which produces the same report.
 
 import { state, showToast } from '../../core/state.js';
 import { getBPStatus } from '../pressure/index.js';
 import { getExportMeasurements, getExportPeriod } from './modal.js';
+import { exportPDF } from './pdf.js';
 
 const avg = (arr) => (arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null);
 
+const isMobile = () =>
+  (typeof navigator !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod|Touch/i.test(navigator.userAgent || ''))
+  || (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 820px)').matches);
+
 export function printReportPeriod() {
+  // Mobile fallback: window.open / window.print are unreliable on iOS / Android browsers.
+  if (isMobile()) {
+    showToast(state.lang === 'ru' ? '📄 Готовлю PDF…' : '📄 Готую PDF…');
+    try { exportPDF(); } catch (e) { console.error('[print mobile fallback]', e); }
+    return;
+  }
   const filtered = getExportMeasurements();
   const isRu = state.lang === 'ru';
   const settings = state.settings;
@@ -222,5 +235,9 @@ export function printReportPeriod() {
 
   const w = window.open('', '_blank', 'width=900,height=700');
   if (w) { w.document.write(html); w.document.close(); }
-  else { showToast(L.popup); }
+  else {
+    // Pop-up blocked — fall back to PDF so the user still gets a report.
+    showToast(L.popup);
+    try { exportPDF(); } catch (e) { console.error('[print popup fallback]', e); }
+  }
 }

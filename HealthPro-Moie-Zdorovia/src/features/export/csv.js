@@ -54,37 +54,54 @@ export function exportCSV() {
 
 export function exportReportCSV(getExportMeasurements) {
   const isRu = state.lang === 'ru';
-  const loc = isRu ? 'ru-UA' : 'uk-UA';
-  const filtered = getExportMeasurements();
-  if (!filtered.length) {
-    showToast(isRu ? '⚠️ Нет данных за выбранный период' : '⚠️ Немає даних за вибраний період');
-    return;
+  try {
+    const loc = isRu ? 'ru-UA' : 'uk-UA';
+    const filtered = getExportMeasurements();
+    if (!filtered.length) {
+      showToast(isRu ? '⚠️ Нет данных за выбранный период' : '⚠️ Немає даних за вибраний період');
+      return;
+    }
+    const head = isRu
+      ? ['Дата', 'Время', 'Систол.', 'Диастол.', 'Пульс', 'Статус', 'Заметка']
+      : ['Дата', 'Час', 'Систол.', 'Діастол.', 'Пульс', 'Статус', 'Нотатка'];
+    const esc = (v) => {
+      const s = String(v ?? '');
+      return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    };
+    const rows = [head, ...filtered.map((m) => {
+      const d = new Date(m.time);
+      return [
+        d.toLocaleDateString(loc),
+        d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' }),
+        m.sys, m.dia, m.pulse || '',
+        getBPStatus(m.sys, m.dia).label.replace(/[^\wа-яёіїєА-ЯЁІЇЄ \.!]/gi, '').trim(),
+        m.note || '',
+      ];
+    })];
+    const csv = '\ufeff' + rows.map((r) => r.map(esc).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const fromEl = document.getElementById('expDateFrom');
+    const toEl = document.getElementById('expDateTo');
+    const from = fromEl?.value || today();
+    const to = toEl?.value || today();
+    const filename = `HealthPro_${from}_${to}.csv`;
+    // Use download link with cleanup; works on desktop and modern mobile browsers.
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+    showToast(isRu ? '📊 CSV сохранён' : '📊 CSV збережено');
+  } catch (err) {
+    console.error('[CSV export]', err);
+    showToast(isRu ? '❌ Ошибка экспорта CSV' : '❌ Помилка експорту CSV');
   }
-  const head = isRu
-    ? ['Дата', 'Время', 'Систол.', 'Диастол.', 'Пульс', 'Статус', 'Заметка']
-    : ['Дата', 'Час', 'Систол.', 'Діастол.', 'Пульс', 'Статус', 'Нотатка'];
-  const esc = (v) => {
-    const s = String(v ?? '');
-    return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-  };
-  const rows = [head, ...filtered.map((m) => {
-    const d = new Date(m.time);
-    return [
-      d.toLocaleDateString(loc),
-      d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' }),
-      m.sys, m.dia, m.pulse || '',
-      getBPStatus(m.sys, m.dia).label.replace(/[^\wа-яёіїєА-ЯЁІЇЄ \.!]/gi, '').trim(),
-      m.note || '',
-    ];
-  })];
-  const blob = new Blob(['\ufeff' + rows.map((r) => r.map(esc).join(',')).join('\n')], { type: 'text/csv;charset=utf-8' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  const from = document.getElementById('expDateFrom').value;
-  const to = document.getElementById('expDateTo').value;
-  a.download = `HealthPro_${from}_${to}.csv`;
-  a.click();
-  showToast(isRu ? '📊 CSV сохранён' : '📊 CSV збережено');
 }
 
 export function importData(e) {

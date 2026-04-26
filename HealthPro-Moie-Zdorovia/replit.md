@@ -48,6 +48,14 @@ HealthPro-Moie-Zdorovia/
 
 Cross-module комунікація — через мінішину `on('event', fn)` / `emit('event')` в `state.js` (наразі meds emit-ить `pills:changed` після додавання/видалення).
 
+## Історія етапів
+- Фаза 1 — рефакторинг: винесення фіч у модулі, видалення `window.X`, заміна inline-обробників на `data-action`.
+- Підготовка до Фази 2 — задача А (13 тестів для `isPillDueToday`) + задача Б (CI workflow `.github/workflows/ci.yml`). 41/41 тестів зелені.
+- BugFix перед Фазою 2 (квітень 2026) — закрито 9-пунктовий список з документа `HealthPro_BugFix_Task`:
+  - Виправлено: 3 (клас історії), 5 (CSV try/catch), 9 (дубль PDF у бекапі), 1 (FOUC через `css.devSourcemap:false`), 6 (мобільний друк → fallback на `exportPDF`), 7 (явний `color: var(--text)` для `.reco-title`).
+  - Перевірено й уже OK: 2 (світла тема), 4 (sticky `.nav-tabs`), 8 (UA/RU словники синхронні: 179/179, 0/0, 0/0).
+  - Звіт: `attached_assets/HealthPro_BugFix_Report.pdf`, генератор `scripts/generate_bugfix_report.cjs`.
+
 ## Архітектурні рішення
 - **Без `window.X`**: усі словники й сховище імпортуються як ES-модулі.
 - **Без inline-обробників**: усі `onclick=`/`onchange=`/`oninput=` замінено на атрибути `data-action`/`data-change`/`data-input`. Один делегований listener у `src/app.js` (карта `ACTIONS`) маршрутизує події.
