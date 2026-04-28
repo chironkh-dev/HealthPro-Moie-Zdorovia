@@ -1,5 +1,20 @@
 // HealthPro local persistence layer (ES module).
-// PRIMARY: IndexedDB (HealthProDB). MIRROR: localStorage for synchronous boot reads.
+//
+// Three-tier strategy:
+//   1. SQLite (native only) — persistent file under app private storage.
+//                              Survives WebView cache eviction. PRIMARY on Android.
+//   2. IndexedDB (HealthProDB / store "state") — async store, PRIMARY on web/PWA.
+//   3. localStorage           — synchronous mirror used for the very first
+//                               render before bootstrapStorage() completes.
+//
+// Feature modules keep using loadState() / saveState() — no API change.
+// The bootstrapStorage() function:
+//   * opens SQLite if available;
+//   * migrates IDB → SQLite once (when SQLite is empty but IDB has data);
+//   * rehydrates the localStorage mirror from whichever store is primary,
+//     so the next cold start of the app paints with up-to-date data.
+
+import * as sql from './sqlite.js';
 
 export const STORAGE_KEYS = {
   measurements: 'hp_measurements',
@@ -77,15 +92,36 @@ async function idbSet(key, value) {
   } catch (e) { console.error('[HealthProDB] write failed:', key, e); return false; }
 }
 
-async function idbGetAll() {
-  const [measurements, pills, pillsTaken, settings, theme] = await Promise.all([
-    idbGet(STORAGE_KEYS.measurements),
-    idbGet(STORAGE_KEYS.pills),
-    idbGet(STORAGE_KEYS.pillsTaken),
-    idbGet(STORAGE_KEYS.settings),
-    idbGet(STORAGE_KEYS.theme),
-  ]);
-  return { measurements, pills, pillsTaken, settings, theme };
+// ─── Unified primary store ─────────────────────────────────────
+// On native (when SQLite is ready) → SQLite is primary.
+// Otherwise (web/PWA, or if SQLite init failed) → IndexedDB.
+async function primaryGet(key) {
+  if (sql.isReady()) {
+    const v = await sql.get(key);
+    if (v !== undefined) return v;
+  }
+  return idbGet(key);
+}
+
+async function primarySet(key, value) {
+  // Always keep IDB as secondary backup on native too — protects against
+  // the rare case where SQLite write fails after we've already returned.
+  if (sql.isReady()) {
+    await sql.set(key, value);
+  }
+  return idbSet(key, value);
+}
+
+async function primaryGetAll() {
+  const keys = [
+    STORAGE_KEYS.measurements,
+    STORAGE_KEYS.pills,
+    STORAGE_KEYS.pillsTaken,
+    STORAGE_KEYS.settings,
+    STORAGE_KEYS.theme,
+  ];
+  const entries = await Promise.all(keys.map(async (k) => [k, await primaryGet(k)]));
+  return Object.fromEntries(entries);
 }
 
 async function requestPersistence() {
@@ -97,35 +133,64 @@ async function requestPersistence() {
   } catch {}
 }
 
+// One-time migration of legacy localStorage entries into the primary store.
 async function migrateFromLocalStorage() {
   try {
-    const idb = await idbGetAll();
-    const ops = [];
-    const tryMigrate = (idbVal, key, legacyKey) => {
-      if (idbVal != null) return;
+    const tryMigrate = async (key, legacyKey) => {
+      const existing = await primaryGet(key);
+      if (existing != null) return false;
       const v = LS.get(key, LS.get(legacyKey, null));
-      if (v != null) ops.push(idbSet(key, v));
+      if (v == null) return false;
+      await primarySet(key, v);
+      return true;
     };
-    tryMigrate(idb.measurements, STORAGE_KEYS.measurements, 'measurements');
-    tryMigrate(idb.pills, STORAGE_KEYS.pills, 'pills');
-    tryMigrate(idb.pillsTaken, STORAGE_KEYS.pillsTaken, 'pillsTaken');
-    tryMigrate(idb.settings, STORAGE_KEYS.settings, 'settings');
-    tryMigrate(idb.theme, STORAGE_KEYS.theme, 'theme');
-    if (ops.length) {
-      await Promise.all(ops);
-      console.log('[HealthProDB] migrated', ops.length, 'collections from localStorage');
-    }
-  } catch (e) { console.warn('[HealthProDB] migration skipped:', e); }
+    const flags = await Promise.all([
+      tryMigrate(STORAGE_KEYS.measurements, 'measurements'),
+      tryMigrate(STORAGE_KEYS.pills, 'pills'),
+      tryMigrate(STORAGE_KEYS.pillsTaken, 'pillsTaken'),
+      tryMigrate(STORAGE_KEYS.settings, 'settings'),
+      tryMigrate(STORAGE_KEYS.theme, 'theme'),
+    ]);
+    const moved = flags.filter(Boolean).length;
+    if (moved) console.log('[HealthProDB] migrated', moved, 'collections from localStorage');
+  } catch (e) { console.warn('[HealthProDB] LS migration skipped:', e); }
 }
 
-async function rehydrateMirrorFromIdb() {
+// One-time migration IDB → SQLite on the first native launch after the
+// SQLite upgrade. Only runs when SQLite is the active primary AND it has
+// no data yet AND IDB has data.
+async function migrateIdbToSqlite() {
+  if (!sql.isReady()) return;
   try {
-    const all = await idbGetAll();
-    if (all.measurements != null) LS.set(STORAGE_KEYS.measurements, all.measurements);
-    if (all.pills != null) LS.set(STORAGE_KEYS.pills, all.pills);
-    if (all.pillsTaken != null) LS.set(STORAGE_KEYS.pillsTaken, all.pillsTaken);
-    if (all.settings != null) LS.set(STORAGE_KEYS.settings, all.settings);
-    if (all.theme != null) LS.set(STORAGE_KEYS.theme, all.theme);
+    const keys = [
+      STORAGE_KEYS.measurements,
+      STORAGE_KEYS.pills,
+      STORAGE_KEYS.pillsTaken,
+      STORAGE_KEYS.settings,
+      STORAGE_KEYS.theme,
+    ];
+    const ops = [];
+    for (const k of keys) {
+      const inSqlite = await sql.get(k);
+      if (inSqlite !== undefined) continue;
+      const inIdb = await idbGet(k);
+      if (inIdb != null) ops.push(sql.set(k, inIdb));
+    }
+    if (ops.length) {
+      await Promise.all(ops);
+      console.log('[HealthProDB/SQLite] migrated', ops.length, 'collections from IndexedDB');
+    }
+  } catch (e) { console.warn('[HealthProDB/SQLite] IDB→SQLite migration skipped:', e); }
+}
+
+async function rehydrateMirrorFromPrimary() {
+  try {
+    const all = await primaryGetAll();
+    if (all[STORAGE_KEYS.measurements] != null) LS.set(STORAGE_KEYS.measurements, all[STORAGE_KEYS.measurements]);
+    if (all[STORAGE_KEYS.pills] != null) LS.set(STORAGE_KEYS.pills, all[STORAGE_KEYS.pills]);
+    if (all[STORAGE_KEYS.pillsTaken] != null) LS.set(STORAGE_KEYS.pillsTaken, all[STORAGE_KEYS.pillsTaken]);
+    if (all[STORAGE_KEYS.settings] != null) LS.set(STORAGE_KEYS.settings, all[STORAGE_KEYS.settings]);
+    if (all[STORAGE_KEYS.theme] != null) LS.set(STORAGE_KEYS.theme, all[STORAGE_KEYS.theme]);
   } catch {}
 }
 
@@ -140,29 +205,33 @@ export function loadState() {
 }
 
 export function saveState({ measurements, pills, pillsTaken, settings }) {
+  // Synchronous mirror first (so a hard kill mid-save still has fresh boot data).
   LS.set(STORAGE_KEYS.measurements, measurements);
   LS.set(STORAGE_KEYS.pills, pills);
   LS.set(STORAGE_KEYS.pillsTaken, pillsTaken);
   LS.set(STORAGE_KEYS.settings, settings);
-  idbSet(STORAGE_KEYS.measurements, measurements);
-  idbSet(STORAGE_KEYS.pills, pills);
-  idbSet(STORAGE_KEYS.pillsTaken, pillsTaken);
-  idbSet(STORAGE_KEYS.settings, settings);
+  // Async primary writes (SQLite on native, IDB on web).
+  primarySet(STORAGE_KEYS.measurements, measurements);
+  primarySet(STORAGE_KEYS.pills, pills);
+  primarySet(STORAGE_KEYS.pillsTaken, pillsTaken);
+  primarySet(STORAGE_KEYS.settings, settings);
 }
 
 export function saveTheme(isDark) {
   const v = isDark ? 'dark' : 'light';
   LS.set(STORAGE_KEYS.theme, v);
-  idbSet(STORAGE_KEYS.theme, v);
+  primarySet(STORAGE_KEYS.theme, v);
 }
 
 export const DB = {
   get(key, fallback) { return LS.get(key, fallback); },
-  set(key, value) { LS.set(key, value); idbSet(key, value); },
+  set(key, value) { LS.set(key, value); primarySet(key, value); },
 };
 
 export async function bootstrapStorage() {
   await requestPersistence();
-  await migrateFromLocalStorage();
-  await rehydrateMirrorFromIdb();
+  await sql.init();                  // no-op on web; opens HealthProDB.db on native
+  await migrateFromLocalStorage();   // legacy LS → primary (one-time)
+  await migrateIdbToSqlite();        // IDB → SQLite (one-time, native only)
+  await rehydrateMirrorFromPrimary();
 }

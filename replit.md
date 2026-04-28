@@ -59,8 +59,10 @@ src/
 - [x] Фаза 2 крок 1 — Capacitor плагіни встановлено в обох package.json (root + HealthPro-Moie-Zdorovia): app, filesystem, haptics, local-notifications, preferences, share, splash-screen, status-bar
 - [x] Фаза 2 крок 2 — `npx cap sync android` пройшов, 8 плагінів зареєстровано в android/
 - [x] Фаза 2 крок 3 — GitHub Actions workflow `.github/workflows/android-apk.yml` для збірки debug APK (артефакт `HealthPro-debug-apk`)
-- [ ] Фаза 2 крок 4 — тест APK на реальному пристрої (пауза перед Етапом 5)
-- [ ] Етап 5 — локальна БД (@capacitor-community/sqlite)
+- [x] Фаза 2 крок 4 — APK успішно зібрано користувачем через GitHub Actions (з невеликими правками воркфлоу)
+- [x] Етап 5 — локальна БД через `@capacitor-community/sqlite@8.1.0` + 3-tier persistence (SQLite/IDB/LS). Новий `src/core/sqlite.js`, переписаний `src/core/storage.js`. API `loadState/saveState` без змін — feature-модулі не зачеплені. Auto-migration legacy LS → primary та IDB → SQLite (одноразово, тільки нативно).
+- [x] Phase 2 + Stage 5 PDF звіт: `attached_assets/HealthPro_Phase2_Stage5_Report.pdf`
+- [ ] Фаза 2 раунд 4 — Баг 4: експорт CSV/PDF на нативі не зберігає файл (`<a download>` не працює в Android WebView). План: переробити `platform.js::download()` через `Filesystem.writeFile` + `Share.share`; переробити `csv.js` (через platform.download) і `pdf.js` (`doc.output('blob')` → platform.download).
 
 ## Збірка APK
 - Локальна збірка в Replit неможлива (немає Java/Android SDK).

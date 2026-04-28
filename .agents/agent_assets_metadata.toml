@@ -36,3 +36,9 @@ id = "yEkZwEFfpZrpx3oRHfmHM"
 uri = "file://attached_assets/HealthPro_BugFix_Report.pdf"
 type = "pdf"
 title = "HealthPro · Звіт BugFix (Раунд 1 + Раунд 2)"
+
+[[outputs]]
+id = "NMVGtttnaYZvYliaCX_6q"
+uri = "file://attached_assets/HealthPro_Phase2_Stage5_Report.pdf"
+type = "pdf"
+title = "HealthPro · Фаза 2 + Етап 5 — Звіт (Capacitor APK + SQLite)"
