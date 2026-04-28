@@ -32,9 +32,19 @@ jobs:
         working-directory: HealthPro-Moie-Zdorovia
         run: npm install
 
+      - name: Check what installed
+        working-directory: HealthPro-Moie-Zdorovia
+        run: |
+          ls -la
+          cat package.json
+          npx vite --version
+
       - name: Build web app
         working-directory: HealthPro-Moie-Zdorovia
         run: npm run build
+
+      - name: Check dist exists
+        run: ls -la HealthPro-Moie-Zdorovia/
 
       - name: Copy dist to root
         run: cp -r HealthPro-Moie-Zdorovia/dist ./dist
