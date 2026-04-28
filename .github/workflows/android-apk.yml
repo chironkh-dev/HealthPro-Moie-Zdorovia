@@ -28,26 +28,16 @@ jobs:
           cache: 'npm'
           cache-dependency-path: 'HealthPro-Moie-Zdorovia/package-lock.json'
 
-      - name: Install dependencies
+      - name: Install web app dependencies
         working-directory: HealthPro-Moie-Zdorovia
         run: npm install
-
-      - name: Check what installed
-        working-directory: HealthPro-Moie-Zdorovia
-        run: |
-          ls -la
-          cat package.json
-          npx vite --version
 
       - name: Build web app
         working-directory: HealthPro-Moie-Zdorovia
         run: npm run build
 
-      - name: Check dist exists
-        run: ls -la HealthPro-Moie-Zdorovia/
-
-      - name: Install Capacitor CLI
-        run: npm install -g @capacitor/cli@8.3.1
+      - name: Install Capacitor in root
+        run: npm install @capacitor/android@8.3.1 @capacitor/core@8.3.1 @capacitor/cli@8.3.1 --no-save
 
       - name: Capacitor sync
         run: npx cap sync android
