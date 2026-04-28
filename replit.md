@@ -55,8 +55,24 @@ src/
 - [x] Етап 4-Д — features/settings + features/pwa
 - [x] BugFix Раунд 1 (6 багів): історія, CSV, дубль PDF, FOUC, друк, контраст
 - [x] BugFix Раунд 2 (4 баги): крах PDF (CDN→npm imports), світла тема (FOUC-стиль з !important), sticky-навігація (top:62), локалізація toast (профіль/ліки/нагадування/експорт)
-- [ ] Етап 5 — локальна БД (рекомендація: @capacitor-community/sqlite)
-- [ ] Підключення Capacitor-плагінів (Notifications, Health)
+- [x] BugFix Раунд 3 (Phase 2 part 1, 3 баги): sticky-навігація (динамічна `--header-height` + ResizeObserver), модалка експорту автозакривається після Друк/PDF/CSV (обгортки в features/export/index.js), CSV `exportReportCSV` отримує `getExportMeasurements` через обгортку
+- [x] Фаза 2 крок 1 — Capacitor плагіни встановлено в обох package.json (root + HealthPro-Moie-Zdorovia): app, filesystem, haptics, local-notifications, preferences, share, splash-screen, status-bar
+- [x] Фаза 2 крок 2 — `npx cap sync android` пройшов, 8 плагінів зареєстровано в android/
+- [x] Фаза 2 крок 3 — GitHub Actions workflow `.github/workflows/android-apk.yml` для збірки debug APK (артефакт `HealthPro-debug-apk`)
+- [ ] Фаза 2 крок 4 — тест APK на реальному пристрої (пауза перед Етапом 5)
+- [ ] Етап 5 — локальна БД (@capacitor-community/sqlite)
+
+## Збірка APK
+- Локальна збірка в Replit неможлива (немає Java/Android SDK).
+- Збірка йде в GitHub Actions (`.github/workflows/android-apk.yml`).
+- Після push до `main` (або через `workflow_dispatch`) → GitHub → Actions → Build Android APK → Artifacts → `HealthPro-debug-apk` → файл `HealthPro-debug-<git-sha>.apk`.
+- Усередині workflow APK кладеться у `android/app/build/outputs/apk/debug/app-debug.apk` і копіюється в `apk-out/HealthPro-debug-<sha>.apk` перед завантаженням.
+
+## Структура Capacitor (важливо для майбутніх сесій)
+- `capacitor.config.json` лежить у **корені репо** (не в HealthPro-Moie-Zdorovia/), з `webDir: "dist"` → відносно кореня.
+- `android/` лежить у **корені репо**.
+- Vite збирає у `../dist` (відносно HealthPro-Moie-Zdorovia/), тобто також у корені.
+- `@capacitor/cli`, `@capacitor/core`, `@capacitor/android` і всі плагіни встановлено в **обох** `package.json` (root + HealthPro-Moie-Zdorovia/), бо `cap sync` запускається з кореня (поряд з config), а сам web-код імпортує плагіни з HealthPro-Moie-Zdorovia/node_modules.
 
 ## Скрипти
 

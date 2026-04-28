@@ -44,7 +44,7 @@
 .theme-btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
 
 /* NAV — 6 tabs */
-.nav-tabs{display:flex;background:var(--nav-bg);border-bottom:1px solid var(--border);position:sticky;top:62px;z-index:99}
+.nav-tabs{display:flex;background:var(--nav-bg);border-bottom:1px solid var(--border);position:sticky;top:var(--header-height,62px);z-index:99}
 .nav-tab{flex:1;padding:9px 2px;border:none;background:none;font-family:'Inter',sans-serif;font-size:9px;font-weight:600;color:var(--text3);cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
 .nav-tab svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:all .2s}
 .nav-tab::after{content:'';position:absolute;bottom:0;left:16%;right:16%;height:2px;background:var(--blue);border-radius:2px 2px 0 0;transform:scaleX(0);transition:transform .2s}

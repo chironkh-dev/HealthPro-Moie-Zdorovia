@@ -66,6 +66,15 @@ function showToast(msg, dur = 2500) {
 }
 setToast(showToast);
 
+// ── Dynamic header height ─────────────────────────────────────
+// The header content (user name, date) changes between languages and themes,
+// so the sticky nav-tabs need a real measured offset, not a hard-coded value.
+export function updateHeaderHeight() {
+  const h = document.querySelector('.header')?.offsetHeight;
+  if (!h) return;
+  document.documentElement.style.setProperty('--header-height', h + 'px');
+}
+
 // ── Page navigation ───────────────────────────────────────────
 export function showPage(name) {
   document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
@@ -98,6 +107,8 @@ registerReRender(() => { try { renderPills(); } catch (e) { /* noop */ } });
 registerReRender(() => { try { renderRecommendations(); } catch (e) { /* noop */ } });
 registerReRender(() => { try { renderBMI(); } catch (e) { /* noop */ } });
 registerReRender(() => { try { updateHeader(); } catch (e) { /* noop */ } });
+// Header text length changes with language → re-measure for sticky nav.
+registerReRender(() => { setTimeout(updateHeaderHeight, 0); });
 
 // ── INIT ──────────────────────────────────────────────────────
 function init() {
@@ -167,9 +178,23 @@ function init() {
 
   setInterval(scheduleNotifications, 60000);
   setInterval(renderPills, 60000);
+
+  // Initial measurement after layout settles, plus a watcher on the header
+  // so any internal text/UI change re-syncs --header-height for sticky nav.
+  requestAnimationFrame(() => {
+    updateHeaderHeight();
+    const headerEl = document.querySelector('.header');
+    if (headerEl && typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(() => updateHeaderHeight());
+      ro.observe(headerEl);
+    }
+  });
 }
 
-window.addEventListener('resize', () => setTimeout(renderChart, 50));
+window.addEventListener('resize', () => {
+  setTimeout(renderChart, 50);
+  updateHeaderHeight();
+});
 
 // ── Event delegation: replaces removed inline on* handlers ───
 const ACTIONS = {
