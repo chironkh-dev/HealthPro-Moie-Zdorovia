@@ -46,9 +46,6 @@ jobs:
       - name: Check dist exists
         run: ls -la HealthPro-Moie-Zdorovia/
 
-      - name: Copy dist to root
-        run: cp -r HealthPro-Moie-Zdorovia/dist ./dist
-
       - name: Install Capacitor CLI
         run: npm install -g @capacitor/cli@8.3.1
 
