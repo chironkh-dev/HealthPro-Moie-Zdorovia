@@ -2,13 +2,15 @@
 // Shares state with the rest of the app via src/core/state.js.
 
 import { state, saveData, showToast, today, DB } from '../../core/state.js';
-import { DEFAULT_STEP_GOAL, STEP_ACCEL_THRESHOLD } from '../../core/constants.js';
+import { DEFAULT_STEP_GOAL, STEP_ACCEL_THRESHOLD, STEP_MIN_INTERVAL_MS } from '../../core/constants.js';
 import { t } from '../../i18n/index.js';
 
 const STEP_THRESHOLD = STEP_ACCEL_THRESHOLD;
+const MIN_INTERVAL_MS = STEP_MIN_INTERVAL_MS;
 
 let stepCount = 0;
 let lastAcc = 0;
+let lastStepTs = 0;
 let stepEnabled = false;
 
 export function saveStepGoal() {
@@ -50,11 +52,21 @@ export function enableSteps() {
 }
 
 function handleMotion(e) {
-  if (!e.accelerationIncludingGravity) return;
-  const { x, y, z } = e.accelerationIncludingGravity;
-  const acc = Math.sqrt((x || 0) ** 2 + (y || 0) ** 2 + (z || 0) ** 2);
-  if (acc > STEP_THRESHOLD * 1.3 && lastAcc <= STEP_THRESHOLD) {
+  // Accept both DeviceMotion and @capacitor/motion-shaped events.
+  const a = e.accelerationIncludingGravity || (e.acceleration && {
+    x: (e.acceleration.x || 0), y: (e.acceleration.y || 0), z: ((e.acceleration.z || 0) + 9.81),
+  });
+  if (!a) return;
+  const acc = Math.sqrt((a.x || 0) ** 2 + (a.y || 0) ** 2 + (a.z || 0) ** 2);
+  const now = Date.now();
+  // Rising-edge detector around the walking-peak threshold + debounce.
+  if (
+    acc > STEP_THRESHOLD &&
+    lastAcc <= STEP_THRESHOLD &&
+    (now - lastStepTs) >= MIN_INTERVAL_MS
+  ) {
     stepCount++;
+    lastStepTs = now;
     DB.set('stepCount-' + today(), stepCount);
     updateStepUI();
   }

@@ -285,6 +285,26 @@ export async function minimizeApp() {
   return false;
 }
 
+// ─── External URL launcher (mailto:, sms:, tel:, https:) ──────
+// On Android Capacitor — uses App.openUrl so the system intent picker
+// (Email client / SMS app) opens correctly, even if the WebView blocks
+// non-http schemes. Falls back to window.open / location.href on web.
+export async function openUrl(url) {
+  if (!url) return false;
+  const app = getPlugin('App');
+  if (app && typeof app.openUrl === 'function') {
+    try { await app.openUrl({ url }); return true; } catch { /* fall through */ }
+  }
+  try {
+    if (typeof window !== 'undefined') {
+      const w = window.open(url, '_blank');
+      if (!w) window.location.href = url;
+      return true;
+    }
+  } catch { /* noop */ }
+  return false;
+}
+
 // ─── Online status ─────────────────────────────────────────────
 export function isOnline() {
   try { return typeof navigator === 'undefined' ? true : navigator.onLine !== false; }

@@ -22,13 +22,13 @@ export const T_RU ={
   't-notif':'Напоминания','t-notif-pill':'Напоминание о лекарствах','t-notif-pill-sub':'Push при наступлении времени',
   't-measure-remind':'Напоминание об измерении','t-measure-remind-sub':'Утро и вечер (настройте время)',
   't-morning':'Утро','t-evening':'Вечер',
-  't-push-note':'⚠️ Напоминания активны только пока приложение открыто. После установки через PWABuilder фоновые push требуют VAPID-сервера.',
-  't-lang-title':'Язык / Мова','t-pedometer':'Счётчик шагов','t-step-enable':'Отслеживание активности','t-step-sub':'Через акселерометр телефона',
+  't-push-note':'🔔 Напоминания работают даже при выключенном приложении (на смартфоне через системные уведомления).',
+  't-lang-title':'Язык / Мова','t-pedometer':'Счётчик шагов','t-step-enable':'Отслеживание активности','t-step-sub':'Через сенсоры телефона',
   't-step-goal-lbl':'Дневная цель (шагов)','t-backup':'Резервная копия','t-exp-json':'Экспорт JSON','t-exp-json-sub':'Полный бекап',
   't-exp-csv':'Экспорт CSV','t-exp-csv-sub':'Для Excel / врача','t-exp-pdf':'Печать / PDF','t-exp-pdf-sub':'Отчёт через печать',
   't-imp':'Импорт данных','t-imp-sub':'Восстановить из JSON','t-imp-btn':'Восстановить',
-  't-email-notif':'Напоминания на Email/SMS','t-email-info':'Автоматическая отправка Email требует серверной части. Рекомендуем: Google Календарь.',
-  't-gcal':'Google Календарь →','t-about':'О приложении','t-version':'Версия','t-data':'Данные','t-data-sub':'Хранятся только на вашем устройстве',
+  't-email-notif':'Напоминания на Email/SMS','t-email-info':'Быстро отправьте себе Email или SMS-напоминание. Адрес и номер берутся из Профиля.',
+  't-about':'О приложении','t-version':'Версия','t-data':'Данные','t-data-sub':'Хранятся только на вашем устройстве',
   't-disclaimer':'⚠️ Приложение не заменяет консультацию врача.','t-view-discl':'Посмотреть медицинский дисклеймер','t-delete-all':'Удалить все данные',
   't-trend-modal':'Тенденция давления','t-who-modal':'Классификация давления ВОЗ',
   't-health-tooltip-title':'Детали индекса','t-health-tooltip-ok':'Понятно',
@@ -133,6 +133,7 @@ export const T_RU ={
   'cr-text':'Критическое давление: {sys}/{dia}! Немедленно обратитесь к врачу или вызовите {phone}.',
   'cr-notify-title':'🚨 Критическое давление!',
   'cr-notify-body':'Давление {sys}/{dia} — вызывайте {phone}!',
+  'cr-sms-body':'{name}! Критическое давление {sys}/{dia} в {time}. HealthPro.',
   'cr-toast-no-phone':'⚠️ Укажите телефон в Профиле',
   'cr-toast-no-num':'⚠️ Введите номер',
   'cr-sms-default-name':'Внимание',
@@ -253,10 +254,36 @@ export const T_RU ={
   'notif-bp-body':'Время для ежедневного измерения давления',
   'notif-bp-toast':'🩺 Время измерить давление',
 
-  // ─── notif permission modal (post-disclaimer) ───
-  't-notif-perm-title':'Включить напоминания?',
-  't-notif-perm-body':'Разрешите уведомления, чтобы получать напоминания о приёме лекарств и измерении давления.',
-  't-notif-perm-no':'Не сейчас',
-  't-notif-perm-yes':'Разрешить',
+  // ─── notif permission modal (post-disclaimer) — IDs match HTML ───
+  'nt-perm-title':'Включить напоминания?',
+  'nt-perm-body':'Разрешите уведомления, чтобы получать напоминания о приёме лекарств и измерении давления.',
+  'nt-perm-no':'Не сейчас',
+  'nt-perm-yes':'Разрешить',
   'notif-perm-warn':'⚠ Уведомления выключены. Можно включить в Настройках.',
+
+  // ─── Email/SMS reminders (#11) ───
+  't-send-email':'Отправить Email',
+  't-send-sms':'Отправить SMS',
+  'notif-email-subject':'HealthPro: напоминание',
+  'notif-email-body':'Время измерить давление! HealthPro напоминает.',
+  'notif-sms-body':'HealthPro: время измерить давление!',
+  'notif-no-email':'⚠ Заполните Email в Профиле',
+  'notif-no-phone':'⚠ Заполните телефон в Профиле',
+  'notif-targets-empty':'Адрес/телефон не заполнены (откройте Профиль).',
+  'notif-targets-email':'Email:',
+  'notif-targets-phone':'Тел.:',
+
+  // ─── settings/data ───
+  'data-clear-confirm':'Удалить ВСЕ данные? Действие отменить нельзя.',
+
+  // ─── critical (SMS) ───
+  'cr-emergency-name-default':'Внимание',
+  'cr-test-sms-body':'Тест HealthPro — проверка связи. Всё в порядке!',
+
+  // ─── steps ───
+  'st-no-perm':'❌ Нет разрешения на акселерометр',
+  'st-off':'🦶 Счётчик выключен',
+  'st-on':'🦶 Счётчик шагов включён!',
+  'st-goal-pref':'цель:',
+  'app-step-sub':'Через сенсоры телефона.',
 };

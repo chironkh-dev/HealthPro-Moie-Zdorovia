@@ -20,3 +20,8 @@ export {
   acceptNotifPerm,
   declineNotifPerm,
 } from './notif-perm.js';
+export {
+  sendEmailReminder,
+  sendSmsReminder,
+  renderEmailSmsTargets,
+} from './email-sms.js';

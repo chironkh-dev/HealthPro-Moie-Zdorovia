@@ -25,8 +25,10 @@ export function sendCriticalSMS() {
     return;
   }
   const last = state.measurements[0];
+  const name = state.settings.emergencyName || t('cr-emergency-name-default');
+  const time = new Date().toLocaleTimeString(getLocale(), { hour: '2-digit', minute: '2-digit' });
   const msg = encodeURIComponent(
-    `${state.settings.emergencyName || 'Увага'}! Критичний тиск ${last?.sys || ''}/${last?.dia || ''} о ${new Date().toLocaleTimeString(getLocale(), { hour: '2-digit', minute: '2-digit' })}. HealthPro.`
+    tt('cr-sms-body', { name, sys: last?.sys || '', dia: last?.dia || '', time })
   );
   window.location.href = `sms:${phone}?body=${msg}`;
 }
@@ -38,5 +40,5 @@ export function testEmergency() {
     showToast(t('cr-toast-no-num'));
     return;
   }
-  window.location.href = `sms:${phone}?body=${encodeURIComponent('Тест HealthPro — перевірка зв\'язку. Все гаразд!')}`;
+  window.location.href = `sms:${phone}?body=${encodeURIComponent(t('cr-test-sms-body'))}`;
 }

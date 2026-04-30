@@ -2,9 +2,10 @@
 
 import { state, saveData } from '../../core/state.js';
 import { defaultSettings } from '../../core/storage.js';
+import { t } from '../../i18n/index.js';
 
 export function clearAllData() {
-  if (!confirm('Видалити ВСІ дані? Незворотно!')) return;
+  if (!confirm(t('data-clear-confirm'))) return;
   state.measurements.length = 0;
   state.pills.length = 0;
   Object.keys(state.pillsTaken).forEach((k) => delete state.pillsTaken[k]);

@@ -22,13 +22,13 @@ export const T_UK ={
   't-notif':'Нагадування','t-notif-pill':'Нагадування про ліки','t-notif-pill-sub':'Push при настанні часу',
   't-measure-remind':'Нагадування про вимір','t-measure-remind-sub':'Ранок та вечір (налаштовуйте час)',
   't-morning':'Ранок','t-evening':'Вечір',
-  't-push-note':'⚠️ Нагадування активні лише коли додаток відкритий. Після встановлення через PWABuilder фонові push потребують VAPID-сервера.',
-  't-lang-title':'Мова / Язык','t-pedometer':'Лічильник кроків','t-step-enable':'Відстеження активності','t-step-sub':'Через акселерометр телефону',
+  't-push-note':'🔔 Нагадування працюють навіть при вимкненому додатку (на смартфоні через системні сповіщення).',
+  't-lang-title':'Мова / Язык','t-pedometer':'Лічильник кроків','t-step-enable':'Відстеження активності','t-step-sub':'Через сенсори телефону',
   't-step-goal-lbl':'Денна ціль (кроків)','t-backup':'Резервна копія','t-exp-json':'Експорт JSON','t-exp-json-sub':'Повний бекап',
   't-exp-csv':'Експорт CSV','t-exp-csv-sub':'Для Excel / лікаря','t-exp-pdf':'Друк / PDF','t-exp-pdf-sub':'Звіт через друк',
   't-imp':'Імпорт даних','t-imp-sub':'Відновити з JSON','t-imp-btn':'Відновити',
-  't-email-notif':'Нагадування на Email/SMS','t-email-info':'Автоматична відправка Email потребує серверної частини (бекенду). Ця функція недоступна в автономному PWA. Рекомендуємо: Google Календар.',
-  't-gcal':'Google Календар →','t-about':'Про додаток','t-version':'Версія','t-data':'Дані','t-data-sub':'Зберігаються тільки на вашому пристрої',
+  't-email-notif':'Нагадування на Email/SMS','t-email-info':'Швидко надішліть собі Email або SMS-нагадування. Адреса та номер беруться з Профілю.',
+  't-about':'Про додаток','t-version':'Версія','t-data':'Дані','t-data-sub':'Зберігаються тільки на вашому пристрої',
   't-disclaimer':'⚠️ Додаток не замінює консультацію лікаря. При погіршенні — зверніться до медика.','t-view-discl':'Переглянути медичний дисклеймер','t-delete-all':'Видалити всі дані',
   't-trend-modal':'Тенденція тиску','t-who-modal':'Класифікація тиску ВООЗ',
   't-health-tooltip-title':'Деталі індексу','t-health-tooltip-ok':'Зрозуміло',
@@ -133,6 +133,7 @@ export const T_UK ={
   'cr-text':'Критичний тиск: {sys}/{dia}! Негайно зверніться до лікаря або викличте {phone}.',
   'cr-notify-title':'🚨 Критичний тиск!',
   'cr-notify-body':'Тиск {sys}/{dia} — виклич {phone}!',
+  'cr-sms-body':'{name}! Критичний тиск {sys}/{dia} о {time}. HealthPro.',
   'cr-toast-no-phone':'⚠️ Вкажіть телефон у Профілі',
   'cr-toast-no-num':'⚠️ Введіть номер',
   'cr-sms-default-name':'Увага',
@@ -227,7 +228,7 @@ export const T_UK ={
   'st-goal-pref':'ціль:',
 
   // ─── app.js ───
-  'app-step-sub':'Через акселерометр. Працює лише коли додаток відкритий!',
+  'app-step-sub':'Через сенсори телефону.',
 
   // ─── settings/profile ───
   'profile-toast-saved':'✅ Профіль збережено!',
@@ -253,10 +254,29 @@ export const T_UK ={
   'notif-bp-body':'Час для щоденного виміру тиску',
   'notif-bp-toast':'🩺 Час для виміру тиску',
 
-  // ─── notif permission modal (post-disclaimer) ───
-  't-notif-perm-title':'Увімкнути нагадування?',
-  't-notif-perm-body':'Дозвольте сповіщення, щоб отримувати нагадування про прийом ліків та вимір тиску.',
-  't-notif-perm-no':'Не зараз',
-  't-notif-perm-yes':'Дозволити',
+  // ─── notif permission modal (post-disclaimer) — IDs match HTML ───
+  'nt-perm-title':'Увімкнути нагадування?',
+  'nt-perm-body':'Дозвольте сповіщення, щоб отримувати нагадування про прийом ліків та вимір тиску.',
+  'nt-perm-no':'Не зараз',
+  'nt-perm-yes':'Дозволити',
   'notif-perm-warn':'⚠ Сповіщення вимкнено. Можна увімкнути в Налаштуваннях.',
+
+  // ─── Email/SMS reminders (#11) ───
+  't-send-email':'Надіслати Email',
+  't-send-sms':'Надіслати SMS',
+  'notif-email-subject':'HealthPro: нагадування',
+  'notif-email-body':'Час виміряти тиск! HealthPro нагадує.',
+  'notif-sms-body':'HealthPro: час виміряти тиск!',
+  'notif-no-email':'⚠ Заповніть Email у Профілі',
+  'notif-no-phone':'⚠ Заповніть телефон у Профілі',
+  'notif-targets-empty':'Адреса/телефон не заповнені (відкрийте Профіль).',
+  'notif-targets-email':'Email:',
+  'notif-targets-phone':'Тел.:',
+
+  // ─── settings/data ───
+  'data-clear-confirm':'Видалити ВСІ дані? Дію скасувати неможливо.',
+
+  // ─── critical (SMS) ───
+  'cr-emergency-name-default':'Увага',
+  'cr-test-sms-body':'Тест HealthPro — перевірка зв\'язку. Все гаразд!',
 };

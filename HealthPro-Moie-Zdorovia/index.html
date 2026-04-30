@@ -97,15 +97,15 @@
 
 <!-- ════════════ NOTIF PERMISSION MODAL (post-disclaimer) ════════════ -->
 <div class="modal-overlay" id="notifPermModal" data-action="dismissNotifPerm">
-  <div class="modal-card" onclick="event.stopPropagation()" style="max-width:380px">
+  <div class="modal-card" data-action="stop" style="max-width:380px">
     <div class="modal-title">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-      <span id="t-notif-perm-title">Увімкнути нагадування?</span>
+      <span id="nt-perm-title">Увімкнути нагадування?</span>
     </div>
-    <div id="t-notif-perm-body" style="font-size:14px;line-height:1.55;color:var(--muted);margin:6px 0 14px">Дозвольте сповіщення, щоб отримувати нагадування про прийом ліків та вимір тиску.</div>
+    <div id="nt-perm-body" style="font-size:14px;line-height:1.55;color:var(--muted);margin:6px 0 14px">Дозвольте сповіщення, щоб отримувати нагадування про прийом ліків та вимір тиску.</div>
     <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
-      <button class="btn btn-outline btn-sm" data-action="declineNotifPerm" id="t-notif-perm-no">Не зараз</button>
-      <button class="btn btn-blue btn-sm" data-action="acceptNotifPerm" id="t-notif-perm-yes">Дозволити</button>
+      <button class="btn btn-outline btn-sm" data-action="declineNotifPerm" id="nt-perm-no">Не зараз</button>
+      <button class="btn btn-blue btn-sm" data-action="acceptNotifPerm" id="nt-perm-yes">Дозволити</button>
     </div>
   </div>
 </div>
@@ -556,7 +556,7 @@
       </div>
     </div>
     <div class="info-box" style="margin-top:8px" id="t-push-note">
-      ⚠️ Нагадування активні лише коли додаток відкритий. Після встановлення через PWABuilder фонові push потребують VAPID-сервера. Для надійних нагадувань — встановіть будильник у телефоні.
+      🔔 Нагадування працюють навіть при вимкненому додатку (на смартфоні через системні сповіщення).
     </div>
   </div>
 
@@ -564,7 +564,7 @@
   <div class="card">
     <div class="card-title"><svg viewBox="0 0 24 24"><path d="M13 4a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM5 9l2 2 3-3M3 17l4-4 2 3 4-7 3 3 3-3"/></svg><span id="t-pedometer">Лічильник кроків</span></div>
     <div class="settings-row">
-      <div><div class="settings-label" id="t-step-enable">Відстеження активності</div><div class="settings-sub" id="t-step-sub">Через акселерометр телефону (HTTPS)</div></div>
+      <div><div class="settings-label" id="t-step-enable">Відстеження активності</div><div class="settings-sub" id="t-step-sub">Через сенсори телефону</div></div>
       <button class="toggle-sw" id="stepToggle" data-action="toggleStepCounter"></button>
     </div>
     <div class="settings-row">
@@ -596,11 +596,15 @@
     <div class="settings-row"><div><div class="settings-label" id="t-imp">Імпорт даних</div><div class="settings-sub" id="t-imp-sub">Відновити з JSON файлу</div></div><label style="cursor:pointer"><input type="file" id="importFile" accept=".json" style="display:none" data-change="importData"><span class="btn btn-outline btn-sm" style="display:inline-flex" id="t-imp-btn">Відновити</span></label></div>
   </div>
 
-  <!-- Email reminder advisory (#11) -->
+  <!-- Email/SMS reminders via mailto: / sms: (#11) -->
   <div class="card">
     <div class="card-title"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><span id="t-email-notif">Нагадування на Email/SMS</span></div>
-    <div class="info-box" id="t-email-info">Автоматична відправка Email потребує серверної частини (бекенду). Ця функція недоступна в автономному PWA. Рекомендуємо: налаштуйте повторювані події в Google Календар → вони надсилатимуть нагадування на вашу пошту.</div>
-    <a href="https://calendar.google.com" target="_blank" class="btn btn-outline" style="margin-top:8px;text-decoration:none;text-align:center"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span id="t-gcal">Google Календар →</span></a>
+    <div class="info-box" id="t-email-info" style="margin-bottom:8px">Швидко надішліть собі Email або SMS-нагадування. Адреса та номер беруться з Профілю.</div>
+    <div id="emailSmsTargets" class="settings-sub" style="margin:6px 0 10px"></div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn btn-outline btn-sm" data-action="sendEmailReminder" id="t-send-email"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Надіслати Email</button>
+      <button class="btn btn-outline btn-sm" data-action="sendSmsReminder" id="t-send-sms"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Надіслати SMS</button>
+    </div>
   </div>
 
   <div class="card">

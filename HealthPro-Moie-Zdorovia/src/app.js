@@ -53,6 +53,7 @@ import {
   clearAllData,
   acceptDisclaimer, openDisclaimerModal, closeDisclaimerModal, checkDisclaimer,
   acceptNotifPerm, declineNotifPerm,
+  sendEmailReminder, sendSmsReminder, renderEmailSmsTargets,
 } from './features/settings/index.js';
 import {
   // PWA
@@ -111,6 +112,7 @@ registerReRender(() => { try { renderPills(); } catch (e) { /* noop */ } });
 registerReRender(() => { try { renderRecommendations(); } catch (e) { /* noop */ } });
 registerReRender(() => { try { renderBMI(); } catch (e) { /* noop */ } });
 registerReRender(() => { try { updateHeader(); } catch (e) { /* noop */ } });
+registerReRender(() => { try { renderEmailSmsTargets(); } catch (e) { /* noop */ } });
 // Header text length changes with language → re-measure for sticky nav.
 registerReRender(() => { setTimeout(updateHeaderHeight, 0); });
 
@@ -246,6 +248,8 @@ const ACTIONS = {
   saveStepGoal: () => saveStepGoal(),
   testEmergency: () => testEmergency(),
   sendCriticalSMS: () => sendCriticalSMS(),
+  sendEmailReminder: () => sendEmailReminder(),
+  sendSmsReminder: () => sendSmsReminder(),
   closeCritical: (el) => el.closest('.critical-wrap')?.classList.remove('show'),
   // export
   openExportModal: () => openExportModal(),

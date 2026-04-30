@@ -71,6 +71,16 @@ src/
   - T6 Модалка дозволу сповіщень одразу після прийняття дисклеймера. Стан зберігається у `prefs.set('notif_permission_asked', ...)`. Новий модуль `features/settings/notif-perm.js`, нова модалка `#notifPermModal` в `index.html`, обробники `acceptNotifPerm/declineNotifPerm/dismissNotifPerm`.
   - T7 `npm test` 41/41, `npm run build` ok, `npx cap sync android` ok (9 плагінів). PDF-звіт: `attached_assets/HealthPro_APK_BugFix_Round3.pdf`.
 
+## APK Bug Fix Round 3 (квітень 2026, продовження)
+- **#1 Виправлено баг із модалкою сповіщень**: `onclick="event.stopPropagation()"` всередині `.modal-sheet` блокував document-level dispatcher → замінено на `data-action="stop"`. Кнопки «Дозволити» / «Не зараз» тепер працюють.
+- **#2 Email/SMS нагадування**: видалено застарілий блок Google Calendar/PWABuilder/VAPID. Новий модуль `src/features/settings/email-sms.js`. Кнопки використовують `App.openUrl(mailto:/sms:)` через `platform.openUrl()` для нативного intent picker (Gmail / SMS-клієнт).
+- **#3 i18n хардкод**: `data.js` (`t('data-clear-confirm')`), `critical.js` (`tt('cr-sms-body')`, `t('cr-test-sms-body')`, `t('cr-emergency-name-default')`). Додано всі ключі в UA та RU словники.
+- **#13 Крокомір**: поріг прискорення піднято з 1.5 до 12 m/s² (правильна базова лінія з гравітацією ~9.81). Додано дебаунс `STEP_MIN_INTERVAL_MS=280` (≤ ~3.5 кроку/сек). Підтримка подій `@capacitor/motion` через `e.acceleration` + 9.81. Більше не «вигадує» кроки в спокої.
+- **#7 AndroidManifest**: додано `POST_NOTIFICATIONS`, `SCHEDULE_EXACT_ALARM`, `USE_EXACT_ALARM`, `RECEIVE_BOOT_COMPLETED`, `WAKE_LOCK`, `VIBRATE`, `FOREGROUND_SERVICE`, `ACTIVITY_RECOGNITION` + `<uses-feature>` крокоміра/детектора. Тег `<queries>` для `mailto:`/`sms:`/`tel:`/`https` (Android 11+ package visibility).
+- **#14 Аудит drug-db.js**: переписано всі попередження зрозумілою мовою («не натщесерце» → «приймати після їжі», «контроль K+» → «контролюйте рівень калію (аналіз крові)»). Видалено криптичні крос-посилання `=еналаприл`. Виправлено баг дублікату ключа `периндоприл` (UA-словник перезаписувався RU).
+- **#12 Іконка/сплеш**: встановлено `@capacitor/assets` (devDep). Команда `npx capacitor-assets generate --android --assetPath assets` згенерувала 74 файли (mipmap-* іконки + drawable-*-splash) із джерела `HealthPro-Moie-Zdorovia/assets/icon.png` (1024×1024).
+- Build: `npx vite build` ok. Залишилось `npx cap sync android` перед збіркою APK.
+
 ## Збірка APK
 - Локальна збірка в Replit неможлива (немає Java/Android SDK).
 - Збірка йде в GitHub Actions (`.github/workflows/android-apk.yml`).
