@@ -79,7 +79,15 @@ src/
 - **#7 AndroidManifest**: додано `POST_NOTIFICATIONS`, `SCHEDULE_EXACT_ALARM`, `USE_EXACT_ALARM`, `RECEIVE_BOOT_COMPLETED`, `WAKE_LOCK`, `VIBRATE`, `FOREGROUND_SERVICE`, `ACTIVITY_RECOGNITION` + `<uses-feature>` крокоміра/детектора. Тег `<queries>` для `mailto:`/`sms:`/`tel:`/`https` (Android 11+ package visibility).
 - **#14 Аудит drug-db.js**: переписано всі попередження зрозумілою мовою («не натщесерце» → «приймати після їжі», «контроль K+» → «контролюйте рівень калію (аналіз крові)»). Видалено криптичні крос-посилання `=еналаприл`. Виправлено баг дублікату ключа `периндоприл` (UA-словник перезаписувався RU).
 - **#12 Іконка/сплеш**: встановлено `@capacitor/assets` (devDep). Команда `npx capacitor-assets generate --android --assetPath assets` згенерувала 74 файли (mipmap-* іконки + drawable-*-splash) із джерела `HealthPro-Moie-Zdorovia/assets/icon.png` (1024×1024).
-- Build: `npx vite build` ok. Залишилось `npx cap sync android` перед збіркою APK.
+- Build: `npx vite build` ok, `npx cap sync android` ok (9 плагінів, web-assets скопійовано). PDF-звіт: `attached_assets/HealthPro_APK_BugFix_Round3_Continuation.pdf`. Скрипт-генератор: `scripts/generate_apk_bugfix_round3_continuation_report.cjs`.
+
+## Послідовність збірки APK (готова до push)
+```
+npx vite build              # збирає dist/ (виконується з HealthPro-Moie-Zdorovia/)
+npx cap sync android        # копіює dist/ + плагіни в android/ (виконується з кореня)
+git add -A && git commit -m "..." && git push origin main
+# далі: GitHub Actions → Build Android APK → Artifacts → HealthPro-debug-<sha>.apk
+```
 
 ## Збірка APK
 - Локальна збірка в Replit неможлива (немає Java/Android SDK).

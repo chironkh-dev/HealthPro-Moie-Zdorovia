@@ -48,3 +48,9 @@ id = "CZ5V6BlYS1alsrpyMKXOz"
 uri = "file://attached_assets/HealthPro_APK_BugFix_Round3.pdf"
 type = "pdf"
 title = "HealthPro · APK Bug Fix Раунд 3 (T1–T7)"
+
+[[outputs]]
+id = "LoQ8rTCFWfV_2dIyipg_U"
+uri = "file://attached_assets/HealthPro_APK_BugFix_Round3_Continuation.pdf"
+type = "pdf"
+title = "HealthPro APK Bug Fix Round 3 (продовження) — звіт"
