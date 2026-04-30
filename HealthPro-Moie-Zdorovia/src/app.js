@@ -138,10 +138,10 @@ function init() {
   document.getElementById('lang-ru')?.classList.toggle('active', state.lang === 'ru');
 
   // Validate stored notification permission
-  // if (state.settings.notif && 'Notification' in window && Notification.permission !== 'granted') {
-  //   state.settings.notif = false;
-  //   document.getElementById('notifToggle')?.classList.remove('on');
-  // }
+   if (state.settings.notif && 'Notification' in window && Notification.permission !== 'granted') {
+     state.settings.notif = false;
+     document.getElementById('notifToggle')?.classList.remove('on');
+   }
 
   
 
@@ -187,25 +187,6 @@ function init() {
   // (see notifications.scheduleAllReminders) so reminders fire even when
   // the app is killed. This call just hydrates the schedule on startup.
   scheduleNotifications();
-
-// ТЕСТ — видалити після діагностики
-setTimeout(async () => {
-  const { notify, ensureNotificationChannel, checkNotificationPermission } = 
-    await import('./core/platform.js');
-  
-  const granted = await checkNotificationPermission();
-  console.log('[TEST] permission granted:', granted);
-  
-  await ensureNotificationChannel();
-  console.log('[TEST] channel ensured');
-  
-  const ok = await notify('HealthPro тест', { 
-    body: 'Якщо бачиш це — LocalNotifications працює!',
-    id: 99999 
-  });
-  console.log('[TEST] notify result:', ok);
-}, 5000);
-  // кінец
   setInterval(renderPills, 60000);
 
   // Hardware Back button (Android). Order: open modal → close it;
