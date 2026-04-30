@@ -138,10 +138,12 @@ function init() {
   document.getElementById('lang-ru')?.classList.toggle('active', state.lang === 'ru');
 
   // Validate stored notification permission
-  if (state.settings.notif && 'Notification' in window && Notification.permission !== 'granted') {
-    state.settings.notif = false;
-    document.getElementById('notifToggle')?.classList.remove('on');
-  }
+  // if (state.settings.notif && 'Notification' in window && Notification.permission !== 'granted') {
+  //   state.settings.notif = false;
+  //   document.getElementById('notifToggle')?.classList.remove('on');
+  // }
+
+  
 
   attachPressureListeners();
   updateLastReading();
