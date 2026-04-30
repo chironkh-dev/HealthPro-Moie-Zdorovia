@@ -62,7 +62,14 @@ src/
 - [x] Фаза 2 крок 4 — APK успішно зібрано користувачем через GitHub Actions (з невеликими правками воркфлоу)
 - [x] Етап 5 — локальна БД через `@capacitor-community/sqlite@8.1.0` + 3-tier persistence (SQLite/IDB/LS). Новий `src/core/sqlite.js`, переписаний `src/core/storage.js`. API `loadState/saveState` без змін — feature-модулі не зачеплені. Auto-migration legacy LS → primary та IDB → SQLite (одноразово, тільки нативно).
 - [x] Phase 2 + Stage 5 PDF звіт: `attached_assets/HealthPro_Phase2_Stage5_Report.pdf`
-- [ ] Фаза 2 раунд 4 — Баг 4: експорт CSV/PDF на нативі не зберігає файл (`<a download>` не працює в Android WebView). План: переробити `platform.js::download()` через `Filesystem.writeFile` + `Share.share`; переробити `csv.js` (через platform.download) і `pdf.js` (`doc.output('blob')` → platform.download).
+- [x] APK Bug Fix Раунд 3 (T1-T7, виконано до тесту APK):
+  - T1 Усунуто весь хардкод UA/RU у фічах (i18n.t/tt + новий `getLocale()` у `core/utils.js`). Залишилися лише легітимні `state.lang === 'ru'` для CSS active-toggle мови та `<html lang>` атрибуту HTML принт-звіту.
+  - T2 Модалка ВООЗ повністю через i18n (`who.js`).
+  - T3 Хардверна кнопка «Назад» (Android): новий `onBackButton()` + `minimizeApp()` у `core/platform.js`. Логіка в `app.js`: відкрита модалка → закрити; не на Pressure → перейти на Pressure; інакше → minimize.
+  - T4 `LocalNotifications` через **ESM dynamic import** `@capacitor/local-notifications` замість `window.Capacitor.Plugins`. Додано `checkNotificationPermission()` та `cancelNotifications()`. `notifications.js` тепер ходить через `notify()`.
+  - T5 Експорт CSV/PDF на нативі через `Filesystem.writeFile(Documents) → Share.share({ url })`. `platform.download()` тепер async, з web-fallback. `csv.js` та `pdf.js` використовують `platformDownload(...)`.
+  - T6 Модалка дозволу сповіщень одразу після прийняття дисклеймера. Стан зберігається у `prefs.set('notif_permission_asked', ...)`. Новий модуль `features/settings/notif-perm.js`, нова модалка `#notifPermModal` в `index.html`, обробники `acceptNotifPerm/declineNotifPerm/dismissNotifPerm`.
+  - T7 `npm test` 41/41, `npm run build` ok, `npx cap sync android` ok (9 плагінів). PDF-звіт: `attached_assets/HealthPro_APK_BugFix_Round3.pdf`.
 
 ## Збірка APK
 - Локальна збірка в Replit неможлива (немає Java/Android SDK).

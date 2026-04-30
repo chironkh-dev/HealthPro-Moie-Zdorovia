@@ -3,6 +3,7 @@
 import { state } from '../../core/state.js';
 import { getBPStatus } from '../pressure/index.js';
 import { formatDate } from '../../core/utils.js';
+import { t } from '../../i18n/index.js';
 
 const avg = (arr) => (arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null);
 
@@ -11,17 +12,16 @@ export function openTrendModal() {
   if (!modal) return;
   modal.classList.add('show');
   const all = state.measurements;
-  const isRu = state.lang === 'ru';
   const statsEl = document.getElementById('trendModalStats');
   if (!all.length) {
-    if (statsEl) statsEl.innerHTML = `<p style="color:var(--text2);font-size:13px">${isRu ? 'Нет данных' : 'Немає даних'}</p>`;
+    if (statsEl) statsEl.innerHTML = `<p style="color:var(--text2);font-size:13px">${t('a-score-no-data')}</p>`;
     return;
   }
   const last14 = all.slice(0, 14).reverse();
   const aS = avg(last14.map((m) => m.sys));
   const aD = avg(last14.map((m) => m.dia));
   if (statsEl) {
-    statsEl.innerHTML = `<div class="bento" style="margin-bottom:0"><div class="bento-card bc-blue"><div class="b-lbl">${isRu ? 'Среднее 14 дн.' : 'Середній 14 дн.'}</div><div class="b-val">${aS || '—'}/${aD || '—'}</div></div><div class="bento-card bc-${aS && aS < 140 ? 'green' : 'red'}"><div class="b-lbl">${isRu ? 'Статус' : 'Статус'}</div><div class="b-val sm">${aS && aD ? getBPStatus(aS, aD).label.replace(/[🚨▲⚠✓⬇️]/g, '').trim() : '—'}</div></div></div>`;
+    statsEl.innerHTML = `<div class="bento" style="margin-bottom:0"><div class="bento-card bc-blue"><div class="b-lbl">${t('a-trend-avg-14')}</div><div class="b-val">${aS || '—'}/${aD || '—'}</div></div><div class="bento-card bc-${aS && aS < 140 ? 'green' : 'red'}"><div class="b-lbl">${t('a-trend-status')}</div><div class="b-val sm">${aS && aD ? getBPStatus(aS, aD).label.replace(/[🚨▲⚠✓⬇️]/g, '').trim() : '—'}</div></div></div>`;
   }
   setTimeout(() => {
     const canvas = document.getElementById('trendChart');

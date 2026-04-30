@@ -2,6 +2,9 @@
 
 import { state, saveData, showToast, today } from '../../core/state.js';
 import { getBPStatus } from '../pressure/index.js';
+import { t, tt } from '../../i18n/index.js';
+import { getLocale } from '../../core/utils.js';
+import { download as platformDownload } from '../../core/platform.js';
 
 export function exportData() {
   const blob = new Blob([JSON.stringify({
@@ -12,24 +15,18 @@ export function exportData() {
     pillsTaken: state.pillsTaken,
     settings: state.settings,
   }, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'healthpro-' + today() + '.json';
-  a.click();
-  showToast(state.lang === 'ru' ? '✅ JSON сохранён' : '✅ JSON збережено');
+  platformDownload('healthpro-' + today() + '.json', blob, 'application/json');
+  showToast(t('e-toast-json-saved'));
 }
 
 export function exportCSV() {
-  const isRu = state.lang === 'ru';
   const measurements = state.measurements;
   if (!measurements.length) {
-    showToast(isRu ? '⚠️ Нет данных' : '⚠️ Немає даних');
+    showToast(t('e-toast-no-data'));
     return;
   }
-  const loc = isRu ? 'ru-UA' : 'uk-UA';
-  const head = isRu
-    ? ['Дата', 'Время', 'Систол.', 'Диастол.', 'Пульс', 'Статус', 'Заметка']
-    : ['Дата', 'Час', 'Систол.', 'Діастол.', 'Пульс', 'Статус', 'Нотатка'];
+  const loc = getLocale();
+  const head = [t('e-csv-col-date'), t('e-csv-col-time'), t('e-csv-col-sys'), t('e-csv-col-dia'), t('e-csv-col-pulse'), t('e-csv-col-status'), t('e-csv-col-note')];
   const esc = (v) => {
     const s = String(v ?? '');
     return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
@@ -45,25 +42,19 @@ export function exportCSV() {
     ];
   })];
   const blob = new Blob(['\ufeff' + rows.map((r) => r.map(esc).join(',')).join('\n')], { type: 'text/csv;charset=utf-8' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'pressure-' + today() + '.csv';
-  a.click();
-  showToast(isRu ? '📊 CSV сохранён' : '📊 CSV збережено');
+  platformDownload('pressure-' + today() + '.csv', blob, 'text/csv;charset=utf-8');
+  showToast(t('e-toast-csv-saved'));
 }
 
 export function exportReportCSV(getExportMeasurements) {
-  const isRu = state.lang === 'ru';
   try {
-    const loc = isRu ? 'ru-UA' : 'uk-UA';
+    const loc = getLocale();
     const filtered = getExportMeasurements();
     if (!filtered.length) {
-      showToast(isRu ? '⚠️ Нет данных за выбранный период' : '⚠️ Немає даних за вибраний період');
+      showToast(t('e-toast-no-data-period'));
       return;
     }
-    const head = isRu
-      ? ['Дата', 'Время', 'Систол.', 'Диастол.', 'Пульс', 'Статус', 'Заметка']
-      : ['Дата', 'Час', 'Систол.', 'Діастол.', 'Пульс', 'Статус', 'Нотатка'];
+    const head = [t('e-csv-col-date'), t('e-csv-col-time'), t('e-csv-col-sys'), t('e-csv-col-dia'), t('e-csv-col-pulse'), t('e-csv-col-status'), t('e-csv-col-note')];
     const esc = (v) => {
       const s = String(v ?? '');
       return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
@@ -85,22 +76,11 @@ export function exportReportCSV(getExportMeasurements) {
     const from = fromEl?.value || today();
     const to = toEl?.value || today();
     const filename = `HealthPro_${from}_${to}.csv`;
-    // Use download link with cleanup; works on desktop and modern mobile browsers.
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.rel = 'noopener';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 100);
-    showToast(isRu ? '📊 CSV сохранён' : '📊 CSV збережено');
+    platformDownload(filename, blob, 'text/csv;charset=utf-8');
+    showToast(t('e-toast-csv-saved'));
   } catch (err) {
     console.error('[CSV export]', err);
-    showToast(isRu ? '❌ Ошибка экспорта CSV' : '❌ Помилка експорту CSV');
+    showToast(t('e-toast-csv-error'));
   }
 }
 
@@ -123,7 +103,7 @@ export function importData(e) {
       saveData();
       location.reload();
     } catch (err) {
-      showToast((state.lang === 'ru' ? '❌ Ошибка: ' : '❌ Помилка: ') + err.message);
+      showToast(tt('e-toast-import-error', { msg: err.message }));
     }
   };
   reader.readAsText(file);

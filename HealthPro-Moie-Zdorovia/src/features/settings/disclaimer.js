@@ -6,6 +6,9 @@ import {
   DISCLAIMER_HISTORY_KEY,
   LEGACY_DISCLAIMER_KEY_PREFIX,
 } from '../../core/constants.js';
+import { t } from '../../i18n/index.js';
+import { getLocale } from '../../core/utils.js';
+import { maybeShowNotifPermModal } from './notif-perm.js';
 
 // Re-export for modules that import DISCLAIMER_VERSION from this file.
 export { DISCLAIMER_VERSION };
@@ -26,7 +29,7 @@ export function isCurrentDisclaimerAccepted() {
 function fmtAcceptDate(iso) {
   try {
     const d = new Date(iso);
-    const loc = state.lang === 'ru' ? 'ru-UA' : 'uk-UA';
+    const loc = getLocale();
     return d.toLocaleDateString(loc, { day: '2-digit', month: 'long', year: 'numeric' })
       + ' ' + d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' });
   } catch (e) { return iso; }
@@ -39,13 +42,10 @@ export function renderDisclaimerStatus() {
   if (!hist.length) { el.innerHTML = ''; return; }
   const latest = hist[hist.length - 1];
   const isCurrent = latest.version === DISCLAIMER_VERSION;
-  const isRu = state.lang === 'ru';
-  const labelAccepted = isRu ? 'Принято' : 'Прийнято';
-  const labelVersion = isRu ? 'Версия' : 'Версія';
-  const labelHistory = isRu ? 'История согласий' : 'Історія погоджень';
-  const warnTxt = isRu
-    ? '⚠ Доступна новая версия дисклеймера. Пожалуйста, ознакомьтесь.'
-    : '⚠ Доступна нова версія дисклеймера. Будь ласка, ознайомтеся.';
+  const labelAccepted = t('discl-accepted');
+  const labelVersion = t('discl-version');
+  const labelHistory = t('discl-history');
+  const warnTxt = t('discl-warn-new');
   const histRows = hist.slice().reverse().map((h) => `<div class="discl-hist-row"><span class="discl-hist-v">v${h.version}</span><span class="discl-hist-d">${fmtAcceptDate(h.acceptedAt)}</span></div>`).join('');
   el.innerHTML = `
     <div class="discl-status ${isCurrent ? 'ok' : 'warn'}">
@@ -85,6 +85,8 @@ export function acceptDisclaimer() {
     document.body.style.overflow = '';
   }, 350);
   closeDisclaimerModal();
+  // First-time only: ask for notification permission via in-app modal.
+  try { maybeShowNotifPermModal(); } catch (e) { /* noop */ }
 }
 
 export function checkDisclaimer() {

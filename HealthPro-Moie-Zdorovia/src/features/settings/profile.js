@@ -2,6 +2,7 @@
 
 import { state, saveData, showToast } from '../../core/state.js';
 import { DEFAULT_STEP_GOAL } from '../../core/constants.js';
+import { t } from '../../i18n/index.js';
 
 export function saveProfile() {
   const settings = state.settings;
@@ -21,7 +22,7 @@ export function saveProfile() {
     if (el) settings[map[id]] = el.value;
   });
   saveData();
-  showToast(state.lang === 'ru' ? '✅ Профиль сохранён!' : '✅ Профіль збережено!');
+  showToast(t('profile-toast-saved'));
   updateHeader();
 }
 

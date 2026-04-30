@@ -2,6 +2,7 @@
 // Shares state with the rest of the app via src/core/state.js.
 
 import { state, saveData, showToast, today, emit } from '../../core/state.js';
+import { t, tt } from '../../i18n/index.js';
 import { DRUG_DB } from './drug-db.js';
 
 export { DRUG_DB };
@@ -27,14 +28,12 @@ export function isPillDueToday(p) {
 }
 
 export function getDayName(p) {
-  const isRu = state.lang === 'ru';
   if (typeof p === 'string') p = { days: p };
-  if (p.days === 'daily') return isRu ? 'Ежедневно' : 'Щодня';
-  if (p.days === 'date') return p.date ? fmtPillDate(p.date) : (isRu ? 'Дата' : 'Дата');
-  const map = isRu
-    ? { weekdays: 'Пн–Пт', mon: 'Понедельник', tue: 'Вторник', wed: 'Среда', thu: 'Четверг', fri: 'Пятница', sat: 'Суббота', sun: 'Воскресенье' }
-    : { weekdays: 'Пн–Пт', mon: 'Понеділок', tue: 'Вівторок', wed: 'Середа', thu: 'Четвер', fri: 'П\'ятниця', sat: 'Субота', sun: 'Неділя' };
-  return map[p.days] || p.days;
+  if (p.days === 'daily') return t('m-day-daily');
+  if (p.days === 'date') return p.date ? fmtPillDate(p.date) : t('m-day-date');
+  const key = `m-day-${p.days}`;
+  const out = t(key);
+  return out === key ? p.days : out;
 }
 
 export function onPillDaysChange() {
@@ -59,7 +58,7 @@ export function checkDrugName() {
   const found = Object.keys(DRUG_DB).find((k) => name.includes(k));
   if (found) {
     const info = DRUG_DB[found];
-    warnEl.innerHTML = `<div class="drug-warn">⚠️ <strong>${found.charAt(0).toUpperCase() + found.slice(1)}</strong>: Добова доза — макс. <strong>${info.max} ${info.unit}</strong>. ${info.warn}. <a href="https://tabletki.ua/search/?q=${encodeURIComponent(found)}" target="_blank" class="pill-link">Довідник →</a></div>`;
+    warnEl.innerHTML = `<div class="drug-warn">⚠️ <strong>${found.charAt(0).toUpperCase() + found.slice(1)}</strong>: ${tt('m-warn-max', { max: info.max, unit: info.unit, warn: info.warn })} <a href="https://tabletki.ua/search/?q=${encodeURIComponent(found)}" target="_blank" class="pill-link">${t('m-warn-ref')} →</a></div>`;
     warnEl.style.display = 'block';
   } else warnEl.style.display = 'none';
 }
@@ -67,35 +66,34 @@ export function checkDrugName() {
 export function validateDosageAmount(dose, drug) {
   const num = parseFloat(dose.replace(/[^\d.]/g, ''));
   if (!num) return null;
-  if (num > 5000) return { level: 'danger', msg: `⛔ Введена доза ${num} мг здається помилкою. Перевірте: 5000+ мг будь-якого препарату є небезпечним!` };
+  if (num > 5000) return { level: 'danger', msg: tt('m-validate-extreme', { num }) };
   if (!drug) return null;
   const info = DRUG_DB[drug];
   if (!info) return null;
-  if (num > info.max * 3) return { level: 'danger', msg: `⛔ НЕБЕЗПЕЧНА доза! Введено ${num} ${info.unit} — максимум ${info.max} ${info.unit}/добу! Це може призвести до отруєння.` };
-  if (num > info.max) return { level: 'warn', msg: `⚠️ Введена доза (${num}) перевищує максимальну добову (${info.max} ${info.unit}). Уточніть у лікаря.` };
+  if (num > info.max * 3) return { level: 'danger', msg: tt('m-validate-danger', { num, unit: info.unit, max: info.max }) };
+  if (num > info.max) return { level: 'warn', msg: tt('m-validate-warn', { num, max: info.max, unit: info.unit }) };
   return null;
 }
 
 // ─── CRUD ───
 export function addPill() {
-  const isRu = state.lang === 'ru';
   const name = document.getElementById('pillName').value.trim();
   const dose = document.getElementById('pillDose').value.trim();
   const time = document.getElementById('pillTime').value;
   const days = document.getElementById('pillDays').value;
   const date = document.getElementById('pillDate').value;
 
-  if (!name) { showToast(isRu ? '⚠️ Введите название препарата' : '⚠️ Введіть назву препарату'); return; }
-  if (!dose) { showToast(isRu ? '⚠️ Введите дозировку (обязательно)' : '⚠️ Введіть дозування (обов\'язково)'); return; }
+  if (!name) { showToast(t('m-toast-need-name')); return; }
+  if (!dose) { showToast(t('m-toast-need-dose')); return; }
   if (days === 'date') {
-    if (!date) { showToast(isRu ? '⚠️ Выберите дату приёма' : '⚠️ Виберіть дату прийому'); return; }
-    if (date < today()) { showToast(isRu ? '⚠️ Дата не может быть в прошлом' : '⚠️ Дата не може бути в минулому'); return; }
+    if (!date) { showToast(t('m-toast-need-date')); return; }
+    if (date < today()) { showToast(t('m-toast-past-date')); return; }
   }
 
   const foundDrug = Object.keys(DRUG_DB).find((k) => name.toLowerCase().includes(k));
   const validation = validateDosageAmount(dose, foundDrug || null);
   if (validation) {
-    if (!confirm(`${validation.msg}\n\nПродовжити все одно?`)) return;
+    if (!confirm(`${validation.msg}\n\n${t('m-confirm-continue')}`)) return;
   }
 
   state.pills.push({ id: Date.now(), name, dose, time, days, date: days === 'date' ? date : '' });
@@ -107,14 +105,13 @@ export function addPill() {
   document.getElementById('pillDate').disabled = true;
   document.getElementById('pillNameWarn').style.display = 'none';
   renderPills();
-  showToast((state.lang === 'ru' ? '💊 ' : '💊 ') + name + (state.lang === 'ru' ? ' добавлен!' : ' додано!'));
+  showToast(tt('m-toast-added', { name }));
   emit('pills:changed');
 }
 
 export function searchPharmacy(site) {
-  const isRu = state.lang === 'ru';
   const name = document.getElementById('pillName').value.trim() || '';
-  if (!name) { showToast(isRu ? '⚠️ Введите название препарата для поиска' : '⚠️ Введіть назву препарату для пошуку'); return false; }
+  if (!name) { showToast(t('m-toast-need-name-search')); return false; }
   const q = encodeURIComponent(name);
   const urls = {
     apteka: `https://apteka.ua/search/?q=${q}`,
@@ -127,7 +124,6 @@ export function searchPharmacy(site) {
 }
 
 export function renderPills() {
-  const isRu = state.lang === 'ru';
   const con = document.getElementById('todayPills');
   const td = today();
   if (!state.pillsTaken[td]) state.pillsTaken[td] = {};
@@ -137,8 +133,9 @@ export function renderPills() {
   document.getElementById('cntTotal').textContent = state.pills.length;
 
   if (!due.length) {
-    const nextDueName = state.pills.length > 0 ? `Всього препаратів: ${state.pills.length}. На сьогодні немає.` : '';
-    con.innerHTML = `<div class="empty-state"><div class="em"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></div><p>${state.pills.length ? (isRu ? 'Лекарств на сегодня нет' : 'Ліків на сьогодні немає') : (isRu ? 'Нет добавленных лекарств' : 'Немає доданих ліків')}</p>${nextDueName ? `<p style="font-size:11px;color:var(--blue2);margin-top:6px">${nextDueName}</p>` : ''}</div>`;
+    const nextDueName = state.pills.length > 0 ? tt('m-summary-no-today', { n: state.pills.length }) : '';
+    const emptyText = state.pills.length ? t('m-empty-no-today') : t('m-empty-no-pills');
+    con.innerHTML = `<div class="empty-state"><div class="em"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></div><p>${emptyText}</p>${nextDueName ? `<p style="font-size:11px;color:var(--blue2);margin-top:6px">${nextDueName}</p>` : ''}</div>`;
     document.getElementById('cntTaken').textContent = 0;
     document.getElementById('cntLeft').textContent = due.length;
   } else {
@@ -150,8 +147,8 @@ export function renderPills() {
       const ov = !taken && (h * 60 + m) < nm - 30;
       const foundDrug = Object.keys(DRUG_DB).find((k) => p.name.toLowerCase().includes(k) || k.includes(p.name.toLowerCase()));
       const dInfo = foundDrug ? DRUG_DB[foundDrug] : null;
-      const warn = dInfo ? `<div class="drug-warn" style="margin-top:4px">⚠️ Макс: ${dInfo.max} ${dInfo.unit}/добу · ${dInfo.warn}</div>` : '';
-      const overdueChip = ov ? ` · <svg class="pill-meta-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Пропущено` : '';
+      const warn = dInfo ? `<div class="drug-warn" style="margin-top:4px">⚠️ ${tt('m-pill-max', { max: dInfo.max, unit: dInfo.unit, warn: dInfo.warn })}</div>` : '';
+      const overdueChip = ov ? ` · <svg class="pill-meta-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${t('m-overdue')}` : '';
       return `<div class="pill-item ${taken ? 'taken' : ov ? 'overdue' : ''}" id="pill-${p.id}">
         <div class="pill-chk" data-action="togglePill" data-id="${p.id}"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
         <div class="pill-info"><div class="pill-name">${p.name}</div><div class="pill-dose">${p.dose}${overdueChip}</div><div class="pill-schedule-badge"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${getDayName(p)}</div>${warn}</div>
@@ -179,7 +176,7 @@ export function renderPills() {
     allList.innerHTML = sortedAll.map((p) => {
       const isPast = p.days === 'date' && p.date && p.date < today();
       const opacity = isPast ? 'opacity:.55' : '';
-      const pastBadge = isPast ? '<span class="pill-past-badge"><svg viewBox="0 0 24 24"><path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>минула</span>' : '';
+      const pastBadge = isPast ? `<span class="pill-past-badge"><svg viewBox="0 0 24 24"><path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>${t('m-past-badge')}</span>` : '';
       return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);${opacity}">
         <div style="flex:1"><div style="font-size:14px;font-weight:700">${p.name}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${p.dose} · ${p.time}${pastBadge}</div><div class="pill-schedule-badge"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${getDayName(p)}</div></div>
         <button class="pill-del" data-action="deletePill" data-id="${p.id}">×</button>
@@ -194,16 +191,15 @@ export function togglePill(id) {
   saveData();
   renderPills();
   const p = state.pills.find((p) => p.id === id);
-  if (p && state.pillsTaken[td][id]) showToast('✅ ' + p.name + (state.lang === 'ru' ? ' принято!' : ' прийнято!'));
+  if (p && state.pillsTaken[td][id]) showToast(tt('m-toast-taken', { name: p.name }));
 }
 
 export function deletePill(id) {
-  const isRu = state.lang === 'ru';
-  if (!confirm(isRu ? 'Удалить препарат?' : 'Видалити препарат?')) return;
+  if (!confirm(t('m-confirm-delete'))) return;
   const i = state.pills.findIndex((p) => p.id === id);
   if (i >= 0) state.pills.splice(i, 1);
   saveData();
   renderPills();
-  showToast(isRu ? '🗑 Удалено' : '🗑 Видалено');
+  showToast(t('m-toast-deleted'));
   emit('pills:changed');
 }

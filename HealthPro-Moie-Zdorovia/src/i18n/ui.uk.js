@@ -68,5 +68,195 @@ export const T_UK ={
   'p-normalSys':'120','p-normalDia':'80','p-normalPulse':'70',
   'p-userPhone':'+380XXXXXXXXX','p-userEmail':'your@email.com',
   'p-userViber':'+380XXXXXXXXX','p-userTelegram':'@username або +380...','p-userWhatsapp':'+380XXXXXXXXX',
-  'p-emergencyPhone':'+380XXXXXXXXX','p-emergencyName':'Лікар / Родич'
+  'p-emergencyPhone':'+380XXXXXXXXX','p-emergencyName':'Лікар / Родич',
+
+  // ─── meds ───
+  'm-day-daily':'Щодня','m-day-date':'Дата',
+  'm-day-weekdays':'Пн–Пт','m-day-mon':'Понеділок','m-day-tue':'Вівторок','m-day-wed':'Середа','m-day-thu':'Четвер','m-day-fri':'П\'ятниця','m-day-sat':'Субота','m-day-sun':'Неділя',
+  'm-toast-need-name':'⚠️ Введіть назву препарату',
+  'm-toast-need-dose':'⚠️ Введіть дозування (обов\'язково)',
+  'm-toast-need-date':'⚠️ Виберіть дату прийому',
+  'm-toast-past-date':'⚠️ Дата не може бути в минулому',
+  'm-toast-added':'💊 {name} додано!',
+  'm-toast-need-name-search':'⚠️ Введіть назву препарату для пошуку',
+  'm-empty-no-today':'Ліків на сьогодні немає',
+  'm-empty-no-pills':'Немає доданих ліків',
+  'm-toast-taken':'✅ {name} прийнято!',
+  'm-confirm-delete':'Видалити препарат?',
+  'm-toast-deleted':'🗑 Видалено',
+  'm-warn-max':'Добова доза — макс. <strong>{max} {unit}</strong>. {warn}.',
+  'm-warn-ref':'Довідник',
+  'm-validate-extreme':'⛔ Введена доза {num} мг здається помилкою. Перевірте: 5000+ мг будь-якого препарату є небезпечним!',
+  'm-validate-danger':'⛔ НЕБЕЗПЕЧНА доза! Введено {num} {unit} — максимум {max} {unit}/добу! Це може призвести до отруєння.',
+  'm-validate-warn':'⚠️ Введена доза ({num}) перевищує максимальну добову ({max} {unit}). Уточніть у лікаря.',
+  'm-confirm-continue':'Продовжити все одно?',
+  'm-summary-no-today':'Всього препаратів: {n}. На сьогодні немає.',
+  'm-pill-max':'Макс: {max} {unit}/добу · {warn}',
+  'm-overdue':'Пропущено',
+  'm-past-badge':'минула',
+
+  // ─── history ───
+  'h-empty':'Немає записів за цей період',
+  'h-aria-delete':'Видалити',
+  'h-confirm-delete':'Видалити цей запис?',
+  'h-toast-deleted':'🗑 Запис видалено',
+  'h-confirm-clear':'Видалити всі виміри?',
+  'h-toast-cleared':'🗑 Очищено',
+
+  // ─── export ───
+  'e-toast-json-saved':'✅ JSON збережено',
+  'e-toast-no-data':'⚠️ Немає даних',
+  'e-toast-no-data-period':'⚠️ Немає даних за вибраний період',
+  'e-csv-col-date':'Дата','e-csv-col-time':'Час','e-csv-col-sys':'Систол.','e-csv-col-dia':'Діастол.','e-csv-col-pulse':'Пульс','e-csv-col-status':'Статус','e-csv-col-note':'Нотатка',
+  'e-toast-csv-saved':'📊 CSV збережено',
+  'e-toast-csv-error':'❌ Помилка експорту CSV',
+  'e-toast-import-error':'❌ Помилка: {msg}',
+  'e-pdf-prep':'⏳ Формування звіту для лікаря…',
+  'e-pdf-saved':'Звіт збережено: {fname}',
+  'e-pdf-error':'Помилка генерації PDF: {msg}',
+  'e-pdf-page-lbl':'HealthPro v4.0 · {date} · Стор. {n} · Не є медичним діагнозом',
+  'e-modal-empty':'Немає вимірів за вибраний період',
+  'e-modal-w-1':'вимір','e-modal-w-few':'виміри','e-modal-w-many':'вимірів',
+  'e-modal-count':'{n} {word} за вибраний період',
+  'e-prep-pdf':'📄 Готую PDF…',
+
+  // ─── pressure ───
+  'pr-toast-need-bp':'Введіть систолічний та діастолічний тиск',
+  'pr-toast-bad-sys':'Перевірте значення систолічного тиску',
+  'pr-toast-bad-dia':'Перевірте значення діастолічного тиску',
+  'pr-toast-bad-pulse':'Неприпустиме значення пульсу (допустимо від 30 до 250)',
+  'pr-toast-saved':'Вимір збережено!',
+  'pr-bpm-short':'уд/хв',
+  'pr-mmhg':'мм рт.ст.',
+
+  // ─── critical ───
+  'cr-text':'Критичний тиск: {sys}/{dia}! Негайно зверніться до лікаря або викличте {phone}.',
+  'cr-notify-title':'🚨 Критичний тиск!',
+  'cr-notify-body':'Тиск {sys}/{dia} — виклич {phone}!',
+  'cr-toast-no-phone':'⚠️ Вкажіть телефон у Профілі',
+  'cr-toast-no-num':'⚠️ Введіть номер',
+  'cr-sms-default-name':'Увага',
+
+  // ─── norm ───
+  'n-personal':'особиста норма {sys}/{dia}',
+  'n-age-under18':'норми до 17 р.',
+  'n-age-18-59':'норми 18–59 р.',
+  'n-age-60-79':'норми 60–79 р.',
+  'n-age-80plus':'норми 80+ р.',
+  'n-bp-very-low':'⬇️ Дуже низький',
+  'n-bp-low':'⬇️ Знижений тиск',
+  'n-bp-normal':'✓ Норма',
+  'n-bp-high':'⚠ Підвищений',
+  'n-bp-ht1':'⚠ Гіпертензія І',
+  'n-bp-ht2':'▲ Гіпертензія ІІ',
+  'n-bp-crisis':'🚨 Криз!',
+  'n-pulse-brady':'Брадикардія',
+  'n-pulse-low':'Знижений',
+  'n-pulse-normal':'Норма',
+  'n-pulse-high':'Підвищений',
+  'n-pulse-tachy':'Тахікардія',
+
+  // ─── who modal ───
+  'w-cat-optimal':'Оптимальний','w-cat-normal':'Нормальний','w-cat-high-normal':'Високо-нормальний',
+  'w-cat-ht1':'Гіпертензія І ст.','w-cat-ht2':'Гіпертензія ІІ ст.','w-cat-ht3':'Гіпертензія ІІІ ст.',
+  'w-toast-no-data':'⚠️ Немає вимірів','w-recos':'Рекомендації:','w-links':'Посилання (🇺🇦 Ukraine):',
+
+  // ─── analytics ───
+  'a-score-no-data':'Немає даних',
+  'a-score-excellent':'Відмінно','a-score-good':'Добре','a-score-fair':'Задовільно','a-score-poor':'Потребує уваги',
+  'a-score-add-3':'Додайте 3+ виміри',
+  'a-score-desc-good':'Показники в нормі','a-score-desc-fair':'Більшість показників добрі','a-score-desc-poor':'Зверніть увагу на рекомендації','a-score-desc-bad':'Рекомендується консультація лікаря',
+  'a-target-bp':'Ціль тиску <{val}',
+  'a-bd-bp':'Тиск','a-bd-pulse':'Пульс','a-bd-pills':'Ліки','a-bd-bmi':'ІМТ','a-bd-activity':'Активність',
+  'a-no-data':'немає даних',
+  'a-trend-stable':'→ Стабільний','a-trend-down':'↓ Знижується','a-trend-up':'↑ Зростає',
+  'a-trend-stable-sub':'Без суттєвих змін','a-trend-down-sub':'На {n} мм нижче','a-trend-up-sub':'На {n} мм вище',
+  'a-trend-need-5':'потрібно 5+ вимірів','a-who-tap':' → Натисни для деталей',
+  'a-week-prefix':'Тиждень: {n} · Журнал →','a-min-prefix':'мін.',
+  'a-trend-avg-14':'Середній 14 дн.','a-trend-status':'Статус',
+
+  // ─── bmi ───
+  'b-cat-very-low':'Виражений дефіцит','b-impact-very-low':'Ризик гіпотонії та серцевих проблем',
+  'b-cat-low':'Дефіцит маси','b-impact-low':'Можлива гіпотонія',
+  'b-cat-normal':'Норма ✓','b-impact-normal':'Нейтральний вплив на тиск',
+  'b-cat-over':'Надмірна вага','b-impact-over':'Ризик гіпертонії +15–20%',
+  'b-cat-ob1':'Ожиріння І ст.','b-impact-ob1':'Кожен +5 кг ≈ +2–3 мм рт.ст.',
+  'b-cat-ob2':'Ожиріння ІІ ст.','b-impact-ob2':'Серйозний ризик гіпертензії',
+  'b-cat-ob3':'Ожиріння ІІІ ст.','b-impact-ob3':'Критичний ризик!',
+  'b-ideal-weight':'Ідеальна вага','b-height':'Зріст','b-weight':'Вага',
+  'b-zone-deficit':'Дефіцит','b-zone-norm':'Норма','b-zone-excess':'Надлишок','b-zone-obese':'Ожиріння',
+  'b-impact-title':'Вплив на тиск',
+  'b-tip-lose':'Зниження ваги на 5–10 кг може знизити систолічний тиск на 5–10 мм рт.ст.',
+  'b-tip-norm':'ІМТ в нормі — позитивний вплив на контроль тиску.',
+  'b-empty-fill-profile':'Заповніть зріст та вагу в Профілі',
+  'b-imt':'ІМТ','b-cm':'см','b-kg':'кг',
+
+  // ─── chart tooltips ───
+  'c-no-data':'Недостатньо даних',
+  'c-tt-sys':'Сис.: ','c-tt-dia':'Діас.: ','c-tt-pulse':'Пульс: ',
+
+  // ─── settings/disclaimer ───
+  'd-accepted':'Прийнято','d-version':'Версія','d-history':'Історія погоджень',
+  'd-warn-new':'⚠ Доступна нова версія дисклеймера. Будь ласка, ознайомтеся.',
+
+  // ─── settings/notifications ───
+  'nt-no-support':'❌ Браузер не підтримує сповіщення',
+  'nt-on':'🔔 Сповіщення увімкнено!',
+  'nt-test-body':'Сповіщення налаштовані!',
+  'nt-denied':'❌ Дозвіл відхилено',
+  'nt-off':'🔕 Вимкнено',
+  'nt-meas-on':'🔔 Нагадування про вимір увімкнено!',
+  'nt-time-saved':'✅ Час збережено',
+  'nt-pill-time':'Час прийому ',
+  'nt-pill-toast':'💊 Час прийняти: ',
+  'nt-bp-title':'🩺 Вимір тиску',
+  'nt-bp-body':'Час для щоденного виміру тиску',
+  'nt-bp-toast':'🩺 Час для виміру тиску',
+  'nt-perm-title':'Дозвольте сповіщення?',
+  'nt-perm-body':'HealthPro може нагадувати про прийом ліків та щоденні виміри тиску. Ви можете змінити це у Налаштуваннях.',
+  'nt-perm-yes':'Так, дозволити','nt-perm-no':'Ні, дякую',
+  'nt-perm-warn':'Сповіщення вимкнено. Ви можете увімкнути їх у Налаштуваннях.',
+
+  // ─── settings/profile ───
+  'pf-saved':'✅ Профіль збережено!',
+
+  // ─── steps ───
+  'st-no-perm':'❌ Немає дозволу на акселерометр',
+  'st-off':'🦶 Лічильник вимкнено',
+  'st-on':'🦶 Лічильник кроків увімкнено!',
+  'st-goal-pref':'ціль:',
+
+  // ─── app.js ───
+  'app-step-sub':'Через акселерометр. Працює лише коли додаток відкритий!',
+
+  // ─── settings/profile ───
+  'profile-toast-saved':'✅ Профіль збережено!',
+
+  // ─── settings/disclaimer ───
+  'discl-accepted':'Прийнято',
+  'discl-version':'Версія',
+  'discl-history':'Історія погоджень',
+  'discl-warn-new':'⚠ Доступна нова версія дисклеймера. Будь ласка, ознайомтеся.',
+
+  // ─── settings/notifications ───
+  'notif-no-support':'❌ Браузер не підтримує сповіщення',
+  'notif-on':'🔔 Сповіщення увімкнено!',
+  'notif-confirm-title':'✅ HealthPro',
+  'notif-confirm-body':'Сповіщення налаштовані!',
+  'notif-denied':'❌ Дозвіл відхилено',
+  'notif-off':'🔕 Вимкнено',
+  'notif-measure-on':'🔔 Нагадування про вимір увімкнено!',
+  'notif-time-saved':'✅ Час збережено',
+  'notif-pill-time':'Час прийому ',
+  'notif-pill-toast':'💊 Час прийняти: ',
+  'notif-bp-title':'🩺 Вимір тиску',
+  'notif-bp-body':'Час для щоденного виміру тиску',
+  'notif-bp-toast':'🩺 Час для виміру тиску',
+
+  // ─── notif permission modal (post-disclaimer) ───
+  't-notif-perm-title':'Увімкнути нагадування?',
+  't-notif-perm-body':'Дозвольте сповіщення, щоб отримувати нагадування про прийом ліків та вимір тиску.',
+  't-notif-perm-no':'Не зараз',
+  't-notif-perm-yes':'Дозволити',
+  'notif-perm-warn':'⚠ Сповіщення вимкнено. Можна увімкнути в Налаштуваннях.',
 };

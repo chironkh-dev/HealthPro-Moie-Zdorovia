@@ -68,5 +68,195 @@ export const T_RU ={
   'p-normalSys':'120','p-normalDia':'80','p-normalPulse':'70',
   'p-userPhone':'+380XXXXXXXXX','p-userEmail':'your@email.com',
   'p-userViber':'+380XXXXXXXXX','p-userTelegram':'@username или +380...','p-userWhatsapp':'+380XXXXXXXXX',
-  'p-emergencyPhone':'+380XXXXXXXXX','p-emergencyName':'Врач / Родственник'
+  'p-emergencyPhone':'+380XXXXXXXXX','p-emergencyName':'Врач / Родственник',
+
+  // ─── meds ───
+  'm-day-daily':'Ежедневно','m-day-date':'Дата',
+  'm-day-weekdays':'Пн–Пт','m-day-mon':'Понедельник','m-day-tue':'Вторник','m-day-wed':'Среда','m-day-thu':'Четверг','m-day-fri':'Пятница','m-day-sat':'Суббота','m-day-sun':'Воскресенье',
+  'm-toast-need-name':'⚠️ Введите название препарата',
+  'm-toast-need-dose':'⚠️ Введите дозировку (обязательно)',
+  'm-toast-need-date':'⚠️ Выберите дату приёма',
+  'm-toast-past-date':'⚠️ Дата не может быть в прошлом',
+  'm-toast-added':'💊 {name} добавлен!',
+  'm-toast-need-name-search':'⚠️ Введите название препарата для поиска',
+  'm-empty-no-today':'Лекарств на сегодня нет',
+  'm-empty-no-pills':'Нет добавленных лекарств',
+  'm-toast-taken':'✅ {name} принято!',
+  'm-confirm-delete':'Удалить препарат?',
+  'm-toast-deleted':'🗑 Удалено',
+  'm-warn-max':'Суточная доза — макс. <strong>{max} {unit}</strong>. {warn}.',
+  'm-warn-ref':'Справочник',
+  'm-validate-extreme':'⛔ Введённая доза {num} мг кажется ошибкой. Проверьте: 5000+ мг любого препарата опасно!',
+  'm-validate-danger':'⛔ ОПАСНАЯ доза! Введено {num} {unit} — максимум {max} {unit}/сутки! Это может привести к отравлению.',
+  'm-validate-warn':'⚠️ Введённая доза ({num}) превышает максимальную суточную ({max} {unit}). Уточните у врача.',
+  'm-confirm-continue':'Продолжить всё равно?',
+  'm-summary-no-today':'Всего препаратов: {n}. На сегодня нет.',
+  'm-pill-max':'Макс: {max} {unit}/сутки · {warn}',
+  'm-overdue':'Пропущено',
+  'm-past-badge':'прошла',
+
+  // ─── history ───
+  'h-empty':'Нет записей за этот период',
+  'h-aria-delete':'Удалить',
+  'h-confirm-delete':'Удалить эту запись?',
+  'h-toast-deleted':'🗑 Запись удалена',
+  'h-confirm-clear':'Удалить все измерения?',
+  'h-toast-cleared':'🗑 Очищено',
+
+  // ─── export ───
+  'e-toast-json-saved':'✅ JSON сохранён',
+  'e-toast-no-data':'⚠️ Нет данных',
+  'e-toast-no-data-period':'⚠️ Нет данных за выбранный период',
+  'e-csv-col-date':'Дата','e-csv-col-time':'Время','e-csv-col-sys':'Систол.','e-csv-col-dia':'Диастол.','e-csv-col-pulse':'Пульс','e-csv-col-status':'Статус','e-csv-col-note':'Заметка',
+  'e-toast-csv-saved':'📊 CSV сохранён',
+  'e-toast-csv-error':'❌ Ошибка экспорта CSV',
+  'e-toast-import-error':'❌ Ошибка: {msg}',
+  'e-pdf-prep':'⏳ Формирование отчёта для врача…',
+  'e-pdf-saved':'Отчёт сохранён: {fname}',
+  'e-pdf-error':'Ошибка генерации PDF: {msg}',
+  'e-pdf-page-lbl':'HealthPro v4.0 · {date} · Стр. {n} · Не является медицинским диагнозом',
+  'e-modal-empty':'Нет измерений за выбранный период',
+  'e-modal-w-1':'измерение','e-modal-w-few':'измерения','e-modal-w-many':'измерений',
+  'e-modal-count':'{n} {word} за выбранный период',
+  'e-prep-pdf':'📄 Готовлю PDF…',
+
+  // ─── pressure ───
+  'pr-toast-need-bp':'Введите систолическое и диастолическое давление',
+  'pr-toast-bad-sys':'Проверьте значение систолического давления',
+  'pr-toast-bad-dia':'Проверьте значение диастолического давления',
+  'pr-toast-bad-pulse':'Недопустимое значение пульса (допустимо от 30 до 250)',
+  'pr-toast-saved':'Измерение сохранено!',
+  'pr-bpm-short':'уд/мин',
+  'pr-mmhg':'мм рт.ст.',
+
+  // ─── critical ───
+  'cr-text':'Критическое давление: {sys}/{dia}! Немедленно обратитесь к врачу или вызовите {phone}.',
+  'cr-notify-title':'🚨 Критическое давление!',
+  'cr-notify-body':'Давление {sys}/{dia} — вызывайте {phone}!',
+  'cr-toast-no-phone':'⚠️ Укажите телефон в Профиле',
+  'cr-toast-no-num':'⚠️ Введите номер',
+  'cr-sms-default-name':'Внимание',
+
+  // ─── norm ───
+  'n-personal':'личная норма {sys}/{dia}',
+  'n-age-under18':'нормы до 17 л.',
+  'n-age-18-59':'нормы 18–59 л.',
+  'n-age-60-79':'нормы 60–79 л.',
+  'n-age-80plus':'нормы 80+ л.',
+  'n-bp-very-low':'⬇️ Очень низкое',
+  'n-bp-low':'⬇️ Пониженное',
+  'n-bp-normal':'✓ Норма',
+  'n-bp-high':'⚠ Повышенное',
+  'n-bp-ht1':'⚠ Гипертензия І',
+  'n-bp-ht2':'▲ Гипертензия ІІ',
+  'n-bp-crisis':'🚨 Криз!',
+  'n-pulse-brady':'Брадикардия',
+  'n-pulse-low':'Пониженный',
+  'n-pulse-normal':'Норма',
+  'n-pulse-high':'Повышенный',
+  'n-pulse-tachy':'Тахикардия',
+
+  // ─── who modal ───
+  'w-cat-optimal':'Оптимальное','w-cat-normal':'Нормальное','w-cat-high-normal':'Высоко-нормальное',
+  'w-cat-ht1':'Гипертензия І ст.','w-cat-ht2':'Гипертензия ІІ ст.','w-cat-ht3':'Гипертензия ІІІ ст.',
+  'w-toast-no-data':'⚠️ Нет измерений','w-recos':'Рекомендации:','w-links':'Ссылки (🇺🇦 Ukraine):',
+
+  // ─── analytics ───
+  'a-score-no-data':'Нет данных',
+  'a-score-excellent':'Отлично','a-score-good':'Хорошо','a-score-fair':'Удовлетворительно','a-score-poor':'Требует внимания',
+  'a-score-add-3':'Добавьте 3+ измерения',
+  'a-score-desc-good':'Показатели в норме','a-score-desc-fair':'Большинство показателей хорошие','a-score-desc-poor':'Обратите внимание на рекомендации','a-score-desc-bad':'Рекомендуется консультация врача',
+  'a-target-bp':'Цель давления <{val}',
+  'a-bd-bp':'Давление','a-bd-pulse':'Пульс','a-bd-pills':'Лекарства','a-bd-bmi':'ИМТ','a-bd-activity':'Активность',
+  'a-no-data':'нет данных',
+  'a-trend-stable':'→ Стабильное','a-trend-down':'↓ Снижается','a-trend-up':'↑ Растёт',
+  'a-trend-stable-sub':'Без существенных изменений','a-trend-down-sub':'На {n} мм ниже','a-trend-up-sub':'На {n} мм выше',
+  'a-trend-need-5':'нужно 5+ измерений','a-who-tap':' → Нажми для деталей',
+  'a-week-prefix':'Неделя: {n} · Журнал →','a-min-prefix':'мин.',
+  'a-trend-avg-14':'Среднее 14 дн.','a-trend-status':'Статус',
+
+  // ─── bmi ───
+  'b-cat-very-low':'Выраженный дефицит','b-impact-very-low':'Риск гипотонии и сердечных проблем',
+  'b-cat-low':'Дефицит массы','b-impact-low':'Возможна гипотония',
+  'b-cat-normal':'Норма ✓','b-impact-normal':'Нейтральное влияние на давление',
+  'b-cat-over':'Избыточный вес','b-impact-over':'Риск гипертонии +15–20%',
+  'b-cat-ob1':'Ожирение І ст.','b-impact-ob1':'Каждые +5 кг ≈ +2–3 мм рт.ст.',
+  'b-cat-ob2':'Ожирение ІІ ст.','b-impact-ob2':'Серьёзный риск гипертензии',
+  'b-cat-ob3':'Ожирение ІІІ ст.','b-impact-ob3':'Критический риск!',
+  'b-ideal-weight':'Идеальный вес','b-height':'Рост','b-weight':'Вес',
+  'b-zone-deficit':'Дефицит','b-zone-norm':'Норма','b-zone-excess':'Избыток','b-zone-obese':'Ожирение',
+  'b-impact-title':'Влияние на давление',
+  'b-tip-lose':'Снижение веса на 5–10 кг может снизить систолическое давление на 5–10 мм рт.ст.',
+  'b-tip-norm':'ИМТ в норме — положительное влияние на контроль давления.',
+  'b-empty-fill-profile':'Заполните рост и вес в Профиле',
+  'b-imt':'ИМТ','b-cm':'см','b-kg':'кг',
+
+  // ─── chart tooltips ───
+  'c-no-data':'Недостаточно данных',
+  'c-tt-sys':'Сис.: ','c-tt-dia':'Диас.: ','c-tt-pulse':'Пульс: ',
+
+  // ─── settings/disclaimer ───
+  'd-accepted':'Принято','d-version':'Версия','d-history':'История согласий',
+  'd-warn-new':'⚠ Доступна новая версия дисклеймера. Пожалуйста, ознакомьтесь.',
+
+  // ─── settings/notifications ───
+  'nt-no-support':'❌ Браузер не поддерживает уведомления',
+  'nt-on':'🔔 Уведомления включены!',
+  'nt-test-body':'Уведомления настроены!',
+  'nt-denied':'❌ Доступ отклонён',
+  'nt-off':'🔕 Выключено',
+  'nt-meas-on':'🔔 Напоминания об измерении включены!',
+  'nt-time-saved':'✅ Время сохранено',
+  'nt-pill-time':'Время приёма ',
+  'nt-pill-toast':'💊 Время принять: ',
+  'nt-bp-title':'🩺 Измерение давления',
+  'nt-bp-body':'Время для ежедневного измерения давления',
+  'nt-bp-toast':'🩺 Время измерить давление',
+  'nt-perm-title':'Разрешить уведомления?',
+  'nt-perm-body':'HealthPro может напоминать о приёме лекарств и ежедневных измерениях давления. Вы можете изменить это в Настройках.',
+  'nt-perm-yes':'Да, разрешить','nt-perm-no':'Нет, спасибо',
+  'nt-perm-warn':'Уведомления выключены. Вы можете включить их в Настройках.',
+
+  // ─── settings/profile ───
+  'pf-saved':'✅ Профиль сохранён!',
+
+  // ─── steps ───
+  'st-no-perm':'❌ Нет разрешения на акселерометр',
+  'st-off':'🦶 Счётчик выключен',
+  'st-on':'🦶 Счётчик шагов включён!',
+  'st-goal-pref':'цель:',
+
+  // ─── app.js ───
+  'app-step-sub':'Через акселерометр. Работает только когда приложение открыто!',
+
+  // ─── settings/profile ───
+  'profile-toast-saved':'✅ Профиль сохранён!',
+
+  // ─── settings/disclaimer ───
+  'discl-accepted':'Принято',
+  'discl-version':'Версия',
+  'discl-history':'История согласий',
+  'discl-warn-new':'⚠ Доступна новая версия дисклеймера. Пожалуйста, ознакомьтесь.',
+
+  // ─── settings/notifications ───
+  'notif-no-support':'❌ Браузер не поддерживает уведомления',
+  'notif-on':'🔔 Уведомления включены!',
+  'notif-confirm-title':'✅ HealthPro',
+  'notif-confirm-body':'Уведомления настроены!',
+  'notif-denied':'❌ Доступ отклонён',
+  'notif-off':'🔕 Выключено',
+  'notif-measure-on':'🔔 Напоминания об измерении включены!',
+  'notif-time-saved':'✅ Время сохранено',
+  'notif-pill-time':'Время приёма ',
+  'notif-pill-toast':'💊 Время принять: ',
+  'notif-bp-title':'🩺 Измерение давления',
+  'notif-bp-body':'Время для ежедневного измерения давления',
+  'notif-bp-toast':'🩺 Время измерить давление',
+
+  // ─── notif permission modal (post-disclaimer) ───
+  't-notif-perm-title':'Включить напоминания?',
+  't-notif-perm-body':'Разрешите уведомления, чтобы получать напоминания о приёме лекарств и измерении давления.',
+  't-notif-perm-no':'Не сейчас',
+  't-notif-perm-yes':'Разрешить',
+  'notif-perm-warn':'⚠ Уведомления выключены. Можно включить в Настройках.',
 };

@@ -1,5 +1,6 @@
 import { state } from '../../core/state.js';
 import { formatTime, formatDate } from '../../core/utils.js';
+import { t } from '../../i18n/index.js';
 import {
   CHART_COLORS,
   CHART_PADDING,
@@ -63,7 +64,7 @@ export function renderChart() {
     ctx.fillStyle = '#64748b';
     ctx.font = '600 12px Inter,sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(state.lang === 'ru' ? 'Недостаточно данных' : 'Недостатньо даних', W / 2, H / 2);
+    ctx.fillText(t('c-no-data'), W / 2, H / 2);
     chartPointsCache = [];
     return;
   }
@@ -124,11 +125,10 @@ export function setupChartTooltip() {
       return;
     }
 
-    const isRu = state.lang === 'ru';
     document.getElementById('cttDate').textContent  = formatDate(nearest.time) + ' ' + formatTime(nearest.time);
-    document.getElementById('cttSys').textContent   = (isRu ? 'Сис.: '  : 'Сис.: ')  + nearest.sys + ' мм';
-    document.getElementById('cttDia').textContent   = (isRu ? 'Диас.: ' : 'Діас.: ') + nearest.dia + ' мм';
-    document.getElementById('cttPulse').textContent = (isRu ? 'Пульс: ' : 'Пульс: ') + (nearest.pulse || '—');
+    document.getElementById('cttSys').textContent   = t('c-tt-sys')  + nearest.sys + ' мм';
+    document.getElementById('cttDia').textContent   = t('c-tt-dia')  + nearest.dia + ' мм';
+    document.getElementById('cttPulse').textContent = t('c-tt-pulse') + (nearest.pulse || '—');
 
     const canvasW = rect.width;
     const left = nearest.x < canvasW / 2 ? nearest.x + 10 : nearest.x - 125;

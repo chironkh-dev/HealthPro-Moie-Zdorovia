@@ -6,6 +6,9 @@ import { state, showToast } from '../../core/state.js';
 import { getBPStatus } from '../pressure/index.js';
 import { getExportMeasurements, getExportPeriod } from './modal.js';
 import { exportPDF } from './pdf.js';
+import { t } from '../../i18n/index.js';
+import { getLocale } from '../../core/utils.js';
+import { PRINT_T } from '../../i18n/print.i18n.js';
 
 const avg = (arr) => (arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null);
 
@@ -16,59 +19,17 @@ const isMobile = () =>
 export function printReportPeriod() {
   // Mobile fallback: window.open / window.print are unreliable on iOS / Android browsers.
   if (isMobile()) {
-    showToast(state.lang === 'ru' ? '📄 Готовлю PDF…' : '📄 Готую PDF…');
+    showToast(t('e-prep-pdf'));
     try { exportPDF(); } catch (e) { console.error('[print mobile fallback]', e); }
     return;
   }
   const filtered = getExportMeasurements();
-  const isRu = state.lang === 'ru';
   const settings = state.settings;
   const expPeriod = getExportPeriod();
-  const L = isRu ? {
-    noData: '⚠️ Нет данных за выбранный период',
-    week: 'Неделя', w2: '2 недели', month: 'Месяц',
-    title: 'Медицинский отчёт', generated: 'Сформирован',
-    age: 'Возраст', phone: 'Тел',
-    h_patient: 'Информация о пациенте и контакты',
-    fio: 'ФИО', ageL: 'Возраст', gender: 'Пол', male: 'Мужской', female: 'Женский',
-    height: 'Рост', weight: 'Вес', bmi: 'ИМТ', normalBP: 'Обычное давление', normalP: 'Обычный пульс', period: 'Период отчёта',
-    phoneL: 'Телефон', email: 'Email', emergency: 'Экстренный контакт',
-    avgBP: 'Среднее давление', avgP: 'Средний пульс', totalM: 'Всего измерений',
-    h_dyn: 'Динамика давления', insufData: 'Недостаточно данных для графика (нужно 2+ измерений)',
-    sys: 'Систолическое', dia: 'Диастолическое',
-    h_log: 'Журнал измерений',
-    cDate: 'Дата', cTime: 'Время', cBP: 'Давление', cP: 'Пульс', cStatus: 'Статус', cNote: 'Заметка',
-    notes: 'Заметки и рекомендации врача:', examDate: 'Дата осмотра:', sign: 'Подпись / Печать:',
-    important: 'ВАЖНО:', disclTxt: 'Отчёт сформирован приложением "HealthPro" на основе данных пользователя. Информация имеет исключительно ознакомительный характер и <b>не является медицинским диагнозом</b>.',
-    page: 'Стр.', of: 'из',
-    popup: '⚠️ Разрешите всплывающие окна в браузере',
-    repTitle: 'HealthPro Отчёт',
-    yrs: ' г.', cm: ' см', kg: ' кг', bpm: ' уд/мин',
-    statusMap: { 'Норма': 'Норма', 'Підвищений': 'Повышенное', 'Гіпертензія 1': 'Гипертензия 1', 'Гіпертензія 2': 'Гипертензия 2', 'Криза': 'Криз', 'Гіпотензія': 'Гипотензия' },
-  } : {
-    noData: '⚠️ Немає даних за вибраний період',
-    week: 'Тиждень', w2: '2 тижні', month: 'Місяць',
-    title: 'Медичний звіт', generated: 'Сформовано',
-    age: 'Вік', phone: 'Тел',
-    h_patient: 'Інформація про пацієнта та контакти',
-    fio: 'ПІБ', ageL: 'Вік', gender: 'Стать', male: 'Чоловіча', female: 'Жіноча',
-    height: 'Зріст', weight: 'Вага', bmi: 'ІМТ', normalBP: 'Звичайний тиск', normalP: 'Звичайний пульс', period: 'Період звіту',
-    phoneL: 'Телефон', email: 'Email', emergency: 'Екстрений контакт',
-    avgBP: 'Середній тиск', avgP: 'Середній пульс', totalM: 'Вимірів всього',
-    h_dyn: 'Динаміка тиску', insufData: 'Недостатньо даних для графіку (потрібно 2+ вимірів)',
-    sys: 'Систолічний', dia: 'Діастолічний',
-    h_log: 'Журнал вимірів',
-    cDate: 'Дата', cTime: 'Час', cBP: 'Тиск', cP: 'Пульс', cStatus: 'Статус', cNote: 'Нотатка',
-    notes: 'Нотатки та рекомендації лікаря:', examDate: 'Дата огляду:', sign: 'Підпис / Печатка:',
-    important: 'ВАЖЛИВО:', disclTxt: 'Звіт сформовано додатком "HealthPro" на основі даних користувача. Інформація має виключно ознайомчий характер і <b>не є медичним діагнозом</b>.',
-    page: 'Стор.', of: 'з',
-    popup: '⚠️ Дозвольте спливаючі вікна в браузері',
-    repTitle: 'HealthPro Звіт',
-    yrs: ' р.', cm: ' см', kg: ' кг', bpm: ' уд/хв',
-    statusMap: { 'Норма': 'Норма', 'Підвищений': 'Підвищений', 'Гіпертензія 1': 'Гіпертензія 1', 'Гіпертензія 2': 'Гіпертензія 2', 'Криза': 'Криза', 'Гіпотензія': 'Гіпотензія' },
-  };
+  const L = PRINT_T[state.lang] || PRINT_T.uk;
   if (!filtered.length) { showToast(L.noData); return; }
-  const loc = isRu ? 'ru-UA' : 'uk-UA';
+  const loc = getLocale();
+  const htmlLang = state.lang === 'ru' ? 'ru' : 'uk';
   const from = document.getElementById('expDateFrom').value;
   const to = document.getElementById('expDateTo').value;
   const name = settings.name || '—';
@@ -157,7 +118,7 @@ export function printReportPeriod() {
   if (settings.emergencyName || settings.emergencyPhone) infoCells.push({ l: L.emergency, v: `${settings.emergencyName || ''} ${settings.emergencyPhone || ''}`.trim(), emergency: true });
   const infoHtml = infoCells.map((c) => `<div class="info-box${c.emergency ? ' info-emerg' : ''}"><label>${c.l}</label><span>${c.v}</span></div>`).join('');
 
-  const html = `<!DOCTYPE html><html lang="${isRu ? 'ru' : 'uk'}"><head><meta charset="utf-8">
+  const html = `<!DOCTYPE html><html lang="${htmlLang}"><head><meta charset="utf-8">
   <title>${L.repTitle} — ${name}</title>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}

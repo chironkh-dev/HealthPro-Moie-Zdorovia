@@ -95,6 +95,21 @@
   </div>
 </div>
 
+<!-- ════════════ NOTIF PERMISSION MODAL (post-disclaimer) ════════════ -->
+<div class="modal-overlay" id="notifPermModal" data-action="dismissNotifPerm">
+  <div class="modal-card" onclick="event.stopPropagation()" style="max-width:380px">
+    <div class="modal-title">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span id="t-notif-perm-title">Увімкнути нагадування?</span>
+    </div>
+    <div id="t-notif-perm-body" style="font-size:14px;line-height:1.55;color:var(--muted);margin:6px 0 14px">Дозвольте сповіщення, щоб отримувати нагадування про прийом ліків та вимір тиску.</div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+      <button class="btn btn-outline btn-sm" data-action="declineNotifPerm" id="t-notif-perm-no">Не зараз</button>
+      <button class="btn btn-blue btn-sm" data-action="acceptNotifPerm" id="t-notif-perm-yes">Дозволити</button>
+    </div>
+  </div>
+</div>
+
 <!-- CRITICAL ALERT -->
 <div class="critical-wrap" id="criticalAlert">
   <div class="critical-inner">

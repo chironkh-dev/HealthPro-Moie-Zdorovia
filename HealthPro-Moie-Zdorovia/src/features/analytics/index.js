@@ -3,6 +3,7 @@
 import { state, today } from '../../core/state.js';
 import { getBPNorm, getBPStatus, getWHOCategory } from '../pressure/index.js';
 import { isPillDueToday } from '../meds/index.js';
+import { t, tt } from '../../i18n/index.js';
 import { calcHealthScore, getDetailedScores, toggleHealthTooltip } from './health-score.js';
 import { renderBMI } from './bmi.js';
 import { renderRecommendations } from './recommendations.js';
@@ -10,7 +11,6 @@ import { renderRecommendations } from './recommendations.js';
 const avg = (arr) => (arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null);
 
 export function renderAnalytics() {
-  const isRu = state.lang === 'ru';
   const all = state.measurements;
   const pills = state.pills;
   const pillsTaken = state.pillsTaken;
@@ -30,23 +30,23 @@ export function renderAnalytics() {
   if (scoreNum) scoreNum.innerHTML = `<span style="color:${sc}">${score === null ? '—' : score}</span><small id="t-score-bal">бал</small>`;
   const scoreTitle = document.getElementById('scoreTitle');
   if (scoreTitle) scoreTitle.textContent = score === null
-    ? (isRu ? 'Нет данных' : 'Немає даних')
-    : score >= 80 ? (isRu ? 'Отлично' : 'Відмінно')
-    : score >= 65 ? (isRu ? 'Хорошо' : 'Добре')
-    : score >= 50 ? (isRu ? 'Удовлетворительно' : 'Задовільно')
-    : (isRu ? 'Требует внимания' : 'Потребує уваги');
+    ? t('a-score-no-data')
+    : score >= 80 ? t('a-score-excellent')
+    : score >= 65 ? t('a-score-good')
+    : score >= 50 ? t('a-score-fair')
+    : t('a-score-poor');
   const scoreDesc = document.getElementById('scoreDesc');
   if (scoreDesc) scoreDesc.textContent = score === null
-    ? (isRu ? 'Добавьте 3+ измерения' : 'Додайте 3+ виміри')
-    : score >= 80 ? (isRu ? 'Показатели в норме' : 'Показники в нормі')
-    : score >= 65 ? (isRu ? 'Большинство показателей хорошие' : 'Більшість показників добрі')
-    : score >= 50 ? (isRu ? 'Обратите внимание на рекомендации' : 'Зверніть увагу на рекомендації')
-    : (isRu ? 'Рекомендуется консультация врача' : 'Рекомендується консультація лікаря');
+    ? t('a-score-add-3')
+    : score >= 80 ? t('a-score-desc-good')
+    : score >= 65 ? t('a-score-desc-fair')
+    : score >= 50 ? t('a-score-desc-poor')
+    : t('a-score-desc-bad');
   const stBP = document.getElementById('scoreTargetBP');
   if (stBP && all.length) {
     const n = getBPNorm();
     const aS = last7.length ? avg(last7.map((m) => m.sys)) : all[0].sys;
-    stBP.textContent = isRu ? `Цель давления <${n.sysWarn}` : `Ціль тиску <${n.sysWarn}`;
+    stBP.textContent = tt('a-target-bp', { val: n.sysWarn });
     stBP.style.color = aS < n.sysWarn ? 'var(--green)' : 'var(--amber)';
   }
 
@@ -54,11 +54,11 @@ export function renderAnalytics() {
   if (score !== null && detail) {
     const breakEl = document.getElementById('scoreBreakdown');
     if (breakEl) breakEl.innerHTML = `
-      <div class="score-bar-row"><div class="score-bar-label">${isRu ? 'Давление' : 'Тиск'}</div><div class="score-bar-track"><div class="score-bar-fill" style="width:${(detail.bp / 40) * 100}%;background:${detail.bp >= 30 ? 'var(--green)' : detail.bp >= 15 ? 'var(--amber)' : 'var(--red)'}"></div></div><span style="font-size:10px;color:var(--text3);width:28px;text-align:right">${detail.bp}/40</span></div>
-      <div class="score-bar-row"><div class="score-bar-label">${isRu ? 'Пульс' : 'Пульс'}</div><div class="score-bar-track"><div class="score-bar-fill" style="width:${(detail.pulse / 20) * 100}%;background:${detail.pulse >= 15 ? 'var(--green)' : detail.pulse >= 10 ? 'var(--amber)' : 'var(--red)'}"></div></div><span style="font-size:10px;color:var(--text3);width:28px;text-align:right">${detail.pulse}/20</span></div>
-      <div class="score-bar-row"><div class="score-bar-label">${isRu ? 'Лекарства' : 'Ліки'}</div><div class="score-bar-track"><div class="score-bar-fill" style="width:${(detail.pills / 20) * 100}%;background:${detail.pills >= 15 ? 'var(--green)' : detail.pills >= 10 ? 'var(--amber)' : 'var(--red)'}"></div></div><span style="font-size:10px;color:var(--text3);width:28px;text-align:right">${detail.pills}/20</span></div>
-      <div class="score-bar-row"><div class="score-bar-label">${isRu ? 'ИМТ' : 'ІМТ'}</div><div class="score-bar-track"><div class="score-bar-fill" style="width:${(detail.bmi / 10) * 100}%;background:${detail.bmi >= 8 ? 'var(--green)' : detail.bmi >= 4 ? 'var(--amber)' : 'var(--red)'}"></div></div><span style="font-size:10px;color:var(--text3);width:28px;text-align:right">${detail.bmi}/10</span></div>
-      <div class="score-bar-row"><div class="score-bar-label">${isRu ? 'Активность' : 'Активність'}</div><div class="score-bar-track"><div class="score-bar-fill" style="width:${(detail.activity / 10) * 100}%;background:${detail.activity >= 8 ? 'var(--green)' : detail.activity >= 5 ? 'var(--amber)' : 'var(--red)'}"></div></div><span style="font-size:10px;color:var(--text3);width:28px;text-align:right">${detail.activity}/10</span></div>`;
+      <div class="score-bar-row"><div class="score-bar-label">${t('a-bd-bp')}</div><div class="score-bar-track"><div class="score-bar-fill" style="width:${(detail.bp / 40) * 100}%;background:${detail.bp >= 30 ? 'var(--green)' : detail.bp >= 15 ? 'var(--amber)' : 'var(--red)'}"></div></div><span style="font-size:10px;color:var(--text3);width:28px;text-align:right">${detail.bp}/40</span></div>
+      <div class="score-bar-row"><div class="score-bar-label">${t('a-bd-pulse')}</div><div class="score-bar-track"><div class="score-bar-fill" style="width:${(detail.pulse / 20) * 100}%;background:${detail.pulse >= 15 ? 'var(--green)' : detail.pulse >= 10 ? 'var(--amber)' : 'var(--red)'}"></div></div><span style="font-size:10px;color:var(--text3);width:28px;text-align:right">${detail.pulse}/20</span></div>
+      <div class="score-bar-row"><div class="score-bar-label">${t('a-bd-pills')}</div><div class="score-bar-track"><div class="score-bar-fill" style="width:${(detail.pills / 20) * 100}%;background:${detail.pills >= 15 ? 'var(--green)' : detail.pills >= 10 ? 'var(--amber)' : 'var(--red)'}"></div></div><span style="font-size:10px;color:var(--text3);width:28px;text-align:right">${detail.pills}/20</span></div>
+      <div class="score-bar-row"><div class="score-bar-label">${t('a-bd-bmi')}</div><div class="score-bar-track"><div class="score-bar-fill" style="width:${(detail.bmi / 10) * 100}%;background:${detail.bmi >= 8 ? 'var(--green)' : detail.bmi >= 4 ? 'var(--amber)' : 'var(--red)'}"></div></div><span style="font-size:10px;color:var(--text3);width:28px;text-align:right">${detail.bmi}/10</span></div>
+      <div class="score-bar-row"><div class="score-bar-label">${t('a-bd-activity')}</div><div class="score-bar-track"><div class="score-bar-fill" style="width:${(detail.activity / 10) * 100}%;background:${detail.activity >= 8 ? 'var(--green)' : detail.activity >= 5 ? 'var(--amber)' : 'var(--red)'}"></div></div><span style="font-size:10px;color:var(--text3);width:28px;text-align:right">${detail.activity}/10</span></div>`;
   }
 
   // Avg BP — last 7 measurements
@@ -77,7 +77,7 @@ export function renderAnalytics() {
       bpSubEl.style.color = bpColor;
     } else {
       bpValEl.textContent = '—';
-      bpSubEl.textContent = isRu ? 'нет данных' : 'немає даних';
+      bpSubEl.textContent = t('a-no-data');
       bpValEl.style.color = '';
       bpSubEl.style.color = '';
     }
@@ -91,11 +91,14 @@ export function renderAnalytics() {
       const r = avg(all.slice(0, 5).map((m) => m.sys));
       const o = avg(all.slice(Math.max(0, all.length - 5)).map((m) => m.sys));
       const diff = r - o;
-      trendVal.textContent = Math.abs(diff) < 3 ? (isRu ? '→ Стабильный' : '→ Стабільний') : diff < -3 ? (isRu ? '↓ Снижается' : '↓ Знижується') : (isRu ? '↑ Растёт' : '↑ Зростає');
-      trendSub.textContent = Math.abs(diff) < 3 ? (isRu ? 'Без существенных изменений' : 'Без суттєвих змін') : diff < -3 ? (isRu ? `На ${Math.abs(Math.round(diff))} мм ниже` : `На ${Math.abs(Math.round(diff))} мм нижче`) : (isRu ? `На ${Math.round(diff)} мм выше` : `На ${Math.round(diff)} мм вище`);
+      trendVal.textContent = Math.abs(diff) < 3 ? t('a-trend-stable') : diff < -3 ? t('a-trend-down') : t('a-trend-up');
+      trendSub.textContent = Math.abs(diff) < 3
+        ? t('a-trend-stable-sub')
+        : diff < -3 ? tt('a-trend-down-sub', { n: Math.abs(Math.round(diff)) })
+                    : tt('a-trend-up-sub',   { n: Math.round(diff) });
     } else {
       trendVal.textContent = '—';
-      trendSub.textContent = isRu ? 'нужно 5+ измерений' : 'потрібно 5+ вимірів';
+      trendSub.textContent = t('a-trend-need-5');
     }
   }
 
@@ -106,14 +109,14 @@ export function renderAnalytics() {
     const who = getWHOCategory(all[0].sys, all[0].dia);
     whoEl.textContent = who.label;
     whoEl.style.color = who.c;
-    whoSubEl.textContent = who.sub + (isRu ? ' → Нажми для деталей' : ' → Натисни для деталей');
+    whoSubEl.textContent = who.sub + t('a-who-tap');
   }
 
   // Total
   const totalEl = document.getElementById('totalMeasurements');
   const totalSubEl = document.getElementById('totalMeasurementsSub');
   if (totalEl) totalEl.textContent = all.length;
-  if (totalSubEl) totalSubEl.textContent = isRu ? `Неделя: ${last7.length} · Журнал →` : `Тиждень: ${last7.length} · Журнал →`;
+  if (totalSubEl) totalSubEl.textContent = tt('a-week-prefix', { n: last7.length });
 
   // Adherence
   const adhEl = document.getElementById('pillAdherence');
@@ -134,7 +137,7 @@ export function renderAnalytics() {
     const minV = Math.min(...sa);
     const n = getBPNorm();
     maxEl.textContent = maxV;
-    minEl.textContent = (isRu ? 'мин.:' : 'мін.') + '\u00a0' + minV;
+    minEl.textContent = t('a-min-prefix') + '\u00a0' + minV;
     const maxColor = maxV >= 180 ? 'var(--red)' : maxV >= n.sysWarn ? 'var(--amber)' : maxV > n.sysOk ? 'var(--amber)' : 'var(--green)';
     const minColor = minV < 90 ? 'var(--red)' : minV < 100 ? 'var(--amber)' : 'var(--green)';
     maxEl.style.color = maxColor;

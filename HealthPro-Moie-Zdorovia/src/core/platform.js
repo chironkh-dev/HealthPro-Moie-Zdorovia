@@ -29,12 +29,22 @@ function getPlugin(name) {
 }
 
 // ─── Notifications ─────────────────────────────────────────────
+// On native (Android) — uses @capacitor/local-notifications via ESM import.
+// On web — falls back to Notification API.
+async function _ln() {
+  if (!isNative()) return null;
+  try {
+    const mod = await import('@capacitor/local-notifications');
+    return mod.LocalNotifications || null;
+  } catch { return null; }
+}
+
 export async function requestNotificationPermission() {
-  const ln = getPlugin('LocalNotifications');
+  const ln = await _ln();
   if (ln && typeof ln.requestPermissions === 'function') {
     try {
       const r = await ln.requestPermissions();
-      return r && (r.display === 'granted' || r.granted === true);
+      return !!(r && (r.display === 'granted' || r.granted === true));
     } catch { return false; }
   }
   if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -48,16 +58,33 @@ export async function requestNotificationPermission() {
   return false;
 }
 
+export async function checkNotificationPermission() {
+  const ln = await _ln();
+  if (ln && typeof ln.checkPermissions === 'function') {
+    try {
+      const r = await ln.checkPermissions();
+      return !!(r && (r.display === 'granted' || r.granted === true));
+    } catch { return false; }
+  }
+  if (typeof window !== 'undefined' && 'Notification' in window) {
+    return Notification.permission === 'granted';
+  }
+  return false;
+}
+
+// Schedule a notification. options.at = Date for future schedule (native only).
 export async function notify(title, options = {}) {
-  const ln = getPlugin('LocalNotifications');
+  const ln = await _ln();
   if (ln && typeof ln.schedule === 'function') {
     try {
+      const id = options.id != null ? options.id : Math.floor(Math.random() * 1e9);
       await ln.schedule({
         notifications: [{
-          id: Math.floor(Math.random() * 1e9),
+          id,
           title,
           body: options.body || '',
           schedule: options.at ? { at: options.at } : undefined,
+          smallIcon: 'ic_stat_icon_config_sample',
         }],
       });
       return true;
@@ -70,6 +97,16 @@ export async function notify(title, options = {}) {
     } catch { return false; }
   }
   return false;
+}
+
+// Cancel previously-scheduled notification(s) by id(s).
+export async function cancelNotifications(ids) {
+  const ln = await _ln();
+  if (!ln || typeof ln.cancel !== 'function' || !ids || !ids.length) return false;
+  try {
+    await ln.cancel({ notifications: ids.map((id) => ({ id })) });
+    return true;
+  } catch { return false; }
 }
 
 // ─── Vibration ─────────────────────────────────────────────────
@@ -94,12 +131,77 @@ export async function share(data) {
   return false;
 }
 
-// ─── File download (web). On native, callers should use Filesystem plugin. ──
-export function download(filename, blobOrText, mime = 'application/octet-stream') {
+// ─── File download / share ─────────────────────────────────────
+// On web: anchor click fallback.
+// On native: writes to Documents via @capacitor/filesystem and opens
+// a Share sheet via @capacitor/share. Returns a promise-resolves-bool.
+function _blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onloadend = () => {
+      const s = String(r.result || '');
+      const i = s.indexOf(',');
+      resolve(i >= 0 ? s.slice(i + 1) : s);
+    };
+    r.onerror = reject;
+    r.readAsDataURL(blob);
+  });
+}
+
+async function _nativeDownload(filename, blob, mime) {
   try {
-    const blob = blobOrText instanceof Blob
-      ? blobOrText
-      : new Blob([blobOrText], { type: mime });
+    const fsMod = await import('@capacitor/filesystem');
+    const Filesystem = fsMod.Filesystem;
+    const Directory = fsMod.Directory;
+    const Encoding = fsMod.Encoding;
+    if (!Filesystem) return false;
+
+    const isText = /^text\/|json|csv|xml/i.test(mime);
+    let data;
+    let encoding;
+    if (isText && typeof blob.text === 'function') {
+      data = await blob.text();
+      encoding = Encoding ? Encoding.UTF8 : 'utf8';
+    } else {
+      data = await _blobToBase64(blob);
+      encoding = undefined; // base64
+    }
+
+    const writeRes = await Filesystem.writeFile({
+      path: filename,
+      data,
+      directory: Directory ? Directory.Documents : 'DOCUMENTS',
+      ...(encoding ? { encoding } : {}),
+      recursive: true,
+    });
+
+    try {
+      const shMod = await import('@capacitor/share');
+      const Share = shMod.Share;
+      if (Share && typeof Share.share === 'function' && writeRes && writeRes.uri) {
+        await Share.share({
+          title: filename,
+          url: writeRes.uri,
+          dialogTitle: filename,
+        });
+      }
+    } catch { /* sharing optional */ }
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+export async function download(filename, blobOrText, mime = 'application/octet-stream') {
+  const blob = blobOrText instanceof Blob
+    ? blobOrText
+    : new Blob([blobOrText], { type: mime });
+  if (isNative()) {
+    const ok = await _nativeDownload(filename, blob, mime);
+    if (ok) return true;
+    // fall through to web fallback if native write/share failed
+  }
+  try {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -158,6 +260,29 @@ export function onResume(handler) {
   const onVisibility = () => { if (document.visibilityState === 'visible') handler(); };
   document.addEventListener('visibilitychange', onVisibility);
   return () => document.removeEventListener('visibilitychange', onVisibility);
+}
+
+// ─── Hardware back button (Android) ────────────────────────────
+// Returns an unsubscribe fn. Web is a no-op (browser handles its own back).
+export function onBackButton(handler) {
+  if (typeof handler !== 'function') return () => {};
+  const app = getPlugin('App');
+  if (!app || typeof app.addListener !== 'function') return () => {};
+  try {
+    const h = app.addListener('backButton', (ev) => {
+      try { handler(ev || { canGoBack: false }); } catch { /* noop */ }
+    });
+    return () => { try { h.remove && h.remove(); } catch {} };
+  } catch { return () => {}; }
+}
+
+// Minimize app (Android only — sends app to background instead of closing).
+export async function minimizeApp() {
+  const app = getPlugin('App');
+  if (app && typeof app.minimizeApp === 'function') {
+    try { await app.minimizeApp(); return true; } catch { return false; }
+  }
+  return false;
 }
 
 // ─── Online status ─────────────────────────────────────────────

@@ -15,3 +15,8 @@ export {
   acceptDisclaimer,
   checkDisclaimer,
 } from './disclaimer.js';
+export {
+  maybeShowNotifPermModal,
+  acceptNotifPerm,
+  declineNotifPerm,
+} from './notif-perm.js';

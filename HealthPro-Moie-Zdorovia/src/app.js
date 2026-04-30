@@ -7,6 +7,9 @@
 //   • Action dispatcher for data-action / data-change / data-input attributes.
 
 import { state, setToast, on } from './core/state.js';
+import { t } from './i18n/index.js';
+import { getLocale } from './core/utils.js';
+import { onBackButton, minimizeApp } from './core/platform.js';
 
 import {
   // pressure
@@ -49,6 +52,7 @@ import {
   toggleNotifications, toggleMeasureReminder, saveReminderTimes, scheduleNotifications,
   clearAllData,
   acceptDisclaimer, openDisclaimerModal, closeDisclaimerModal, checkDisclaimer,
+  acceptNotifPerm, declineNotifPerm,
 } from './features/settings/index.js';
 import {
   // PWA
@@ -119,7 +123,7 @@ function init() {
   const d = new Date();
   const headerDate = document.getElementById('headerDate');
   if (headerDate) {
-    headerDate.textContent = d.toLocaleDateString(state.lang === 'ru' ? 'ru-UA' : 'uk-UA', {
+    headerDate.textContent = d.toLocaleDateString(getLocale(), {
       weekday: 'long', day: 'numeric', month: 'long',
     });
   }
@@ -169,15 +173,26 @@ function init() {
   // Step counter PWA note
   const stepSubEl = document.getElementById('t-step-sub');
   if (stepSubEl) {
-    stepSubEl.textContent = state.lang === 'ru'
-      ? 'Через акселерометр. Работает только когда приложение открыто!'
-      : 'Через акселерометр. Працює лише коли додаток відкритий!';
+    stepSubEl.textContent = t('app-step-sub');
   }
 
   onPillDaysChange();
 
   setInterval(scheduleNotifications, 60000);
   setInterval(renderPills, 60000);
+
+  // Hardware Back button (Android). Order: open modal → close it;
+  // not on home tab → go to home; otherwise minimize the app.
+  onBackButton(() => {
+    const openModal = document.querySelector(
+      '.modal-overlay.show, .critical-wrap.show, .disclaimer-modal.show'
+    );
+    if (openModal) { openModal.classList.remove('show'); document.body.style.overflow = ''; return; }
+    const activeTab = document.querySelector('.nav-tab.active');
+    const cur = activeTab?.id?.replace('tab-', '');
+    if (cur && cur !== 'pressure') { showPage('pressure'); return; }
+    minimizeApp();
+  });
 
   // Initial measurement after layout settles, plus a watcher on the header
   // so any internal text/UI change re-syncs --header-height for sticky nav.
@@ -248,6 +263,10 @@ const ACTIONS = {
   acceptDisclaimer: () => acceptDisclaimer(),
   openDisclaimerModal: () => openDisclaimerModal(),
   closeDisclaimerModal: () => closeDisclaimerModal(),
+  // notif permission modal (post-disclaimer)
+  acceptNotifPerm: () => acceptNotifPerm(),
+  declineNotifPerm: () => declineNotifPerm(),
+  dismissNotifPerm: (el, ev) => { if (ev.target === el) declineNotifPerm(); },
   // pills form
   onPillDaysChange: () => onPillDaysChange(),
   checkDrugName: () => checkDrugName(),

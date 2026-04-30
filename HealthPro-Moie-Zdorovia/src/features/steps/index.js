@@ -3,14 +3,13 @@
 
 import { state, saveData, showToast, today, DB } from '../../core/state.js';
 import { DEFAULT_STEP_GOAL, STEP_ACCEL_THRESHOLD } from '../../core/constants.js';
+import { t } from '../../i18n/index.js';
 
 const STEP_THRESHOLD = STEP_ACCEL_THRESHOLD;
 
 let stepCount = 0;
 let lastAcc = 0;
 let stepEnabled = false;
-
-function isRu() { return state.lang === 'ru'; }
 
 export function saveStepGoal() {
   const el = document.getElementById('stepGoalInput');
@@ -24,7 +23,7 @@ export function toggleStepCounter() {
     if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
       DeviceMotionEvent.requestPermission().then((p) => {
         if (p === 'granted') enableSteps();
-        else showToast(isRu() ? '❌ Нет разрешения на акселерометр' : '❌ Немає дозволу на акселерометр');
+        else showToast(t('st-no-perm'));
       });
     } else enableSteps();
   } else {
@@ -34,7 +33,7 @@ export function toggleStepCounter() {
     document.getElementById('stepToggle').classList.remove('on');
     document.getElementById('stepCard').style.display = 'none';
     window.removeEventListener('devicemotion', handleMotion);
-    showToast(isRu() ? '🦶 Счётчик выключен' : '🦶 Лічильник вимкнено');
+    showToast(t('st-off'));
   }
 }
 
@@ -47,7 +46,7 @@ export function enableSteps() {
   stepCount = DB.get('stepCount-' + today(), 0);
   updateStepUI();
   window.addEventListener('devicemotion', handleMotion);
-  showToast(isRu() ? '🦶 Счётчик шагов включён!' : '🦶 Лічильник кроків увімкнено!');
+  showToast(t('st-on'));
 }
 
 function handleMotion(e) {
@@ -73,7 +72,7 @@ export function updateStepUI() {
   const pct = Math.min(100, Math.round(stepCount / goal * 100));
   stepPctEl.textContent = pct + '%';
   stepBarEl.style.width = pct + '%';
-  if (stepGoalEl) stepGoalEl.textContent = `ціль: ${goal.toLocaleString()}`;
+  if (stepGoalEl) stepGoalEl.textContent = `${t('st-goal-pref')} ${goal.toLocaleString()}`;
 }
 
 // Restore counter for today on load.

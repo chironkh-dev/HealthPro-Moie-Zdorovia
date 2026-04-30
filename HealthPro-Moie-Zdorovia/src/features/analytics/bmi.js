@@ -1,6 +1,7 @@
 // BMI calculation, classification and rendering.
 
 import { state } from '../../core/state.js';
+import { t } from '../../i18n/index.js';
 
 export function calcBMI() {
   const h = parseFloat(state.settings.height);
@@ -10,23 +11,21 @@ export function calcBMI() {
 }
 
 export function getBMICategory(bmi) {
-  const isRu = state.lang === 'ru';
-  if (bmi < 16) return { label: isRu ? 'Выраженный дефицит' : 'Виражений дефіцит', c: 'var(--red)', impact: isRu ? 'Риск гипотонии и сердечных проблем' : 'Ризик гіпотонії та серцевих проблем' };
-  if (bmi < 18.5) return { label: isRu ? 'Дефицит массы' : 'Дефіцит маси', c: 'var(--amber)', impact: isRu ? 'Возможна гипотония' : 'Можлива гіпотонія' };
-  if (bmi < 25) return { label: isRu ? 'Норма ✓' : 'Норма ✓', c: 'var(--green)', impact: isRu ? 'Нейтральное влияние на давление' : 'Нейтральний вплив на тиск' };
-  if (bmi < 30) return { label: isRu ? 'Избыточный вес' : 'Надмірна вага', c: 'var(--amber)', impact: isRu ? 'Риск гипертонии +15–20%' : 'Ризик гіпертонії +15–20%' };
-  if (bmi < 35) return { label: isRu ? 'Ожирение І ст.' : 'Ожиріння І ст.', c: 'var(--red)', impact: isRu ? 'Каждые +5 кг ≈ +2–3 мм рт.ст.' : 'Кожен +5 кг ≈ +2–3 мм рт.ст.' };
-  if (bmi < 40) return { label: isRu ? 'Ожирение ІІ ст.' : 'Ожиріння ІІ ст.', c: 'var(--red)', impact: isRu ? 'Серьёзный риск гипертензии' : 'Серйозний ризик гіпертензії' };
-  return { label: isRu ? 'Ожирение ІІІ ст.' : 'Ожиріння ІІІ ст.', c: 'var(--rose)', impact: isRu ? 'Критический риск!' : 'Критичний ризик!' };
+  if (bmi < 16)   return { label: t('b-cat-very-low'), c: 'var(--red)',   impact: t('b-impact-very-low') };
+  if (bmi < 18.5) return { label: t('b-cat-low'),      c: 'var(--amber)', impact: t('b-impact-low') };
+  if (bmi < 25)   return { label: t('b-cat-normal'),   c: 'var(--green)', impact: t('b-impact-normal') };
+  if (bmi < 30)   return { label: t('b-cat-over'),     c: 'var(--amber)', impact: t('b-impact-over') };
+  if (bmi < 35)   return { label: t('b-cat-ob1'),      c: 'var(--red)',   impact: t('b-impact-ob1') };
+  if (bmi < 40)   return { label: t('b-cat-ob2'),      c: 'var(--red)',   impact: t('b-impact-ob2') };
+  return            { label: t('b-cat-ob3'),      c: 'var(--rose)',  impact: t('b-impact-ob3') };
 }
 
 export function renderBMI() {
-  const isRu = state.lang === 'ru';
   const bmi = calcBMI();
   const el = document.getElementById('bmiContent');
   if (!el) return;
   if (!bmi) {
-    el.innerHTML = `<div class="empty-state" style="padding:12px"><div class="em"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg></div><p>${isRu ? 'Заполните рост и вес в Профиле' : 'Заповніть зріст та вагу в Профілі'}</p></div>`;
+    el.innerHTML = `<div class="empty-state" style="padding:12px"><div class="em"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg></div><p>${t('b-empty-fill-profile')}</p></div>`;
     return;
   }
   const cat = getBMICategory(bmi);
@@ -38,22 +37,22 @@ export function renderBMI() {
     <div class="bmi-visual">
       <div class="bmi-circle" style="border-color:${cat.c}">
         <div class="bmi-num" style="color:${cat.c}">${bmi}</div>
-        <div class="bmi-label">ІМТ</div>
+        <div class="bmi-label">${t('b-imt')}</div>
       </div>
       <div class="bmi-info">
         <div class="bmi-category" style="color:${cat.c}">${cat.label}</div>
-        <div class="bmi-sub">${isRu ? 'Идеальный вес' : 'Ідеальна вага'}: ${wMin}–${wMax} ${isRu ? 'кг' : 'кг'}</div>
-        <div class="bmi-sub">${isRu ? 'Рост' : 'Зріст'}: ${state.settings.height} ${isRu ? 'см' : 'см'} · ${isRu ? 'Вес' : 'Вага'}: ${state.settings.weight} ${isRu ? 'кг' : 'кг'}</div>
+        <div class="bmi-sub">${t('b-ideal-weight')}: ${wMin}–${wMax} ${t('b-kg')}</div>
+        <div class="bmi-sub">${t('b-height')}: ${state.settings.height} ${t('b-cm')} · ${t('b-weight')}: ${state.settings.weight} ${t('b-kg')}</div>
       </div>
     </div>
     <div class="bmi-bar">
       <div class="bmi-bar-indicator" style="left:calc(${pct}% - 1.5px)"></div>
     </div>
     <div class="bmi-zones">
-      <span style="color:#3b82f6">${isRu ? 'Дефицит' : 'Дефіцит'}</span>
-      <span style="color:#10b981">${isRu ? 'Норма' : 'Норма'}</span>
-      <span style="color:#f59e0b">${isRu ? 'Избыток' : 'Надлишок'}</span>
-      <span style="color:#ef4444">${isRu ? 'Ожирение' : 'Ожиріння'}</span>
+      <span style="color:#3b82f6">${t('b-zone-deficit')}</span>
+      <span style="color:#10b981">${t('b-zone-norm')}</span>
+      <span style="color:#f59e0b">${t('b-zone-excess')}</span>
+      <span style="color:#ef4444">${t('b-zone-obese')}</span>
     </div>
-    <div class="bmi-impact"><strong>${isRu ? 'Влияние на давление' : 'Вплив на тиск'}:</strong> ${cat.impact}. ${bmi > 25 ? (isRu ? 'Снижение веса на 5–10 кг может снизить систолическое давление на 5–10 мм рт.ст.' : 'Зниження ваги на 5–10 кг може знизити систолічний тиск на 5–10 мм рт.ст.') : (isRu ? 'ИМТ в норме — положительное влияние на контроль давления.' : 'ІМТ в нормі — позитивний вплив на контроль тиску.')}</div>`;
+    <div class="bmi-impact"><strong>${t('b-impact-title')}:</strong> ${cat.impact}. ${bmi > 25 ? t('b-tip-lose') : t('b-tip-norm')}</div>`;
 }

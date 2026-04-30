@@ -1,10 +1,10 @@
 import { state, saveData, showToast, emit } from '../../core/state.js';
 import { formatTime } from '../../core/utils.js';
+import { t } from '../../i18n/index.js';
 import { getBPStatus } from './norm.js';
 import { checkCritical } from './critical.js';
 
 export function saveMeasurement() {
-  const isRu = state.lang === 'ru';
   const sysEl   = document.getElementById('sys');
   const diaEl   = document.getElementById('dia');
   const pulseEl = document.getElementById('pulse');
@@ -15,24 +15,10 @@ export function saveMeasurement() {
   const p = parseInt(pulseEl?.value);
   const note = (noteEl?.value || '').trim();
 
-  if (!s || !d) {
-    showToast(isRu ? 'Введите систолическое и диастолическое давление' : 'Введіть систолічний та діастолічний тиск');
-    return;
-  }
-  if (s < 60 || s > 300) {
-    showToast(isRu ? 'Проверьте значение систолического давления' : 'Перевірте значення систолічного тиску');
-    return;
-  }
-  if (d < 40 || d > 200) {
-    showToast(isRu ? 'Проверьте значение диастолического давления' : 'Перевірте значення діастолічного тиску');
-    return;
-  }
-  if (p && (p < 30 || p > 250)) {
-    showToast(isRu
-      ? 'Недопустимое значение пульса (допустимо от 30 до 250)'
-      : 'Неприпустиме значення пульсу (допустимо від 30 до 250)');
-    return;
-  }
+  if (!s || !d) { showToast(t('pr-toast-need-bp')); return; }
+  if (s < 60 || s > 300) { showToast(t('pr-toast-bad-sys')); return; }
+  if (d < 40 || d > 200) { showToast(t('pr-toast-bad-dia')); return; }
+  if (p && (p < 30 || p > 250)) { showToast(t('pr-toast-bad-pulse')); return; }
 
   state.measurements.unshift({
     sys: s,
@@ -57,7 +43,7 @@ export function saveMeasurement() {
 
   emit('measurement:saved', { sys: s, dia: d, pulse: p });
 
-  showToast(isRu ? 'Измерение сохранено!' : 'Вимір збережено!');
+  showToast(t('pr-toast-saved'));
 }
 
 export function updateLastReading() {
@@ -74,7 +60,6 @@ export function updateLastReading() {
 }
 
 export function updateHeaderStatus() {
-  const isRu = state.lang === 'ru';
   const hdrBP    = document.getElementById('hdrBP');
   const hdrPulse = document.getElementById('hdrPulse');
   if (!state.measurements.length) {
@@ -84,7 +69,7 @@ export function updateHeaderStatus() {
   }
   const last = state.measurements[0];
   if (hdrBP)    hdrBP.textContent    = last.sys + '/' + last.dia;
-  if (hdrPulse) hdrPulse.textContent = last.pulse ? last.pulse + (isRu ? ' уд/мин' : ' уд/хв') : '';
+  if (hdrPulse) hdrPulse.textContent = last.pulse ? last.pulse + ' ' + t('pr-bpm-short') : '';
 }
 
 export function previewBP() {

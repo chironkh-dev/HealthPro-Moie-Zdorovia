@@ -89,3 +89,13 @@ export function t(id) {
   const fallback = T.uk || {};
   return current[id] || fallback[id] || id;
 }
+
+// Templated translation: replaces {name} placeholders in the dict value.
+// Usage: tt('r-bp-stable', { sys: 130, dia: 80 })
+export function tt(id, vars = {}) {
+  let s = t(id);
+  Object.keys(vars).forEach((k) => {
+    s = s.split('{' + k + '}').join(String(vars[k]));
+  });
+  return s;
+}

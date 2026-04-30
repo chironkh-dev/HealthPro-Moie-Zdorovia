@@ -16,6 +16,11 @@ function localeFor() {
   return state.lang === 'ru' ? 'ru-UA' : 'uk-UA';
 }
 
+// Public re-export for feature modules that need a UI locale.
+export function getLocale() {
+  return localeFor();
+}
+
 export function formatTime(s) {
   const d = new Date(s);
   if (isNaN(d.getTime())) return '';

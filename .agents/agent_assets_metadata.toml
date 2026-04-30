@@ -42,3 +42,9 @@ id = "NMVGtttnaYZvYliaCX_6q"
 uri = "file://attached_assets/HealthPro_Phase2_Stage5_Report.pdf"
 type = "pdf"
 title = "HealthPro · Фаза 2 + Етап 5 — Звіт (Capacitor APK + SQLite)"
+
+[[outputs]]
+id = "CZ5V6BlYS1alsrpyMKXOz"
+uri = "file://attached_assets/HealthPro_APK_BugFix_Round3.pdf"
+type = "pdf"
+title = "HealthPro · APK Bug Fix Раунд 3 (T1–T7)"

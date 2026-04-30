@@ -1,6 +1,7 @@
 // Export modal: period chooser + filtered measurement count.
 
 import { state } from '../../core/state.js';
+import { t, tt } from '../../i18n/index.js';
 
 let _expPeriod = 'month';
 
@@ -59,13 +60,14 @@ export function getExportMeasurements() {
 }
 
 export function updateExportCount() {
-  const isRu = state.lang === 'ru';
   const filtered = getExportMeasurements();
   const el = document.getElementById('expCount');
   if (!el) return;
   if (!filtered.length) {
-    el.textContent = isRu ? 'Нет измерений за выбранный период' : 'Немає вимірів за вибраний період';
+    el.textContent = t('e-modal-empty');
   } else {
-    el.textContent = `${filtered.length} ${filtered.length === 1 ? 'вимір' : filtered.length < 5 ? 'виміри' : 'вимірів'} за вибраний період`;
+    const n = filtered.length;
+    const word = n === 1 ? t('e-modal-w-1') : n < 5 ? t('e-modal-w-few') : t('e-modal-w-many');
+    el.textContent = tt('e-modal-count', { n, word });
   }
 }
