@@ -81,6 +81,23 @@ src/
 - **#12 Іконка/сплеш**: встановлено `@capacitor/assets` (devDep). Команда `npx capacitor-assets generate --android --assetPath assets` згенерувала 74 файли (mipmap-* іконки + drawable-*-splash) із джерела `HealthPro-Moie-Zdorovia/assets/icon.png` (1024×1024).
 - Build: `npx vite build` ok, `npx cap sync android` ok (9 плагінів, web-assets скопійовано). PDF-звіт: `attached_assets/HealthPro_APK_BugFix_Round3_Continuation.pdf`. Скрипт-генератор: `scripts/generate_apk_bugfix_round3_continuation_report.cjs`.
 
+## APK Round 4 — Частина 1 (квітень 2026)
+- **Структура:** видалено дубль `HealthPro-Moie-Zdorovia/android/` + дубль `HealthPro-Moie-Zdorovia/capacitor.config.json`. Тепер ОДНА `android/` у корені (саме її використовує GitHub Actions). Джерело іконки `assets/icon.png` (1024×1024) у корені.
+- **Іконка:** перегенеровано в правильну кореневу `android/` через `./HealthPro-Moie-Zdorovia/node_modules/.bin/capacitor-assets generate --android --assetPath assets` (з кореня). 74 файли. mipmap-xxxhdpi/ic_launcher.png — 22 KB (раніше була дефолтна 9 KB).
+- **AndroidManifest:** додано `FOREGROUND_SERVICE_HEALTH` (Android 14+ typed foreground service). Поради Gemini про `<service BackgroundStepService>` + `<receiver StepResetReceiver>` ВІДХИЛЕНО — немає відповідних Java/Kotlin-класів, APK не збереться.
+- **Фонові сповіщення (головне):**
+  - `platform.ensureNotificationChannel()` створює канал `"reminders"` з `importance=5 (HIGH)`, `sound='default'`, `vibration=true`, `lights=true`. Викликається після `requestPermissions()`.
+  - `platform.notify(title, { dailyAt: { hour, minute }, ... })` → `LocalNotifications.schedule({ schedule: { on: {hour, minute}, allowWhileIdle: true }, channelId: 'reminders', smallIcon: 'ic_launcher', iconColor: '#5B7CFF' })`. Android AlarmManager спрацьовує НАВІТЬ якщо додаток вбито.
+  - `platform.cancelAllNotifications()` — `getPending() → cancel(all)`.
+  - `platform.openAppSettings()` через `App.openSettings()` для denied permission.
+- **notifications.js — переписано:**
+  - `scheduleAllReminders()` — cancel all + pre-schedule per pill (id 50000+hash) + ранкове (90001) + вечірнє (90002) BP-нагадування з repeats.
+  - Тригери: `toggleNotifications`, `toggleMeasureReminder`, `saveReminderTimes`, `on('pills:changed')`.
+  - Видалено `setInterval(scheduleNotifications, 60000)` з `app.js` (тільки одноразовий виклик на старті).
+- **i18n:** додано ключі `notif-pill-title`, `notif-open-settings-confirm` (UA + RU).
+- **Звіт:** `attached_assets/HealthPro_APK_Round4_Part1_BackgroundNotifications.pdf`. Скрипт: `scripts/generate_apk_round4_part1_report.cjs`.
+- **Залишилось:** Email/SMS автоматичне надсилання (юзер обирає варіант A/B/C); фоновий крокомір (потребує власного Capacitor-плагіна на Java).
+
 ## Послідовність збірки APK (готова до push)
 ```
 npx vite build              # збирає dist/ (виконується з HealthPro-Moie-Zdorovia/)

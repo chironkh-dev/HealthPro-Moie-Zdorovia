@@ -31,6 +31,10 @@ function getPlugin(name) {
 // ─── Notifications ─────────────────────────────────────────────
 // On native (Android) — uses @capacitor/local-notifications via ESM import.
 // On web — falls back to Notification API.
+//
+// Channel design (Round 4 #2 — background reminders + sound):
+//   id "reminders" · IMPORTANCE_HIGH (5) · sound default · vibration on ·
+//   lights on. Created once on first permission grant; idempotent on Android.
 async function _ln() {
   if (!isNative()) return null;
   try {
@@ -39,12 +43,38 @@ async function _ln() {
   } catch { return null; }
 }
 
+export const REMINDER_CHANNEL_ID = 'reminders';
+
+let _channelEnsured = false;
+export async function ensureNotificationChannel() {
+  if (_channelEnsured) return true;
+  const ln = await _ln();
+  if (!ln || typeof ln.createChannel !== 'function') return false;
+  try {
+    await ln.createChannel({
+      id: REMINDER_CHANNEL_ID,
+      name: 'Нагадування',
+      description: 'Прийом ліків та вимірювання тиску',
+      importance: 5,            // IMPORTANCE_HIGH → heads-up + sound
+      visibility: 1,            // VISIBILITY_PUBLIC
+      sound: 'default',
+      vibration: true,
+      lights: true,
+      lightColor: '#5B7CFF',
+    });
+    _channelEnsured = true;
+    return true;
+  } catch { return false; }
+}
+
 export async function requestNotificationPermission() {
   const ln = await _ln();
   if (ln && typeof ln.requestPermissions === 'function') {
     try {
       const r = await ln.requestPermissions();
-      return !!(r && (r.display === 'granted' || r.granted === true));
+      const granted = !!(r && (r.display === 'granted' || r.granted === true));
+      if (granted) await ensureNotificationChannel();
+      return granted;
     } catch { return false; }
   }
   if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -55,6 +85,17 @@ export async function requestNotificationPermission() {
       return p === 'granted';
     } catch { return false; }
   }
+  return false;
+}
+
+// Open the system app-settings page so user can re-enable notifications
+// after they were denied. Uses @capacitor/app's openSettings (Android intent).
+export async function openAppSettings() {
+  const app = getPlugin('App');
+  if (app && typeof app.openSettings === 'function') {
+    try { await app.openSettings(); return true; } catch { /* noop */ }
+  }
+  // Web fallback — nothing to open.
   return false;
 }
 
@@ -72,19 +113,40 @@ export async function checkNotificationPermission() {
   return false;
 }
 
-// Schedule a notification. options.at = Date for future schedule (native only).
+// Schedule a notification. Supports:
+//   options.at         — Date | timestamp for one-shot future delivery
+//   options.dailyAt    — { hour, minute } → repeats daily at this local time
+//                         (delivered by ALARM_MANAGER even if app is killed)
+//   options.id         — fixed integer (use it to update/cancel later)
+//   options.extra      — payload passed back when user taps the notification
+//
+// On Android the channel "reminders" is HIGH-importance with sound+vibration
+// (see ensureNotificationChannel), so heads-up + sound work in background.
 export async function notify(title, options = {}) {
   const ln = await _ln();
   if (ln && typeof ln.schedule === 'function') {
     try {
+      await ensureNotificationChannel();
       const id = options.id != null ? options.id : Math.floor(Math.random() * 1e9);
+      const sched = options.dailyAt
+        ? { on: { hour: options.dailyAt.hour, minute: options.dailyAt.minute }, allowWhileIdle: true }
+        : (options.at ? { at: options.at instanceof Date ? options.at : new Date(options.at), allowWhileIdle: true } : undefined);
       await ln.schedule({
         notifications: [{
           id,
           title,
           body: options.body || '',
-          schedule: options.at ? { at: options.at } : undefined,
-          smallIcon: 'ic_stat_icon_config_sample',
+          schedule: sched,
+          channelId: REMINDER_CHANNEL_ID,
+          // Fallback to mipmap launcher icon (LocalNotifications resolves
+          // by name from android/app/src/main/res). The Capacitor sample
+          // icon "ic_stat_icon_config_sample" is NOT bundled with the
+          // plugin, so referencing it leaves notifications without an
+          // icon → some Android versions then drop them entirely.
+          smallIcon: 'ic_launcher',
+          iconColor: '#5B7CFF',
+          sound: undefined, // channel handles default sound
+          extra: options.extra || {},
         }],
       });
       return true;
@@ -105,6 +167,19 @@ export async function cancelNotifications(ids) {
   if (!ln || typeof ln.cancel !== 'function' || !ids || !ids.length) return false;
   try {
     await ln.cancel({ notifications: ids.map((id) => ({ id })) });
+    return true;
+  } catch { return false; }
+}
+
+// Cancel ALL pending notifications scheduled by us.
+export async function cancelAllNotifications() {
+  const ln = await _ln();
+  if (!ln) return false;
+  try {
+    const pending = await ln.getPending();
+    const list = (pending && pending.notifications) || [];
+    if (list.length === 0) return true;
+    await ln.cancel({ notifications: list.map((n) => ({ id: n.id })) });
     return true;
   } catch { return false; }
 }

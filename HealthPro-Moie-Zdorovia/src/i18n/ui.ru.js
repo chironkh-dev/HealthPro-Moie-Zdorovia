@@ -253,6 +253,8 @@ export const T_RU ={
   'notif-bp-title':'🩺 Измерение давления',
   'notif-bp-body':'Время для ежедневного измерения давления',
   'notif-bp-toast':'🩺 Время измерить давление',
+  'notif-pill-title':'💊 Время принять: {{name}}',
+  'notif-open-settings-confirm':'Уведомления запрещены. Открыть настройки приложения, чтобы включить?',
 
   // ─── notif permission modal (post-disclaimer) — IDs match HTML ───
   'nt-perm-title':'Включить напоминания?',

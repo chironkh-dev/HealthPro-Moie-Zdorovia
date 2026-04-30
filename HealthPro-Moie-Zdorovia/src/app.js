@@ -180,7 +180,11 @@ function init() {
 
   onPillDaysChange();
 
-  setInterval(scheduleNotifications, 60000);
+  // Round 4 #2 — schedule was previously polled every minute (only worked
+  // while the app was open). Now we pre-schedule via Android AlarmManager
+  // (see notifications.scheduleAllReminders) so reminders fire even when
+  // the app is killed. This call just hydrates the schedule on startup.
+  scheduleNotifications();
   setInterval(renderPills, 60000);
 
   // Hardware Back button (Android). Order: open modal → close it;

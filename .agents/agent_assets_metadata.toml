@@ -54,3 +54,9 @@ id = "LoQ8rTCFWfV_2dIyipg_U"
 uri = "file://attached_assets/HealthPro_APK_BugFix_Round3_Continuation.pdf"
 type = "pdf"
 title = "HealthPro APK Bug Fix Round 3 (продовження) — звіт"
+
+[[outputs]]
+id = "jcp6uN30txBdzALQBNUia"
+uri = "file://attached_assets/HealthPro_APK_Round4_Part1_BackgroundNotifications.pdf"
+type = "pdf"
+title = "HealthPro APK Round 4 · Частина 1 — фонові сповіщення + іконка"
