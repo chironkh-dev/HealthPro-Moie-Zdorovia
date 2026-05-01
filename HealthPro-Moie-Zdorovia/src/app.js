@@ -136,20 +136,23 @@ function init() {
 
   loadProfileFields();
   if (state.settings.name) updateHeader();
-  document.getElementById('notifToggle')?.classList.toggle('on', !!state.settings.notif);
+  const notifToggle = document.getElementById('notifToggle');
+  if (notifToggle) {
+    notifToggle.classList.remove('on');
+    notifToggle.classList.add('is-disabled');
+    notifToggle.setAttribute('aria-disabled', 'true');
+  }
   document.getElementById('measureToggle')?.classList.toggle('on', !!state.settings.measureReminder);
   document.getElementById('lang-uk')?.classList.toggle('active', state.lang === 'uk');
   document.getElementById('lang-ru')?.classList.toggle('active', state.lang === 'ru');
 
-  // Validate stored notification permission with platform-aware check.
-  // IMPORTANT: on native Android/WebView `Notification.permission` can be
-  // "default"/unsupported even when LocalNotifications permission is granted.
-  // Using the web-only check here incorrectly disabled reminders on startup.
-  if (state.settings.notif) {
+  // Keep a lightweight permission sanity check on startup so measurement
+  // reminders don't stay enabled in UI if OS permission was revoked.
+  if (state.settings.measureReminder) {
     checkNotificationPermission().then((granted) => {
       if (!granted) {
-        state.settings.notif = false;
-        document.getElementById('notifToggle')?.classList.remove('on');
+        state.settings.measureReminder = false;
+        document.getElementById('measureToggle')?.classList.remove('on');
       }
     });
   }

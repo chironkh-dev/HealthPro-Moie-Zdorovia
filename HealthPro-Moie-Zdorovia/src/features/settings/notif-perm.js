@@ -2,15 +2,12 @@
 // medical disclaimer. Uses platform.prefs to remember whether we have already
 // asked, so we never prompt twice.
 
-import { state, saveData, showToast } from '../../core/state.js';
+import { showToast } from '../../core/state.js';
 import { t } from '../../i18n/index.js';
 import {
   prefs,
   requestNotificationPermission,
-  ensureNotificationChannel,
-  notify,
 } from '../../core/platform.js';
-import { scheduleNotifications } from './notifications.js';
 
 const PREF_KEY = 'notif_permission_asked';
 
@@ -45,17 +42,7 @@ export async function acceptNotifPerm() {
   try {
     const granted = await requestNotificationPermission();
     if (granted) {
-      state.settings.notif = true;
-      const tg = document.getElementById('notifToggle');
-      if (tg) tg.classList.add('on');
-      saveData();
       showToast(t('notif-on'));
-      await ensureNotificationChannel();
-      await scheduleNotifications();
-      await notify(t('notif-on'), {
-        at: Date.now() + 5000,
-        body: 'HealthPro: test notification',
-      });
     } else {
       showToast(t('notif-denied'));
     }

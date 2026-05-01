@@ -78,6 +78,7 @@
 .settings-sub{font-size:11px;color:var(--text3);margin-top:2px}
 .toggle-sw{width:46px;height:25px;background:var(--bg3);border-radius:13px;position:relative;cursor:pointer;border:1px solid var(--border2);transition:all .3s;flex-shrink:0}
 .toggle-sw.on{background:var(--blue);border-color:var(--blue)}
+.toggle-sw.is-disabled{opacity:.5;cursor:not-allowed}
 .toggle-sw::after{content:'';position:absolute;width:19px;height:19px;background:white;border-radius:50%;top:2px;left:2px;transition:left .25s;box-shadow:0 2px 4px rgba(0,0,0,.3)}
 .toggle-sw.on::after{left:23px}
 .time-pickers{display:flex;gap:8px;margin-top:8px}
@@ -87,4 +88,3 @@
 .step-num{font-size:28px;font-weight:900;color:var(--blue2)}
 .step-info{text-align:right}
 .step-goal{font-size:11px;color:var(--text2)}
-
