@@ -23,7 +23,7 @@ import {
   cancelAllNotifications,
   ensureNotificationChannel,
   ensureExactAlarmPermission,
-  openAppSettings,
+  openAppSettings
 } from '../../core/platform.js';
 
 // Stable ID space — never collide with random IDs from one-shot notify().
@@ -73,7 +73,6 @@ export async function toggleMeasureReminder() {
   saveData();
   showToast(t('notif-measure-on'));
   await ensureNotificationChannel();
-
   const exactGranted = await ensureExactAlarmPermission();
   if (!exactGranted) {
     state.settings.measureReminder = false;
@@ -82,7 +81,6 @@ export async function toggleMeasureReminder() {
     showToast(t('notif-exact-alarm-needed'));
     return;
   }
-
   await scheduleAllReminders();
 }
 

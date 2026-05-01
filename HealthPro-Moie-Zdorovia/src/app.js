@@ -11,8 +11,7 @@ import { t } from './i18n/index.js';
 import { getLocale } from './core/utils.js';
 import {
   onBackButton,
-  minimizeApp,
-  checkNotificationPermission,
+  minimizeApp
 } from './core/platform.js';
 
 import {
@@ -145,19 +144,6 @@ function init() {
   document.getElementById('measureToggle')?.classList.toggle('on', !!state.settings.measureReminder);
   document.getElementById('lang-uk')?.classList.toggle('active', state.lang === 'uk');
   document.getElementById('lang-ru')?.classList.toggle('active', state.lang === 'ru');
-
-  // Keep a lightweight permission sanity check on startup so measurement
-  // reminders don't stay enabled in UI if OS permission was revoked.
-  if (state.settings.measureReminder) {
-    checkNotificationPermission().then((granted) => {
-      if (!granted) {
-        state.settings.measureReminder = false;
-        document.getElementById('measureToggle')?.classList.remove('on');
-      }
-    });
-  }
-
-  
 
   attachPressureListeners();
   updateLastReading();
