@@ -73,7 +73,16 @@ export async function toggleMeasureReminder() {
   saveData();
   showToast(t('notif-measure-on'));
   await ensureNotificationChannel();
-  await ensureExactAlarmPermission();
+
+  const exactGranted = await ensureExactAlarmPermission();
+  if (!exactGranted) {
+    state.settings.measureReminder = false;
+    document.getElementById('measureToggle').classList.remove('on');
+    saveData();
+    showToast(t('notif-exact-alarm-needed'));
+    return;
+  }
+
   await scheduleAllReminders();
 }
 
@@ -124,5 +133,5 @@ export async function scheduleNotifications() {
   if (state.settings.measureReminder) await scheduleAllReminders();
 }
 
-// Re-schedule whenever the pill list changes (kept for compatibility).
+// Re-schedule whenever pill list changes (kept for compatibility hooks).
 on('pills:changed', () => { scheduleAllReminders(); });
