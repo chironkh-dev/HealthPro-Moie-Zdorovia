@@ -46,6 +46,8 @@ function getPlugin(name) {
 //   lights on. Created once on first permission grant; idempotent on Android.
 async function _ln() {
   if (!isNative()) return null;
+  const p = getPlugin("LocalNotifications");
+  if (p) return p;
   try {
     const mod = await import("@capacitor/local-notifications");
     return mod.LocalNotifications || null;
@@ -55,6 +57,15 @@ async function _ln() {
 }
 
 export const REMINDER_CHANNEL_ID = "reminders";
+
+function _notifGranted(r) {
+  if (!r) return false;
+  if (r.granted === true) return true;
+  // Capacitor LocalNotifications permission keys vary by platform/version:
+  // - { display: "granted" } (common)
+  // - { receive: "granted" } (Android 13+ style)
+  return r.display === "granted" || r.receive === "granted";
+}
 
 let _channelEnsured = false;
 export async function ensureNotificationChannel() {
@@ -85,7 +96,7 @@ export async function requestNotificationPermission() {
   if (ln && typeof ln.requestPermissions === "function") {
     try {
       const r = await ln.requestPermissions();
-      const granted = !!(r && (r.display === "granted" || r.granted === true));
+      const granted = _notifGranted(r);
       if (granted) await ensureNotificationChannel();
       return granted;
     } catch {
@@ -126,7 +137,7 @@ export async function checkNotificationPermission() {
   if (ln && typeof ln.checkPermissions === "function") {
     try {
       const r = await ln.checkPermissions();
-      return !!(r && (r.display === "granted" || r.granted === true));
+      return _notifGranted(r);
     } catch {
       return false;
     }
@@ -158,6 +169,7 @@ export async function notify(title, options = {}) {
       const sched = options.dailyAt
         ? {
             on: { hour: options.dailyAt.hour, minute: options.dailyAt.minute },
+            every: "day",
             allowWhileIdle: true,
             repeats: true,
           }
@@ -179,7 +191,7 @@ export async function notify(title, options = {}) {
             channelId: REMINDER_CHANNEL_ID,
             smallIcon: "ic_stat_notification",
             iconColor: "#5B7CFF",
-            sound: undefined,
+            sound: "default",
             extra: options.extra || {},
           },
         ],

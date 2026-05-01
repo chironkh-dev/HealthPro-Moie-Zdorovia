@@ -20,7 +20,6 @@ import { isPillDueToday } from '../meds/index.js';
 import { t, tt } from '../../i18n/index.js';
 import {
   requestNotificationPermission,
-  notify,
   cancelAllNotifications,
   ensureNotificationChannel,
   openAppSettings,
@@ -43,37 +42,42 @@ function parseHM(s) {
 
 // ─── Toggles ──────────────────────────────────────────────────
 export async function toggleNotifications() {
-  if (!state.settings.notif) {
-    const granted = await requestNotificationPermission();
-    if (granted) {
-      state.settings.notif = true;
-      document.getElementById('notifToggle').classList.add('on');
-      saveData();
-      showToast(t('notif-on'));
-      await ensureNotificationChannel();
-      await scheduleAllReminders();
-    } else {
-      // Permission denied — offer the system settings page so the user
-      // can flip it back on without uninstalling/reinstalling.
-      showToast(t('notif-denied'));
-      setTimeout(() => {
-        if (confirm(t('notif-open-settings-confirm'))) openAppSettings();
-      }, 400);
-    }
-  } else {
-    state.settings.notif = false;
-    document.getElementById('notifToggle').classList.remove('on');
-    saveData();
-    showToast(t('notif-off'));
-    await cancelAllReminders();
-  }
+  // Toggle #1 reserved for future FCM server push reminders.
+  showToast('FCM push — скоро');
 }
 
 export async function toggleMeasureReminder() {
-  state.settings.measureReminder = !state.settings.measureReminder;
-  document.getElementById('measureToggle').classList.toggle('on', state.settings.measureReminder);
+  const next = !state.settings.measureReminder;
+  if (!next) {
+    state.settings.measureReminder = false;
+    document.getElementById('measureToggle').classList.remove('on');
+    saveData();
+    showToast(t('notif-off'));
+    await scheduleAllReminders();
+    return;
+  }
+
+  const morning = document.getElementById('morningTime')?.value || state.settings.morningTime || '';
+  const evening = document.getElementById('eveningTime')?.value || state.settings.eveningTime || '';
+  if (!morning || !evening) {
+    showToast('Спочатку задайте час Ранок/Вечір');
+    return;
+  }
+
+  const granted = await requestNotificationPermission();
+  if (!granted) {
+    showToast(t('notif-denied'));
+    setTimeout(() => {
+      if (confirm(t('notif-open-settings-confirm'))) openAppSettings();
+    }, 400);
+    return;
+  }
+
+  state.settings.measureReminder = true;
+  document.getElementById('measureToggle').classList.add('on');
   saveData();
-  showToast(state.settings.measureReminder ? t('notif-measure-on') : t('notif-off'));
+  showToast(t('notif-measure-on'));
+  await ensureNotificationChannel();
   await scheduleAllReminders();
 }
 
