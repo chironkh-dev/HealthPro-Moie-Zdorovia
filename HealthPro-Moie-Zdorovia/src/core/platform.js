@@ -143,7 +143,7 @@ export async function notify(title, options = {}) {
           // icon "ic_stat_icon_config_sample" is NOT bundled with the
           // plugin, so referencing it leaves notifications without an
           // icon → some Android versions then drop them entirely.
-          smallIcon: 'ic_launcher',
+          smallIcon: 'ic_stat_notification',
           iconColor: '#5B7CFF',
           sound: undefined, // channel handles default sound
           extra: options.extra || {},
