@@ -16,26 +16,19 @@
 
 import { state, saveData, showToast } from '../../core/state.js';
 import { on } from '../../core/state.js';
-import { isPillDueToday } from '../meds/index.js';
-import { t, tt } from '../../i18n/index.js';
+import { t } from '../../i18n/index.js';
 import {
   requestNotificationPermission,
   notify,
   cancelAllNotifications,
   ensureNotificationChannel,
+  ensureExactAlarmPermission,
   openAppSettings,
 } from '../../core/platform.js';
 
 // Stable ID space — never collide with random IDs from one-shot notify().
 const ID_BP_MORNING = 90001;
 const ID_BP_EVENING = 90002;
-const PILL_ID_BASE  = 50000;
-function pillNotifId(p) {
-  // Map possibly-large pill.id (Date.now()) into a stable small int.
-  const n = typeof p.id === 'number' ? p.id : 0;
-  return PILL_ID_BASE + (Math.abs(n) % 30000);
-}
-
 function parseHM(s) {
   const [h, m] = String(s || '08:00').split(':').map((x) => parseInt(x, 10) || 0);
   return { hour: h, minute: m };
@@ -43,37 +36,50 @@ function parseHM(s) {
 
 // ─── Toggles ──────────────────────────────────────────────────
 export async function toggleNotifications() {
-  if (!state.settings.notif) {
-    const granted = await requestNotificationPermission();
-    if (granted) {
-      state.settings.notif = true;
-      document.getElementById('notifToggle').classList.add('on');
-      saveData();
-      showToast(t('notif-on'));
-      await ensureNotificationChannel();
-      await scheduleAllReminders();
-    } else {
-      // Permission denied — offer the system settings page so the user
-      // can flip it back on without uninstalling/reinstalling.
-      showToast(t('notif-denied'));
-      setTimeout(() => {
-        if (confirm(t('notif-open-settings-confirm'))) openAppSettings();
-      }, 400);
-    }
-  } else {
-    state.settings.notif = false;
-    document.getElementById('notifToggle').classList.remove('on');
-    saveData();
-    showToast(t('notif-off'));
-    await cancelAllReminders();
-  }
+  // Toggle #1 reserved for future FCM server push reminders.
+  showToast(t('notif-fcm-soon'));
 }
 
 export async function toggleMeasureReminder() {
-  state.settings.measureReminder = !state.settings.measureReminder;
-  document.getElementById('measureToggle').classList.toggle('on', state.settings.measureReminder);
+  const next = !state.settings.measureReminder;
+  if (!next) {
+    state.settings.measureReminder = false;
+    document.getElementById('measureToggle').classList.remove('on');
+    saveData();
+    showToast(t('notif-off'));
+    await scheduleAllReminders();
+    return;
+  }
+
+  const morning = document.getElementById('morningTime')?.value || state.settings.morningTime || '';
+  const evening = document.getElementById('eveningTime')?.value || state.settings.eveningTime || '';
+  if (!morning || !evening) {
+    showToast(t('notif-set-times-first'));
+    return;
+  }
+
+  const granted = await requestNotificationPermission();
+  if (!granted) {
+    showToast(t('notif-denied'));
+    setTimeout(() => {
+      if (confirm(t('notif-open-settings-confirm'))) openAppSettings();
+    }, 400);
+    return;
+  }
+
+  state.settings.measureReminder = true;
+  document.getElementById('measureToggle').classList.add('on');
   saveData();
-  showToast(state.settings.measureReminder ? t('notif-measure-on') : t('notif-off'));
+  showToast(t('notif-measure-on'));
+  await ensureNotificationChannel();
+  const exactGranted = await ensureExactAlarmPermission();
+  if (!exactGranted) {
+    state.settings.measureReminder = false;
+    document.getElementById('measureToggle').classList.remove('on');
+    saveData();
+    showToast(t('notif-exact-alarm-needed'));
+    return;
+  }
   await scheduleAllReminders();
 }
 
@@ -90,45 +96,27 @@ export async function saveReminderTimes() {
 // for whatever is currently enabled. Idempotent — safe to call often.
 export async function scheduleAllReminders() {
   await cancelAllNotifications();
-  if (!state.settings.notif) return;
+  if (!state.settings.measureReminder) return;
 
   const items = [];
 
-  // Pills: only those due today (daily / weekly-mon / etc.). The OS will
-  // repeat the alarm every day at the same local time; the in-app pill
-  // list still controls visibility for non-daily schedules at render time.
-  state.pills.forEach((p) => {
-    if (!isPillDueToday(p)) return;
-    const { hour, minute } = parseHM(p.time);
-    const body = t('notif-pill-time') + (p.time || '') + (p.dose ? ' · ' + p.dose : '');
-    items.push({
-      id: pillNotifId(p),
-      title: tt('notif-pill-title', { name: p.name || '' }),
-      dailyAt: { hour, minute },
-      body,
-      extra: { type: 'pill', pillId: p.id },
-    });
-  });
-
   // Morning + evening BP reminders.
-  if (state.settings.measureReminder) {
-    const m = parseHM(state.settings.morningTime || '08:00');
-    const e = parseHM(state.settings.eveningTime || '20:00');
-    items.push({
-      id: ID_BP_MORNING,
-      title: t('notif-bp-title'),
-      dailyAt: m,
-      body: t('notif-bp-body'),
-      extra: { type: 'bp', slot: 'morning' },
-    });
-    items.push({
-      id: ID_BP_EVENING,
-      title: t('notif-bp-title'),
-      dailyAt: e,
-      body: t('notif-bp-body'),
-      extra: { type: 'bp', slot: 'evening' },
-    });
-  }
+  const m = parseHM(state.settings.morningTime || '08:00');
+  const e = parseHM(state.settings.eveningTime || '20:00');
+  items.push({
+    id: ID_BP_MORNING,
+    title: t('notif-bp-title'),
+    dailyAt: m,
+    body: t('notif-bp-body'),
+    extra: { type: 'bp', slot: 'morning' },
+  });
+  items.push({
+    id: ID_BP_EVENING,
+    title: t('notif-bp-title'),
+    dailyAt: e,
+    body: t('notif-bp-body'),
+    extra: { type: 'bp', slot: 'evening' },
+  });
 
   // Schedule sequentially so the LocalNotifications plugin queues each one
   // with its own unique id (single-batch schedule also works, but this
@@ -146,7 +134,7 @@ export async function cancelAllReminders() {
 // In the old setInterval-based architecture this fired every minute; now
 // it just ensures the schedule is up to date (cheap idempotent call).
 export async function scheduleNotifications() {
-  if (state.settings.notif) await scheduleAllReminders();
+  if (state.settings.measureReminder) await scheduleAllReminders();
 }
 
 // Re-schedule whenever the pill list changes (add / delete / toggle taken).
