@@ -56,6 +56,15 @@ async function _ln() {
 
 export const REMINDER_CHANNEL_ID = "reminders";
 
+function _notifGranted(r) {
+  if (!r) return false;
+  if (r.granted === true) return true;
+  // Capacitor LocalNotifications permission keys vary by platform/version:
+  // - { display: "granted" } (common)
+  // - { receive: "granted" } (Android 13+ style)
+  return r.display === "granted" || r.receive === "granted";
+}
+
 let _channelEnsured = false;
 export async function ensureNotificationChannel() {
   if (_channelEnsured) return true;
@@ -85,7 +94,7 @@ export async function requestNotificationPermission() {
   if (ln && typeof ln.requestPermissions === "function") {
     try {
       const r = await ln.requestPermissions();
-      const granted = !!(r && (r.display === "granted" || r.granted === true));
+      const granted = _notifGranted(r);
       if (granted) await ensureNotificationChannel();
       return granted;
     } catch {
@@ -126,7 +135,7 @@ export async function checkNotificationPermission() {
   if (ln && typeof ln.checkPermissions === "function") {
     try {
       const r = await ln.checkPermissions();
-      return !!(r && (r.display === "granted" || r.granted === true));
+      return _notifGranted(r);
     } catch {
       return false;
     }
