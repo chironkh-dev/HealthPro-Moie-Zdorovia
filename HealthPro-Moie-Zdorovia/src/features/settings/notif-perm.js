@@ -7,7 +7,14 @@ import { t } from '../../i18n/index.js';
 import {
   prefs,
   requestNotificationPermission,
+<<<<<<< codex/analyze-local-notification-issue
 } from '../../core/platform.js';
+=======
+  ensureNotificationChannel,
+  notify,
+} from '../../core/platform.js';
+import { scheduleNotifications } from './notifications.js';
+>>>>>>> main
 
 const PREF_KEY = 'notif_permission_asked';
 
@@ -43,6 +50,12 @@ export async function acceptNotifPerm() {
     const granted = await requestNotificationPermission();
     if (granted) {
       showToast(t('notif-on'));
+      await ensureNotificationChannel();
+      await scheduleNotifications();
+      await notify(t('notif-on'), {
+        at: Date.now() + 5000,
+        body: 'HealthPro: test notification',
+      });
     } else {
       showToast(t('notif-denied'));
     }

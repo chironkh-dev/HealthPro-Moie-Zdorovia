@@ -42,6 +42,7 @@ function parseHM(s) {
 
 // ─── Toggles ──────────────────────────────────────────────────
 export async function toggleNotifications() {
+<<<<<<< codex/analyze-local-notification-issue
   // Toggle #1 reserved for future FCM server push reminders.
   showToast('FCM push — скоро');
 }
@@ -51,6 +52,34 @@ export async function toggleMeasureReminder() {
   if (!next) {
     state.settings.measureReminder = false;
     document.getElementById('measureToggle').classList.remove('on');
+=======
+  if (!state.settings.notif) {
+    const granted = await requestNotificationPermission();
+    if (granted) {
+      state.settings.notif = true;
+      document.getElementById('notifToggle').classList.add('on');
+      saveData();
+      showToast(t('notif-on'));
+      await ensureNotificationChannel();
+      await scheduleAllReminders();
+      // Immediate smoke-test so user can confirm notifications actually work
+      // on this device/build right after enabling.
+      await notify(t('notif-on'), {
+        at: Date.now() + 5000,
+        body: 'HealthPro: test notification',
+      });
+    } else {
+      // Permission denied — offer the system settings page so the user
+      // can flip it back on without uninstalling/reinstalling.
+      showToast(t('notif-denied'));
+      setTimeout(() => {
+        if (confirm(t('notif-open-settings-confirm'))) openAppSettings();
+      }, 400);
+    }
+  } else {
+    state.settings.notif = false;
+    document.getElementById('notifToggle').classList.remove('on');
+>>>>>>> main
     saveData();
     showToast(t('notif-off'));
     await scheduleAllReminders();
