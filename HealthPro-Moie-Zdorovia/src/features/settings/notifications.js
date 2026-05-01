@@ -52,6 +52,12 @@ export async function toggleNotifications() {
       showToast(t('notif-on'));
       await ensureNotificationChannel();
       await scheduleAllReminders();
+      // Immediate smoke-test so user can confirm notifications actually work
+      // on this device/build right after enabling.
+      await notify(t('notif-on'), {
+        at: Date.now() + 5000,
+        body: 'HealthPro: test notification',
+      });
     } else {
       // Permission denied — offer the system settings page so the user
       // can flip it back on without uninstalling/reinstalling.
