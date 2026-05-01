@@ -22,6 +22,7 @@ import {
   notify,
   cancelAllNotifications,
   ensureNotificationChannel,
+  ensureExactAlarmPermission,
   openAppSettings,
 } from '../../core/platform.js';
 
@@ -37,7 +38,7 @@ function parseHM(s) {
 // ─── Toggles ──────────────────────────────────────────────────
 export async function toggleNotifications() {
   // Toggle #1 reserved for future FCM server push reminders.
-  showToast('FCM push — скоро');
+  showToast(t('notif-fcm-soon'));
 }
 
 export async function toggleMeasureReminder() {
@@ -54,7 +55,7 @@ export async function toggleMeasureReminder() {
   const morning = document.getElementById('morningTime')?.value || state.settings.morningTime || '';
   const evening = document.getElementById('eveningTime')?.value || state.settings.eveningTime || '';
   if (!morning || !evening) {
-    showToast('Спочатку задайте час Ранок/Вечір');
+    showToast(t('notif-set-times-first'));
     return;
   }
 
@@ -72,6 +73,7 @@ export async function toggleMeasureReminder() {
   saveData();
   showToast(t('notif-measure-on'));
   await ensureNotificationChannel();
+  await ensureExactAlarmPermission();
   await scheduleAllReminders();
 }
 

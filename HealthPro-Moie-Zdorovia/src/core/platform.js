@@ -148,6 +148,29 @@ export async function checkNotificationPermission() {
   return false;
 }
 
+// Android 12+ may require "exact alarms" capability for precise clock-time
+// delivery. We best-effort request/open this setting when plugin supports it.
+export async function ensureExactAlarmPermission() {
+  const ln = await _ln();
+  if (!ln) return true;
+  try {
+    if (typeof ln.checkExactNotificationSetting !== "function") return true;
+    const r = await ln.checkExactNotificationSetting();
+    const granted =
+      r === "granted" ||
+      r?.value === "granted" ||
+      r?.exact === "granted" ||
+      r?.exactAlarm === "granted";
+    if (granted) return true;
+    if (typeof ln.changeExactNotificationSetting === "function") {
+      await ln.changeExactNotificationSetting();
+    }
+    return false;
+  } catch {
+    return true;
+  }
+}
+
 // Schedule a notification. Supports:
 //   options.at         — Date | timestamp for one-shot future delivery
 //   options.dailyAt    — { hour, minute } → repeats daily at this local time

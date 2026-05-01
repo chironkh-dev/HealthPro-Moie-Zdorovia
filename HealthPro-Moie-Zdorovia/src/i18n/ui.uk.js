@@ -255,6 +255,8 @@ export const T_UK ={
   'notif-bp-toast':'🩺 Час для виміру тиску',
   'notif-pill-title':'💊 Час прийняти: {{name}}',
   'notif-open-settings-confirm':'Сповіщення заборонені. Відкрити налаштування додатку, щоб увімкнути?',
+  'notif-fcm-soon':'FCM push — скоро',
+  'notif-set-times-first':'Спочатку задайте час Ранок/Вечір',
 
   // ─── notif permission modal (post-disclaimer) — IDs match HTML ───
   'nt-perm-title':'Увімкнути нагадування?',
