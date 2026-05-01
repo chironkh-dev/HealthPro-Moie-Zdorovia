@@ -29,6 +29,7 @@ import {
 // Stable ID space — never collide with random IDs from one-shot notify().
 const ID_BP_MORNING = 90001;
 const ID_BP_EVENING = 90002;
+
 function parseHM(s) {
   const [h, m] = String(s || '08:00').split(':').map((x) => parseInt(x, 10) || 0);
   return { hour: h, minute: m };
@@ -85,8 +86,6 @@ export async function saveReminderTimes() {
 }
 
 // ─── Core re-scheduler ────────────────────────────────────────
-// Cancels every previously-scheduled item, then re-creates the full set
-// for whatever is currently enabled. Idempotent — safe to call often.
 export async function scheduleAllReminders() {
   await cancelAllNotifications();
   if (!state.settings.measureReminder) return;
@@ -111,9 +110,6 @@ export async function scheduleAllReminders() {
     extra: { type: 'bp', slot: 'evening' },
   });
 
-  // Schedule sequentially so the LocalNotifications plugin queues each one
-  // with its own unique id (single-batch schedule also works, but this
-  // gives clearer error reporting if a single item fails).
   for (const it of items) {
     try { await notify(it.title, it); } catch { /* noop */ }
   }
@@ -124,11 +120,9 @@ export async function cancelAllReminders() {
 }
 
 // Backwards-compat shim: app.js still imports `scheduleNotifications`.
-// In the old setInterval-based architecture this fired every minute; now
-// it just ensures the schedule is up to date (cheap idempotent call).
 export async function scheduleNotifications() {
   if (state.settings.measureReminder) await scheduleAllReminders();
 }
 
-// Re-schedule whenever the pill list changes (add / delete / toggle taken).
+// Re-schedule whenever the pill list changes (kept for compatibility).
 on('pills:changed', () => { scheduleAllReminders(); });
