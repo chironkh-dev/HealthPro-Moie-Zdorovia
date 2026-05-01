@@ -46,6 +46,8 @@ function getPlugin(name) {
 //   lights on. Created once on first permission grant; idempotent on Android.
 async function _ln() {
   if (!isNative()) return null;
+  const p = getPlugin("LocalNotifications");
+  if (p) return p;
   try {
     const mod = await import("@capacitor/local-notifications");
     return mod.LocalNotifications || null;
