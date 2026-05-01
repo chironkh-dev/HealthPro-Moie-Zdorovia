@@ -257,7 +257,10 @@ export const T_RU ={
   'notif-open-settings-confirm':'Уведомления запрещены. Открыть настройки приложения, чтобы включить?',
   'notif-fcm-soon':'FCM push — скоро',
   'notif-set-times-first':'Сначала задайте время Утро/Вечер',
+<<<<<<< codex/analyze-local-notification-issue-229eid
   'notif-exact-alarm-needed':'Разрешите “Будильники и напоминания”, затем включите напоминания ещё раз.',
+=======
+>>>>>>> main
 
   // ─── notif permission modal (post-disclaimer) — IDs match HTML ───
   'nt-perm-title':'Включить напоминания?',

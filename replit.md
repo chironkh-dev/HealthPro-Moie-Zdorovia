@@ -1,124 +1,53 @@
 # HealthPro · Моє Здоров'я
 
-Українська PWA для контролю артеріального тиску, пульсу та прийому ліків. Готується до нативного білду через Capacitor (Android / iOS).
+### Overview
+HealthPro is a Ukrainian Progressive Web App (PWA) designed for monitoring blood pressure, pulse, and medication intake. It is being prepared for native build via Capacitor (Android/iOS). The project aims to provide a comprehensive health management solution with features for tracking vital signs, medication reminders, and health analytics, offering a user-friendly experience on both web and mobile platforms.
 
-## Стек
-
-- Vite 5 (dev-сервер на порту 5000, host 0.0.0.0)
-- Vanilla JS (модулі ESM)
-- jsPDF + html2canvas — експорт звітів
-- Capacitor 8 — нативна обгортка (плагіни поки не підключені)
-
-## Структура `HealthPro-Moie-Zdorovia/src/`
-
-```
-src/
-├─ app.js                 тонкий оркестратор (~254 рядки)
-├─ core/
-│  ├─ state.js            єдиний state, saveData, on/emit, setToast, today, DB
-│  ├─ storage.js          defaultSettings, ключі LocalStorage
-│  └─ utils.js            formatTime, formatDate, todayISO, avg
-├─ i18n/
-│  └─ index.js            T_UK, T_RU, WELCOME_T, DISCLAIMER_T, PDF_LABELS
-└─ features/
-   ├─ pressure/   norm, who, critical, index — Етап 4-А
-   ├─ charts/     helpers, bp-chart, index   — Етап 4-Б
-   ├─ analytics/  health-score, bmi, recommendations, trend-modal, index — Етап 4-В
-   ├─ history/    index — Етап 4-Г (журнал з фільтром)
-   ├─ export/     csv, modal, pdf, print, logo, index — Етап 4-Г
-   ├─ settings/   theme, i18n, profile, notifications, data, disclaimer, index — Етап 4-Д
-   ├─ pwa/        index — Етап 4-Д (installApp, registerSW, applyUpdate, online/offline)
-   ├─ meds/       drug-db, index
-   └─ steps/      index (експортує getStepCount для analytics)
-```
-
-## Workflow
-
-- `Start application` → `cd HealthPro-Moie-Zdorovia && npm run dev -- --host 0.0.0.0 --port 5000`
-
-## Конвенції
-
+### User Preferences
 - Користувач спілкується українською. Без емодзі без явного запиту.
-- Усі feature-модулі імпортують `state` з `core/state.js` напряму. Нічого глобального.
-- Масиви мутують через `push/splice/length=0`, ніколи не переприсвоюють (інакше посилання в інших модулях розсинхронізуються).
-- Крос-модульні перерисовки — через шину подій `emit('event:name')` / `on('event:name', ...)`.
-- Зміна мови — модуль реєструє свій рендерер через `registerReRender(fn)` із settings/i18n.js (уникаємо циклічних імпортів).
-- `showToast` живе в app.js (DOM-bound), реєструється через `setToast(showToast)` у state.js.
-- Файли для Capacitor (`capacitor.config.json`) використовують `webDir: "dist"`.
 
-## Прогрес рефакторингу (за планом з PDF)
+### System Architecture
 
-- [x] Етап 4-А — features/pressure
-- [x] Етап 4-Б — features/charts
-- [x] Етап 4-В — features/analytics (health-score, BMI, рекомендації, тренди)
-- [x] Етап 4-Г — features/history + features/export (CSV / JSON / друк / PDF)
-- [x] Етап 4-Д — features/settings + features/pwa
-- [x] BugFix Раунд 1 (6 багів): історія, CSV, дубль PDF, FOUC, друк, контраст
-- [x] BugFix Раунд 2 (4 баги): крах PDF (CDN→npm imports), світла тема (FOUC-стиль з !important), sticky-навігація (top:62), локалізація toast (профіль/ліки/нагадування/експорт)
-- [x] BugFix Раунд 3 (Phase 2 part 1, 3 баги): sticky-навігація (динамічна `--header-height` + ResizeObserver), модалка експорту автозакривається після Друк/PDF/CSV (обгортки в features/export/index.js), CSV `exportReportCSV` отримує `getExportMeasurements` через обгортку
-- [x] Фаза 2 крок 1 — Capacitor плагіни встановлено в обох package.json (root + HealthPro-Moie-Zdorovia): app, filesystem, haptics, local-notifications, preferences, share, splash-screen, status-bar
-- [x] Фаза 2 крок 2 — `npx cap sync android` пройшов, 8 плагінів зареєстровано в android/
-- [x] Фаза 2 крок 3 — GitHub Actions workflow `.github/workflows/android-apk.yml` для збірки debug APK (артефакт `HealthPro-debug-apk`)
-- [x] Фаза 2 крок 4 — APK успішно зібрано користувачем через GitHub Actions (з невеликими правками воркфлоу)
-- [x] Етап 5 — локальна БД через `@capacitor-community/sqlite@8.1.0` + 3-tier persistence (SQLite/IDB/LS). Новий `src/core/sqlite.js`, переписаний `src/core/storage.js`. API `loadState/saveState` без змін — feature-модулі не зачеплені. Auto-migration legacy LS → primary та IDB → SQLite (одноразово, тільки нативно).
-- [x] Phase 2 + Stage 5 PDF звіт: `attached_assets/HealthPro_Phase2_Stage5_Report.pdf`
-- [x] APK Bug Fix Раунд 3 (T1-T7, виконано до тесту APK):
-  - T1 Усунуто весь хардкод UA/RU у фічах (i18n.t/tt + новий `getLocale()` у `core/utils.js`). Залишилися лише легітимні `state.lang === 'ru'` для CSS active-toggle мови та `<html lang>` атрибуту HTML принт-звіту.
-  - T2 Модалка ВООЗ повністю через i18n (`who.js`).
-  - T3 Хардверна кнопка «Назад» (Android): новий `onBackButton()` + `minimizeApp()` у `core/platform.js`. Логіка в `app.js`: відкрита модалка → закрити; не на Pressure → перейти на Pressure; інакше → minimize.
-  - T4 `LocalNotifications` через **ESM dynamic import** `@capacitor/local-notifications` замість `window.Capacitor.Plugins`. Додано `checkNotificationPermission()` та `cancelNotifications()`. `notifications.js` тепер ходить через `notify()`.
-  - T5 Експорт CSV/PDF на нативі через `Filesystem.writeFile(Documents) → Share.share({ url })`. `platform.download()` тепер async, з web-fallback. `csv.js` та `pdf.js` використовують `platformDownload(...)`.
-  - T6 Модалка дозволу сповіщень одразу після прийняття дисклеймера. Стан зберігається у `prefs.set('notif_permission_asked', ...)`. Новий модуль `features/settings/notif-perm.js`, нова модалка `#notifPermModal` в `index.html`, обробники `acceptNotifPerm/declineNotifPerm/dismissNotifPerm`.
-  - T7 `npm test` 41/41, `npm run build` ok, `npx cap sync android` ok (9 плагінів). PDF-звіт: `attached_assets/HealthPro_APK_BugFix_Round3.pdf`.
+The application is built with Vite 5 and Vanilla JS (ESM modules). The core architecture emphasizes a modular approach, with a thin orchestrator (`app.js`) managing various feature modules.
 
-## APK Bug Fix Round 3 (квітень 2026, продовження)
-- **#1 Виправлено баг із модалкою сповіщень**: `onclick="event.stopPropagation()"` всередині `.modal-sheet` блокував document-level dispatcher → замінено на `data-action="stop"`. Кнопки «Дозволити» / «Не зараз» тепер працюють.
-- **#2 Email/SMS нагадування**: видалено застарілий блок Google Calendar/PWABuilder/VAPID. Новий модуль `src/features/settings/email-sms.js`. Кнопки використовують `App.openUrl(mailto:/sms:)` через `platform.openUrl()` для нативного intent picker (Gmail / SMS-клієнт).
-- **#3 i18n хардкод**: `data.js` (`t('data-clear-confirm')`), `critical.js` (`tt('cr-sms-body')`, `t('cr-test-sms-body')`, `t('cr-emergency-name-default')`). Додано всі ключі в UA та RU словники.
-- **#13 Крокомір**: поріг прискорення піднято з 1.5 до 12 m/s² (правильна базова лінія з гравітацією ~9.81). Додано дебаунс `STEP_MIN_INTERVAL_MS=280` (≤ ~3.5 кроку/сек). Підтримка подій `@capacitor/motion` через `e.acceleration` + 9.81. Більше не «вигадує» кроки в спокої.
-- **#7 AndroidManifest**: додано `POST_NOTIFICATIONS`, `SCHEDULE_EXACT_ALARM`, `USE_EXACT_ALARM`, `RECEIVE_BOOT_COMPLETED`, `WAKE_LOCK`, `VIBRATE`, `FOREGROUND_SERVICE`, `ACTIVITY_RECOGNITION` + `<uses-feature>` крокоміра/детектора. Тег `<queries>` для `mailto:`/`sms:`/`tel:`/`https` (Android 11+ package visibility).
-- **#14 Аудит drug-db.js**: переписано всі попередження зрозумілою мовою («не натщесерце» → «приймати після їжі», «контроль K+» → «контролюйте рівень калію (аналіз крові)»). Видалено криптичні крос-посилання `=еналаприл`. Виправлено баг дублікату ключа `периндоприл` (UA-словник перезаписувався RU).
-- **#12 Іконка/сплеш**: встановлено `@capacitor/assets` (devDep). Команда `npx capacitor-assets generate --android --assetPath assets` згенерувала 74 файли (mipmap-* іконки + drawable-*-splash) із джерела `HealthPro-Moie-Zdorovia/assets/icon.png` (1024×1024).
-- Build: `npx vite build` ok, `npx cap sync android` ok (9 плагінів, web-assets скопійовано). PDF-звіт: `attached_assets/HealthPro_APK_BugFix_Round3_Continuation.pdf`. Скрипт-генератор: `scripts/generate_apk_bugfix_round3_continuation_report.cjs`.
+**Core Principles:**
+- **State Management:** A single, centralized `state.js` in `core/` handles application state, data saving, event emission, and toast notifications.
+- **Modularity:** Features are organized into independent modules under `features/`, each responsible for a specific domain (e.g., `pressure`, `charts`, `analytics`, `history`, `export`, `settings`, `pwa`, `meds`, `steps`).
+- **Data Persistence:** The application supports a 3-tier persistence model using `@capacitor-community/sqlite`, IndexedDB, and LocalStorage, with auto-migration from legacy storage types to SQLite on native platforms.
+- **Cross-Module Communication:** Achieved via an event bus (`emit('event:name')` / `on('event:name', ...)`) to avoid direct coupling and cyclic imports.
+- **Internationalization (i18n):** Language changes trigger re-rendering in registered modules through `settings/i18n.js` to dynamically update UI text.
+- **UI/UX:** The application prioritizes clear data visualization and user-friendly interaction. Theming (light/dark) is supported.
+- **Native Integration (Capacitor):** The project is transitioning to a native wrapper using Capacitor, incorporating plugins for app functionality, filesystem access, haptics, local notifications, preferences, sharing, splash screen, and status bar.
+- **Background Notifications:** Implemented using Capacitor's Local Notifications, ensuring reminders (medication, blood pressure) are delivered even when the app is closed, leveraging Android's AlarmManager.
+- **Step Counter:** Utilizes `@capacitor/motion` for step detection with adjusted acceleration thresholds and debounce mechanisms to prevent erroneous readings.
+- **Dynamic Styling:** CSS variables like `--header-height` are used for adaptive UI elements, such as sticky navigation, incorporating `ResizeObserver` for dynamic adjustments.
 
-## APK Round 4 — Частина 1 (квітень 2026)
-- **Структура:** видалено дубль `HealthPro-Moie-Zdorovia/android/` + дубль `HealthPro-Moie-Zdorovia/capacitor.config.json`. Тепер ОДНА `android/` у корені (саме її використовує GitHub Actions). Джерело іконки `assets/icon.png` (1024×1024) у корені.
-- **Іконка:** перегенеровано в правильну кореневу `android/` через `./HealthPro-Moie-Zdorovia/node_modules/.bin/capacitor-assets generate --android --assetPath assets` (з кореня). 74 файли. mipmap-xxxhdpi/ic_launcher.png — 22 KB (раніше була дефолтна 9 KB).
-- **AndroidManifest:** додано `FOREGROUND_SERVICE_HEALTH` (Android 14+ typed foreground service). Поради Gemini про `<service BackgroundStepService>` + `<receiver StepResetReceiver>` ВІДХИЛЕНО — немає відповідних Java/Kotlin-класів, APK не збереться.
-- **Фонові сповіщення (головне):**
-  - `platform.ensureNotificationChannel()` створює канал `"reminders"` з `importance=5 (HIGH)`, `sound='default'`, `vibration=true`, `lights=true`. Викликається після `requestPermissions()`.
-  - `platform.notify(title, { dailyAt: { hour, minute }, ... })` → `LocalNotifications.schedule({ schedule: { on: {hour, minute}, allowWhileIdle: true }, channelId: 'reminders', smallIcon: 'ic_launcher', iconColor: '#5B7CFF' })`. Android AlarmManager спрацьовує НАВІТЬ якщо додаток вбито.
-  - `platform.cancelAllNotifications()` — `getPending() → cancel(all)`.
-  - `platform.openAppSettings()` через `App.openSettings()` для denied permission.
-- **notifications.js — переписано:**
-  - `scheduleAllReminders()` — cancel all + pre-schedule per pill (id 50000+hash) + ранкове (90001) + вечірнє (90002) BP-нагадування з repeats.
-  - Тригери: `toggleNotifications`, `toggleMeasureReminder`, `saveReminderTimes`, `on('pills:changed')`.
-  - Видалено `setInterval(scheduleNotifications, 60000)` з `app.js` (тільки одноразовий виклик на старті).
-- **i18n:** додано ключі `notif-pill-title`, `notif-open-settings-confirm` (UA + RU).
-- **Звіт:** `attached_assets/HealthPro_APK_Round4_Part1_BackgroundNotifications.pdf`. Скрипт: `scripts/generate_apk_round4_part1_report.cjs`.
-- **Залишилось:** Email/SMS автоматичне надсилання (юзер обирає варіант A/B/C); фоновий крокомір (потребує власного Capacitor-плагіна на Java).
+**Key Feature Specifications:**
+- **Pressure Module:** Manages blood pressure readings, displaying normal, WHO classifications, and critical values.
+- **Charts Module:** Visualizes blood pressure data.
+- **Analytics Module:** Provides health scores, BMI calculations, recommendations, and trend analysis.
+- **History Module:** A journal with filtering capabilities for past records.
+- **Export Module:** Supports exporting data in CSV, PDF, and print formats, including native sharing functionalities.
+- **Settings Module:** Manages user preferences, themes, language, profile, notifications, and data management.
+- **PWA Module:** Handles PWA installation, service worker registration, and update mechanisms.
+- **Meds Module:** Manages medication intake with a drug database and scheduling.
+- **Localization:** All hardcoded UA/RU strings removed and managed through `i18n.t`/`tt` and `getLocale()`.
 
-## Послідовність збірки APK (готова до push)
-```
-npx vite build              # збирає dist/ (виконується з HealthPro-Moie-Zdorovia/)
-npx cap sync android        # копіює dist/ + плагіни в android/ (виконується з кореня)
-git add -A && git commit -m "..." && git push origin main
-# далі: GitHub Actions → Build Android APK → Artifacts → HealthPro-debug-<sha>.apk
-```
-
-## Збірка APK
-- Локальна збірка в Replit неможлива (немає Java/Android SDK).
-- Збірка йде в GitHub Actions (`.github/workflows/android-apk.yml`).
-- Після push до `main` (або через `workflow_dispatch`) → GitHub → Actions → Build Android APK → Artifacts → `HealthPro-debug-apk` → файл `HealthPro-debug-<git-sha>.apk`.
-- Усередині workflow APK кладеться у `android/app/build/outputs/apk/debug/app-debug.apk` і копіюється в `apk-out/HealthPro-debug-<sha>.apk` перед завантаженням.
-
-## Структура Capacitor (важливо для майбутніх сесій)
-- `capacitor.config.json` лежить у **корені репо** (не в HealthPro-Moie-Zdorovia/), з `webDir: "dist"` → відносно кореня.
-- `android/` лежить у **корені репо**.
-- Vite збирає у `../dist` (відносно HealthPro-Moie-Zdorovia/), тобто також у корені.
-- `@capacitor/cli`, `@capacitor/core`, `@capacitor/android` і всі плагіни встановлено в **обох** `package.json` (root + HealthPro-Moie-Zdorovia/), бо `cap sync` запускається з кореня (поряд з config), а сам web-код імпортує плагіни з HealthPro-Moie-Zdorovia/node_modules.
-
-## Скрипти
-
-- `scripts/generate_report.cjs` — генерує `attached_assets/HealthPro_Refactor_Report_Stage_4_complete.pdf` через jsPDF + DejaVu Sans (підтримка кирилиці). Запуск: `node scripts/generate_report.cjs`.
-- `scripts/generate_bugfix_report.cjs` — генерує `attached_assets/HealthPro_BugFix_Report.pdf` (Раунд 1+2). Запуск: `node scripts/generate_bugfix_report.cjs`.
+### External Dependencies
+- **Vite 5:** Build tool and development server.
+- **jsPDF + html2canvas:** For generating PDF reports.
+- **Capacitor 8:** Native wrapper for Android/iOS.
+    - `@capacitor/app`
+    - `@capacitor/filesystem`
+    - `@capacitor/haptics`
+    - `@capacitor/local-notifications`
+    - `@capacitor/preferences`
+    - `@capacitor/share`
+    - `@capacitor/splash-screen`
+    - `@capacitor/status-bar`
+    - `@capacitor/motion`
+    - `@capacitor/cli`
+    - `@capacitor/core`
+    - `@capacitor/android`
+- **@capacitor-community/sqlite@8.1.0:** For local database persistence on native platforms.
+- **@capacitor/assets:** Used for generating native app icons and splash screens.
