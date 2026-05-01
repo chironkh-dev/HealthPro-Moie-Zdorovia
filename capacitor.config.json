@@ -1,5 +1,12 @@
 {
   "appId": "ua.healthpro.app",
   "appName": "HealthPro",
-  "webDir": "dist"
+  "webDir": "dist",
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_notification",
+      "iconColor": "#5B7CFF",
+      "sound": "default"
+    }
+  }
 }
