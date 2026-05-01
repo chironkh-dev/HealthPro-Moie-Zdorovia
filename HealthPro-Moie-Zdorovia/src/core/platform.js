@@ -124,6 +124,17 @@ export async function checkNotificationPermission() {
 // (see ensureNotificationChannel), so heads-up + sound work in background.
 export async function notify(title, options = {}) {
   const ln = await _ln();
+// Перевірити чи дозволені точні будильники (Android 12+)
+if (typeof ln.checkExactNotificationSetting === 'function') {
+  try {
+    const exactPerm = await ln.checkExactNotificationSetting();
+    if (exactPerm && exactPerm.exactAlarm === 'denied') {
+      // Fallback: schedule inexact (без allowWhileIdle)
+      if (sched) sched.allowWhileIdle = false;
+    }
+  } catch { /* ignore */ }
+}
+// конец
   if (ln && typeof ln.schedule === 'function') {
     try {
       await ensureNotificationChannel();
