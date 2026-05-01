@@ -29,7 +29,6 @@ import {
 // Stable ID space — never collide with random IDs from one-shot notify().
 const ID_BP_MORNING = 90001;
 const ID_BP_EVENING = 90002;
-
 function parseHM(s) {
   const [h, m] = String(s || '08:00').split(':').map((x) => parseInt(x, 10) || 0);
   return { hour: h, minute: m };
@@ -117,6 +116,10 @@ export async function scheduleAllReminders() {
     extra: { type: 'bp', slot: 'evening' },
   });
 
+
+  // Schedule sequentially so the LocalNotifications plugin queues each one
+  // with its own unique id (single-batch schedule also works, but this
+  // gives clearer error reporting if a single item fails).
   for (const it of items) {
     try { await notify(it.title, it); } catch { /* noop */ }
   }
