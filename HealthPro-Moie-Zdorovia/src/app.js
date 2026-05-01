@@ -9,7 +9,11 @@
 import { state, setToast, on } from './core/state.js';
 import { t } from './i18n/index.js';
 import { getLocale } from './core/utils.js';
-import { onBackButton, minimizeApp } from './core/platform.js';
+import {
+  onBackButton,
+  minimizeApp,
+  checkNotificationPermission,
+} from './core/platform.js';
 
 import {
   // pressure
@@ -137,11 +141,18 @@ function init() {
   document.getElementById('lang-uk')?.classList.toggle('active', state.lang === 'uk');
   document.getElementById('lang-ru')?.classList.toggle('active', state.lang === 'ru');
 
-  // Validate stored notification permission
-   if (state.settings.notif && 'Notification' in window && Notification.permission !== 'granted') {
-     state.settings.notif = false;
-     document.getElementById('notifToggle')?.classList.remove('on');
-   }
+  // Validate stored notification permission with platform-aware check.
+  // IMPORTANT: on native Android/WebView `Notification.permission` can be
+  // "default"/unsupported even when LocalNotifications permission is granted.
+  // Using the web-only check here incorrectly disabled reminders on startup.
+  if (state.settings.notif) {
+    checkNotificationPermission().then((granted) => {
+      if (!granted) {
+        state.settings.notif = false;
+        document.getElementById('notifToggle')?.classList.remove('on');
+      }
+    });
+  }
 
   
 

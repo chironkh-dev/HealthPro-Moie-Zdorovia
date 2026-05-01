@@ -4,7 +4,13 @@
 
 import { state, saveData, showToast } from '../../core/state.js';
 import { t } from '../../i18n/index.js';
-import { prefs, requestNotificationPermission } from '../../core/platform.js';
+import {
+  prefs,
+  requestNotificationPermission,
+  ensureNotificationChannel,
+  notify,
+} from '../../core/platform.js';
+import { scheduleNotifications } from './notifications.js';
 
 const PREF_KEY = 'notif_permission_asked';
 
@@ -44,6 +50,12 @@ export async function acceptNotifPerm() {
       if (tg) tg.classList.add('on');
       saveData();
       showToast(t('notif-on'));
+      await ensureNotificationChannel();
+      await scheduleNotifications();
+      await notify(t('notif-on'), {
+        at: Date.now() + 5000,
+        body: 'HealthPro: test notification',
+      });
     } else {
       showToast(t('notif-denied'));
     }
