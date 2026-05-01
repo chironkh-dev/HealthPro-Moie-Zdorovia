@@ -158,6 +158,7 @@ export async function notify(title, options = {}) {
       const sched = options.dailyAt
         ? {
             on: { hour: options.dailyAt.hour, minute: options.dailyAt.minute },
+            every: "day",
             allowWhileIdle: true,
             repeats: true,
           }
@@ -179,7 +180,7 @@ export async function notify(title, options = {}) {
             channelId: REMINDER_CHANNEL_ID,
             smallIcon: "ic_stat_notification",
             iconColor: "#5B7CFF",
-            sound: undefined,
+            sound: "default",
             extra: options.extra || {},
           },
         ],
