@@ -255,6 +255,8 @@ export const T_RU ={
   'notif-bp-toast':'🩺 Время измерить давление',
   'notif-pill-title':'💊 Время принять: {{name}}',
   'notif-open-settings-confirm':'Уведомления запрещены. Открыть настройки приложения, чтобы включить?',
+  'notif-fcm-soon':'FCM push — скоро',
+  'notif-set-times-first':'Сначала задайте время Утро/Вечер',
 
   // ─── notif permission modal (post-disclaimer) — IDs match HTML ───
   'nt-perm-title':'Включить напоминания?',
