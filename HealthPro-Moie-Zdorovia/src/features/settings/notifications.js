@@ -70,20 +70,24 @@ export async function toggleMeasureReminder() {
   document.getElementById('measureToggle').classList.add('on');
   saveData();
   showToast(t('notif-measure-on'));
-// Тимчасова діагностика _ln
-const { isNative } = await import('../../core/platform.js');
-showToast('isNative: ' + isNative());
-
-let chOk = false;
-let chErr = '';
+  await ensureNotificationChannel();
+// Тест одноразового сповіщення
+const testAt = new Date(Date.now() + 10000);
+let testOk = false;
+let testErr = '';
 try {
-  chOk = await ensureNotificationChannel();
+  testOk = await notify('HealthPro тест', {
+    id: 99999,
+    body: 'Тест через 10 сек',
+    at: testAt,
+  });
 } catch(e) {
-  chErr = e.message || String(e);
+  testErr = e.message || String(e);
 }
-showToast('Канал: ' + (chOk ? 'OK' : 'FAIL: ' + chErr.slice(0, 40))); 
+showToast('notify at: ' + (testOk ? 'OK' : 'FAIL: ' + testErr.slice(0, 40)));
 
-await scheduleAllReminders();
+await scheduleAllReminders();  
+
 }
 
 export async function saveReminderTimes() {
