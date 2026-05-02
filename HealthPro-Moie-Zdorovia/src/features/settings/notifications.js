@@ -70,8 +70,19 @@ export async function toggleMeasureReminder() {
   document.getElementById('measureToggle').classList.add('on');
   saveData();
   showToast(t('notif-measure-on'));
-  await ensureNotificationChannel();
-  await scheduleAllReminders();
+  const chOk = await ensureNotificationChannel();
+showToast('Канал: ' + (chOk ? 'OK' : 'FAIL'));
+
+// Тест — негайне сповіщення через 5 секунд
+const at = new Date(Date.now() + 5000);
+const testOk = await notify('HealthPro тест', {
+  id: 99999,
+  body: 'Якщо бачите це — notify працює!',
+  at,
+});
+showToast('notify: ' + (testOk ? 'OK' : 'FAIL'));
+
+await scheduleAllReminders();
 }
 
 export async function saveReminderTimes() {
