@@ -155,28 +155,17 @@ export async function ensureExactAlarmPermission() {
   if (!ln) return true;
   try {
     if (typeof ln.checkExactNotificationSetting !== "function") return true;
-    const granted = await checkExactAlarmPermission();
+    const r = await ln.checkExactNotificationSetting();
+    const granted =
+      r === "granted" ||
+      r?.value === "granted" ||
+      r?.exact === "granted" ||
+      r?.exactAlarm === "granted";
     if (granted) return true;
     if (typeof ln.changeExactNotificationSetting === "function") {
       await ln.changeExactNotificationSetting();
     }
     return false;
-  } catch {
-    return true;
-  }
-}
-
-export async function checkExactAlarmPermission() {
-  const ln = await _ln();
-  if (!ln || typeof ln.checkExactNotificationSetting !== "function") return true;
-  try {
-    const r = await ln.checkExactNotificationSetting();
-    return (
-      r === "granted" ||
-      r?.value === "granted" ||
-      r?.exact === "granted" ||
-      r?.exactAlarm === "granted"
-    );
   } catch {
     return true;
   }
