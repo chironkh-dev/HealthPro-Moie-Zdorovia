@@ -22,7 +22,8 @@ import {
   notify,
   cancelAllNotifications,
   ensureNotificationChannel,
-  openAppSettings
+  openAppSettings,
+  addNotificationReceivedListener
 } from '../../core/platform.js';
 
 // Stable ID space — never collide with random IDs from one-shot notify().
@@ -128,3 +129,10 @@ export async function scheduleNotifications() {
 
 // Re-schedule whenever pill list changes (kept for compatibility hooks).
 on('pills:changed', () => { scheduleAllReminders(); });
+
+// Після спрацювання — перепланувати наступне на завтра
+addNotificationReceivedListener((notification) => {
+  if (notification.extra?.type === 'bp') {
+    scheduleAllReminders();
+  }
+});

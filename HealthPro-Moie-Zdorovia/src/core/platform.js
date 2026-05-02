@@ -201,7 +201,6 @@ export async function notify(title, options = {}) {
     ? {
         at: nextDailyTime(options.dailyAt.hour, options.dailyAt.minute),
         allowWhileIdle: true,
-        repeats: true,
       }
     : options.at
       ? { at: options.at instanceof Date ? options.at : new Date(options.at), allowWhileIdle: true }
@@ -575,4 +574,11 @@ export function onConnectivityChange(handler) {
     window.removeEventListener("online", on);
     window.removeEventListener("offline", off);
   };
+}
+
+// ─── Notification received listener ──────────────────────────────
+export async function addNotificationReceivedListener(handler) {
+  const ln = await _ln();
+  if (!ln || typeof ln.addListener !== 'function') return;
+  await ln.addListener('localNotificationReceived', handler);
 }
