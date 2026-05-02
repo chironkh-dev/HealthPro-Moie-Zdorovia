@@ -22,7 +22,6 @@ import {
   notify,
   cancelAllNotifications,
   ensureNotificationChannel,
-  ensureExactAlarmPermission,
   openAppSettings
 } from '../../core/platform.js';
 
@@ -72,14 +71,6 @@ export async function toggleMeasureReminder() {
   saveData();
   showToast(t('notif-measure-on'));
   await ensureNotificationChannel();
-  const exactGranted = await ensureExactAlarmPermission();
-  if (!exactGranted) {
-    state.settings.measureReminder = false;
-    document.getElementById('measureToggle').classList.remove('on');
-    saveData();
-    showToast(t('notif-exact-alarm-needed'));
-    return;
-  }
   await scheduleAllReminders();
 }
 
