@@ -180,6 +180,14 @@ export async function ensureExactAlarmPermission() {
 //
 // On Android the channel "reminders" is HIGH-importance with sound+vibration
 // (see ensureNotificationChannel), so heads-up + sound work in background.
+  function nextDailyTime(hour, minute) {
+    const now = new Date();
+    const next = new Date();
+    next.setHours(hour, minute, 0, 0);
+    if (next <= now) next.setDate(next.getDate() + 1);
+    return next;
+  }
+
 export async function notify(title, options = {}) {
   const ln = await _ln();
   if (ln && typeof ln.schedule === "function") {
@@ -189,20 +197,15 @@ export async function notify(title, options = {}) {
         options.id != null ? options.id : Math.floor(Math.random() * 1e9);
 
       // sched оголошується ПЕРШИМ — до будь-яких перевірок
-      const sched = options.dailyAt
-        ? {
-            on: { hour: options.dailyAt.hour, minute: options.dailyAt.minute },
-            every: "day",
-            allowWhileIdle: true,
-            repeats: true,
-          }
-        : options.at
-          ? {
-              at:
-                options.at instanceof Date ? options.at : new Date(options.at),
-              allowWhileIdle: true,
-            }
-          : undefined;
+          const sched = options.dailyAt
+    ? {
+        at: nextDailyTime(options.dailyAt.hour, options.dailyAt.minute),
+        allowWhileIdle: true,
+        repeats: true,
+      }
+    : options.at
+      ? { at: options.at instanceof Date ? options.at : new Date(options.at), allowWhileIdle: true }
+      : undefined;
 
       await ln.schedule({
         notifications: [
