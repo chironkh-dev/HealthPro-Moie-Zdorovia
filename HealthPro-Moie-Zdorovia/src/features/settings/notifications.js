@@ -71,22 +71,7 @@ export async function toggleMeasureReminder() {
   saveData();
   showToast(t('notif-measure-on'));
   await ensureNotificationChannel();
-// Тест одноразового сповіщення
-const testAt = new Date(Date.now() + 10000);
-let testOk = false;
-let testErr = '';
-try {
-  testOk = await notify('HealthPro тест', {
-    id: 99999,
-    body: 'Тест через 10 сек',
-    at: testAt,
-  });
-} catch(e) {
-  testErr = e.message || String(e);
-}
-showToast('notify at: ' + (testOk ? 'OK' : 'FAIL: ' + testErr.slice(0, 40)));
-
-await scheduleAllReminders();  
+  await scheduleAllReminders();
 
 }
 
