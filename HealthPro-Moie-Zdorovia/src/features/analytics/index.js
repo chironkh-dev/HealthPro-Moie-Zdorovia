@@ -17,11 +17,16 @@ export function renderAnalytics() {
   const last7 = all.filter((m) => new Date(m.time) > new Date(Date.now() - 7 * 864e5));
 
   // Score (with breakdown)
-  const score = all.length ? calcHealthScore() : null;
+  const scoreResult = all.length ? calcHealthScore() : null;
+  const score  = scoreResult?.score  ?? null;
+  const status = scoreResult?.status ?? null;
   const detail = getDetailedScores();
   const circ = 226;
   const fill = document.getElementById('scoreRingFill');
-  const sc = score === null ? '#475569' : score >= 80 ? '#10b981' : score >= 60 ? '#f59e0b' : '#ef4444';
+  // Force red when a VETO is active, regardless of numeric score.
+  const sc = score === null
+    ? '#475569'
+    : (detail?.isVetoApplied ? '#ef4444' : score >= 80 ? '#10b981' : score >= 60 ? '#f59e0b' : '#ef4444');
   if (fill) {
     fill.setAttribute('stroke-dashoffset', score === null ? circ : circ - (circ * (score / 100)));
     fill.setAttribute('stroke', sc);
@@ -31,6 +36,9 @@ export function renderAnalytics() {
   const scoreTitle = document.getElementById('scoreTitle');
   if (scoreTitle) scoreTitle.textContent = score === null
     ? t('a-score-no-data')
+    : status === 'crisis'         ? t('hs-veto-crisis')
+    : status === 'hypertension-2' ? t('hs-veto-ht2')
+    : status === 'hypotension'    ? t('hs-veto-hypo')
     : score >= 80 ? t('a-score-excellent')
     : score >= 65 ? t('a-score-good')
     : score >= 50 ? t('a-score-fair')

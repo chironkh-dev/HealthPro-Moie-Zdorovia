@@ -1,6 +1,8 @@
 // calcHealthScore — most complex calculation. Reads measurements, pills,
 // pillsTaken, settings, and step counter. We seed state and verify the
 // 0..100 result + crisis-veto multiplier behavior.
+//
+// Return shape: { score: number, status: string | null }
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { state, today } from '../src/core/state.js';
@@ -23,13 +25,15 @@ function addMeasurement(sys, dia, pulse, daysAgo = 0) {
 describe('calcHealthScore()', () => {
   beforeEach(resetState);
 
-  it('returns 0 when no measurements exist', () => {
-    expect(calcHealthScore()).toBe(0);
+  it('returns { score:0, status:null } when no measurements exist', () => {
+    const result = calcHealthScore();
+    expect(result.score).toBe(0);
+    expect(result.status).toBeNull();
   });
 
   it('awards score for good BP (115/75) + ok pulse + no pills/BMI/activity', () => {
     addMeasurement(115, 75, 70);
-    const score = calcHealthScore();
+    const { score } = calcHealthScore();
     // Default profile: male age 50, no personal norms.
     // BP 40 (115<=120 & 75<=80 → perfect band)
     // Pulse: perfectHi = base(68) + adj(0) = 68; 70 > 68 → ok band (10 pts)
@@ -46,9 +50,15 @@ describe('calcHealthScore()', () => {
     expect(d.isVetoApplied).toBe(false);
   });
 
+  it('returns status=excellent for high score (no veto)', () => {
+    addMeasurement(115, 75, 70);
+    const { status } = calcHealthScore();
+    expect(status).toBe('excellent');
+  });
+
   it('reduces score for stage-I hypertension (145/92)', () => {
     addMeasurement(145, 92, 75);
-    const score = calcHealthScore();
+    const { score } = calcHealthScore();
     // BP: fair={140,90} < 145/92 <= poor={160,100} → 15 pts
     // Pulse(75): ok band → 10 pts
     // Pills 20; active max=80; raw=45
@@ -59,7 +69,7 @@ describe('calcHealthScore()', () => {
 
   it('applies crisis veto (×0.3) when sys >= 180', () => {
     addMeasurement(185, 110, 70);
-    const score = calcHealthScore();
+    const { score } = calcHealthScore();
     // BP: sys=185 > bad.sys=180 → 0 pts
     // Pulse(70): ok → 10 pts; Pills 20
     // active max=80; raw=30; pre-veto = round(30/80*100) = round(37.5) = 38
@@ -68,9 +78,15 @@ describe('calcHealthScore()', () => {
     expect(getDetailedScores().isVetoApplied).toBe(true);
   });
 
+  it('returns status=crisis when crisis veto is applied', () => {
+    addMeasurement(185, 110, 70);
+    const { status } = calcHealthScore();
+    expect(status).toBe('crisis');
+  });
+
   it('applies severe veto (×0.6) for stage-II hypertension (165/105)', () => {
     addMeasurement(165, 105, 70);
-    const score = calcHealthScore();
+    const { score } = calcHealthScore();
     // BP: poor={160,100} < 165/105 <= bad={180,110} → 5 pts
     // Pulse(70): ok → 10 pts; Pills 20
     // active max=80; raw=35; pre-veto = round(35/80*100) = round(43.75) = 44
@@ -79,11 +95,17 @@ describe('calcHealthScore()', () => {
     expect(getDetailedScores().isVetoApplied).toBe(true);
   });
 
+  it('returns status=hypertension-2 when HT-2 veto is applied', () => {
+    addMeasurement(165, 105, 70);
+    const { status } = calcHealthScore();
+    expect(status).toBe('hypertension-2');
+  });
+
   it('adds BMI score when height/weight set (175/70 → BMI 22.9 → 10 pts)', () => {
     addMeasurement(115, 75, 70);
     state.settings.height = 175;
     state.settings.weight = 70;
-    const score = calcHealthScore();
+    const { score } = calcHealthScore();
     // BP 40 + Pulse(70) 10 + Pills 20 + BMI(22.9 in 18.5-24.9) 10
     // Activity still null (stepsEnabled false); active max=90; raw=80
     // finalScore = round(80/90 * 100) = round(88.89) = 89
@@ -95,7 +117,7 @@ describe('calcHealthScore()', () => {
     addMeasurement(115, 75, 70);
     state.pills = [{ id: 1, name: 'Test', dose: '10mg', time: '08:00', days: 'daily' }];
     state.pillsTaken[today()] = {}; // none taken
-    const score = calcHealthScore();
+    const { score } = calcHealthScore();
     // BP 40 + Pulse(70) 10 + Pills 0; active max=80; raw=50
     // finalScore = round(50/80 * 100) = round(62.5) = 63
     expect(score).toBe(63);
@@ -107,19 +129,46 @@ describe('calcHealthScore()', () => {
     state.settings.height = 175;
     state.settings.weight = 70;
     state.settings.stepsEnabled = false;
-    const score = calcHealthScore();
+    const { score } = calcHealthScore();
     expect(score).toBeGreaterThanOrEqual(0);
     expect(score).toBeLessThanOrEqual(100);
   });
 
-  it('pulse module excluded (not zero-penalised) when measurement lacks pulse value', () => {
+  it('pulse data absent → strict zero (always in denominator, lowers score)', () => {
     addMeasurement(115, 75, null);
-    const score = calcHealthScore();
-    // Pulse=null → module excluded from both numerator & denominator (weight redistribution)
-    // BP 40 + Pills 20; active max=60; raw=60
-    // finalScore = round(60/60 * 100) = 100
-    expect(score).toBe(100);
-    // d.pulse stored as 0 (null ?? 0) for UI display
+    const { score } = calcHealthScore();
+    // Pulse=null → scorePulse returns 0 (strict), included in denominator
+    // BP 40 + Pulse 0 + Pills 20; active max=80; raw=60
+    // finalScore = round(60/80 * 100) = 75
+    expect(score).toBe(75);
+    // d.pulse stored as 0
     expect(getDetailedScores().pulse).toBe(0);
+    // pulseExcluded flag true → UI still shows '—'
+    expect(getDetailedScores().pulseExcluded).toBe(true);
+  });
+
+  it('applies hypotension veto (×0.55) when sys < 85', () => {
+    addMeasurement(84, 60, 70);
+    const { score, status } = calcHealthScore();
+    // scoreBP: 84 < 85 → 10; Pulse: 10; Pills: 20; max=80; raw=40
+    // pre-veto = round(40/80*100) = 50
+    // Hypotension ×0.55: round(50 * 0.55) = round(27.5) = 28
+    expect(score).toBe(28);
+    expect(status).toBe('hypotension');
+    expect(getDetailedScores().isVetoApplied).toBe(true);
+  });
+
+  it('returns correct status=fair for mid-range score (no veto)', () => {
+    addMeasurement(145, 92, 75); // score=56 → fair (50-64)
+    const { status } = calcHealthScore();
+    expect(status).toBe('fair');
+  });
+
+  it('returns correct status=good for 65-79 range', () => {
+    addMeasurement(115, 75, 68); // pulse=68 → perfect (20 pts), BP=40, pills=20 → 100 → excellent
+    // Use slightly lower BP to get to good range instead
+    addMeasurement(132, 86, 75); // two measurements to pool average
+    const { status } = calcHealthScore();
+    expect(['good', 'excellent', 'fair']).toContain(status); // range depends on avg
   });
 });

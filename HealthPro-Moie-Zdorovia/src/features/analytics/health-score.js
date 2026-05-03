@@ -104,7 +104,7 @@ function scoreBP(avgSys, avgDia) {
 }
 
 function scorePulse(pulse) {
-  if (!pulse) return null; // no data → exclude from total
+  if (pulse == null) return 0; // strict: absent → 0 pts, always in denominator
   const th = getPulseThresholds();
   if (pulse >= th.perfectLo && pulse <= th.perfectHi) return 20;
   if (pulse >= th.okLo      && pulse <= th.okHi)      return 10;
@@ -156,7 +156,7 @@ function scoreActivity() {
 
 export function calcHealthScore() {
   const measurements = state.measurements;
-  if (!measurements.length) return 0;
+  if (!measurements.length) return { score: 0, status: null };
 
   const now      = Date.now();
   const last7    = measurements.filter((m) => new Date(m.time).getTime() > now - 7 * 86400000);
@@ -165,19 +165,22 @@ export function calcHealthScore() {
   const avgSys = avg(dataPool.map((m) => m.sys));
   const avgDia = avg(dataPool.map((m) => m.dia));
 
-  // Pulse: average over last 7 days (same source as BP for consistency)
+  // Pulse: average over last 7 days.
+  // avgPulse === null means no measurements have pulse data.
   const pulsePool = dataPool.filter((m) => m.pulse);
   const avgPulse  = pulsePool.length ? avg(pulsePool.map((m) => m.pulse)) : null;
 
   // ── Raw module scores ──
+  // Pulse always contributes to denominator (strict zero when absent).
   const bpRaw       = scoreBP(avgSys, avgDia);
-  const pulseRaw    = scorePulse(avgPulse);   // null if no data
+  const pulseRaw    = scorePulse(avgPulse);   // 0 if absent (strict check)
   const pillsRaw    = scorePills();
-  const bmiRaw      = scoreBMI();             // null if no height/weight
-  const activityRaw = scoreActivity();        // null if steps disabled
+  const bmiRaw      = scoreBMI();             // null if no height/weight → excluded
+  const activityRaw = scoreActivity();        // null if steps disabled → excluded
 
   // ── Redistribute weights for missing optional modules ──
-  // Max possible = sum of modules that actually have data
+  // BMI and Activity are excluded when data is unavailable (null).
+  // Pulse is always included (returns 0 when absent).
   const modules = [
     { score: bpRaw,       max: 40 },
     { score: pulseRaw,    max: 20 },
@@ -212,14 +215,26 @@ export function calcHealthScore() {
     vetoReason    = 'hypotension';
   }
 
+  const score = Math.max(0, Math.min(100, finalScore));
+
+  // ── Derive human-readable status ──
+  let status;
+  if      (vetoReason === 'hypertensive-crisis') status = 'crisis';
+  else if (vetoReason === 'hypertension-2')      status = 'hypertension-2';
+  else if (vetoReason === 'hypotension')         status = 'hypotension';
+  else if (score >= 80)                          status = 'excellent';
+  else if (score >= 65)                          status = 'good';
+  else if (score >= 50)                          status = 'fair';
+  else                                           status = 'poor';
+
   // ── Store breakdown for UI ──
   currentDetailedScores = {
     bp:           bpRaw       ?? 0,
-    pulse:        pulseRaw    ?? 0,
+    pulse:        pulseRaw,
     pills:        pillsRaw    ?? 0,
     bmi:          bmiRaw      ?? 0,
     activity:     activityRaw ?? 0,
-    pulseExcluded:   pulseRaw    === null,
+    pulseExcluded:   avgPulse === null,   // true → show '—' in UI
     bmiExcluded:     bmiRaw      === null,
     activityExcluded:activityRaw === null,
     isVetoApplied,
@@ -232,7 +247,7 @@ export function calcHealthScore() {
     avgPulse,
   };
 
-  return Math.max(0, Math.min(100, finalScore));
+  return { score, status };
 }
 
 // ─── UI helpers (unchanged API, extended veto display) ────────────────────────

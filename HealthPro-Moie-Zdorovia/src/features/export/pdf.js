@@ -49,7 +49,7 @@ export async function exportPDF() {
   const aS = last7.length ? avg(last7.map((m) => m.sys)) : '—';
   const aD = last7.length ? avg(last7.map((m) => m.dia)) : '—';
   const aPulse = last7.filter((m) => m.pulse).length ? avg(last7.filter((m) => m.pulse).map((m) => m.pulse)) : '—';
-  const score = measurements.length ? calcHealthScore() : '—';
+  const score = measurements.length ? calcHealthScore().score : '—';
   const bmi = calcBMI();
 
   const PDF_L = (PDF_LABELS[lang] || PDF_LABELS.uk) || {};
