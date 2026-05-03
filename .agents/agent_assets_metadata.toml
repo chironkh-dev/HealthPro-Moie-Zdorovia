@@ -60,3 +60,9 @@ id = "jcp6uN30txBdzALQBNUia"
 uri = "file://attached_assets/HealthPro_APK_Round4_Part1_BackgroundNotifications.pdf"
 type = "pdf"
 title = "HealthPro APK Round 4 · Частина 1 — фонові сповіщення + іконка"
+
+[[outputs]]
+id = "20pKTU7LuYXT2MLOOQ5a3"
+uri = "file://HealthPro-Moie-Zdorovia/HealthPro_Test_Report.pdf"
+type = "pdf"
+title = "HealthPro — Підсумковий технічний звіт"
