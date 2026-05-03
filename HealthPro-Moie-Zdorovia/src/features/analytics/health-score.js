@@ -1,5 +1,9 @@
-// Health score calculation (0-100) and detail breakdown.
-// Reads pressure / pills / BMI / steps from shared state.
+// Health score calculation (0-100) with personalised norms.
+// Priority: user profile values → age-based AHA/WHO defaults.
+//
+// Weights:  BP 40 | Pulse 20 | Pills 20 | BMI 10 | Activity 10
+// Crisis veto: sys≥180||dia≥120 → ×0.30 | sys≥160||dia≥100 → ×0.60
+// Hypotension veto: sys<85||dia<55 → ×0.55
 
 import { state, today } from '../../core/state.js';
 import { DEFAULT_STEP_GOAL } from '../../core/constants.js';
@@ -7,101 +11,230 @@ import { isPillDueToday } from '../meds/index.js';
 import { getStepCount } from '../steps/index.js';
 import { calcBMI } from './bmi.js';
 
-const avg = (arr) => (arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null);
+const avg = (arr) =>
+  arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null;
 
 let currentDetailedScores = null;
+export function getDetailedScores() { return currentDetailedScores; }
 
-export function getDetailedScores() {
-  return currentDetailedScores;
+// ─── Personalised norm helpers ────────────────────────────────────────────────
+
+/**
+ * Returns BP thresholds for scoring, respecting user profile.
+ * If normalSys/normalDia are set → personal mode.
+ * Otherwise → age-based WHO/AHA defaults.
+ */
+function getBPThresholds() {
+  const ns = parseInt(state.settings.normalSys);
+  const nd = parseInt(state.settings.normalDia);
+  if (ns >= 80 && ns <= 200 && nd >= 50 && nd <= 130) {
+    // Personal mode: score relative to user's own baseline
+    return {
+      perfect:  { sys: ns + 5,  dia: nd + 5  },   // 40 pts
+      good:     { sys: ns + 10, dia: nd + 8  },   // 35 pts
+      fair:     { sys: ns + 20, dia: nd + 12 },   // 25 pts
+      poor:     { sys: ns + 35, dia: nd + 20 },   // 15 pts
+      bad:      { sys: ns + 50, dia: nd + 30 },   //  5 pts
+      personal: true,
+    };
+  }
+  // Age-based defaults
+  const age = parseInt(state.settings.age) || 50;
+  if (age < 18)  return { perfect:{sys:110,dia:70}, good:{sys:120,dia:78}, fair:{sys:130,dia:85}, poor:{sys:150,dia:95}, bad:{sys:170,dia:108} };
+  if (age <= 59) return { perfect:{sys:120,dia:80}, good:{sys:130,dia:85}, fair:{sys:140,dia:90}, poor:{sys:160,dia:100},bad:{sys:180,dia:110} };
+  if (age <= 79) return { perfect:{sys:130,dia:85}, good:{sys:140,dia:90}, fair:{sys:150,dia:95}, poor:{sys:165,dia:105},bad:{sys:180,dia:115} };
+  // 80+
+  return           { perfect:{sys:140,dia:90}, good:{sys:150,dia:92}, fair:{sys:160,dia:98}, poor:{sys:175,dia:108},bad:{sys:190,dia:118} };
 }
+
+/**
+ * Returns pulse optimal range respecting user profile.
+ * normalPulse → ±10 = perfect, ±20 = acceptable.
+ * Otherwise age/gender defaults.
+ */
+function getPulseThresholds() {
+  const np = parseInt(state.settings.normalPulse);
+  if (np >= 40 && np <= 120) {
+    return {
+      perfectLo: Math.max(40, np - 10),
+      perfectHi: Math.min(120, np + 10),
+      okLo:      Math.max(35, np - 20),
+      okHi:      Math.min(130, np + 20),
+      personal:  true,
+    };
+  }
+  const age    = parseInt(state.settings.age) || 50;
+  const gender = state.settings.gender || 'm';
+  // Women have slightly higher resting HR on average
+  const base = gender === 'f' ? 72 : 68;
+  // HR norms loosen slightly with age
+  const adj  = age >= 60 ? 5 : 0;
+  return {
+    perfectLo: 55,
+    perfectHi: base + adj,
+    okLo:      45,
+    okHi:      100,
+    personal:  false,
+  };
+}
+
+/**
+ * BMI normal range adjusted for age (65+ norm shifts to 22–27).
+ */
+function getBMIRange() {
+  const age = parseInt(state.settings.age) || 50;
+  if (age >= 65) return { lo: 22, hi: 27 };
+  return               { lo: 18.5, hi: 24.9 };
+}
+
+// ─── Module scorers ──────────────────────────────────────────────────────────
+
+function scoreBP(avgSys, avgDia) {
+  // Hypotension is handled as a veto below, but still needs a raw score
+  if (avgSys < 85 || avgDia < 55) return 10; // low — partial, veto applied later
+
+  const th = getBPThresholds();
+  if (avgSys <= th.perfect.sys && avgDia <= th.perfect.dia) return 40;
+  if (avgSys <= th.good.sys    && avgDia <= th.good.dia)    return 35;
+  if (avgSys <= th.fair.sys    && avgDia <= th.fair.dia)    return 25;
+  if (avgSys <= th.poor.sys    && avgDia <= th.poor.dia)    return 15;
+  if (avgSys <= th.bad.sys     && avgDia <= th.bad.dia)     return  5;
+  return 0;
+}
+
+function scorePulse(pulse) {
+  if (!pulse) return null; // no data → exclude from total
+  const th = getPulseThresholds();
+  if (pulse >= th.perfectLo && pulse <= th.perfectHi) return 20;
+  if (pulse >= th.okLo      && pulse <= th.okHi)      return 10;
+  return 0;
+}
+
+function scorePills() {
+  const pills     = state.pills;
+  const pillsTaken = state.pillsTaken;
+  const td        = today();
+  const duePills  = pills.filter(isPillDueToday);
+  if (!duePills.length) return 20; // no meds prescribed → full score
+
+  const takenCount = Object.values(pillsTaken[td] || {}).filter(Boolean).length;
+  const adherence  = takenCount / duePills.length;
+  if (adherence >= 0.9) return 20;
+  if (adherence >= 0.5) return 10;
+  return 0;
+}
+
+function scoreBMI() {
+  const bmi = calcBMI();
+  if (!bmi) return null; // height/weight not set → exclude
+
+  const { lo, hi } = getBMIRange();
+  const hiOver  = hi + 5;   // 25–29.9 (or 27–31.9 for 65+)
+  const hiOb1   = hi + 10;  // 30–34.9
+
+  if (bmi >= lo && bmi <= hi)       return 10;
+  if (bmi > hi  && bmi <= hiOver)   return  7;
+  if ((bmi > hiOver && bmi <= hiOb1) || (bmi < lo && bmi >= lo - 3)) return 4;
+  return 0;
+}
+
+function scoreActivity() {
+  const settings = state.settings;
+  if (!settings.stepsEnabled) return null; // not tracking → exclude
+
+  const goal     = settings.stepGoal || DEFAULT_STEP_GOAL;
+  const progress = getStepCount() / goal;
+  if (progress >= 1)    return 10;
+  if (progress >= 0.75) return  8;
+  if (progress >= 0.5)  return  6;
+  if (progress >= 0.25) return  3;
+  return 0;
+}
+
+// ─── Main calculation ────────────────────────────────────────────────────────
 
 export function calcHealthScore() {
   const measurements = state.measurements;
-  const pills = state.pills;
-  const pillsTaken = state.pillsTaken;
-  const settings = state.settings;
   if (!measurements.length) return 0;
 
-  const now = Date.now();
-  const last7Days = measurements.filter((m) => new Date(m.time).getTime() > now - 7 * 86400000);
-  const dataToUse = last7Days.length > 0 ? last7Days : [measurements[0]];
+  const now      = Date.now();
+  const last7    = measurements.filter((m) => new Date(m.time).getTime() > now - 7 * 86400000);
+  const dataPool = last7.length > 0 ? last7 : [measurements[0]];
 
-  const avgSys = avg(dataToUse.map((m) => m.sys));
-  const avgDia = avg(dataToUse.map((m) => m.dia));
+  const avgSys = avg(dataPool.map((m) => m.sys));
+  const avgDia = avg(dataPool.map((m) => m.dia));
 
-  // 1. BP (max 40)
-  let bpScore = 0;
-  if (avgSys < 120 && avgDia < 80) bpScore = 40;
-  else if (avgSys < 130 && avgDia < 85) bpScore = 35;
-  else if (avgSys < 140 && avgDia < 90) bpScore = 25;
-  else if (avgSys < 160 && avgDia < 100) bpScore = 15;
-  else if (avgSys < 180 && avgDia < 110) bpScore = 5;
-  if (avgSys < 90 || avgDia < 60) bpScore = 15;
+  // Pulse: average over last 7 days (same source as BP for consistency)
+  const pulsePool = dataPool.filter((m) => m.pulse);
+  const avgPulse  = pulsePool.length ? avg(pulsePool.map((m) => m.pulse)) : null;
 
-  // 2. Pulse (max 20)
-  const last = measurements[0];
-  let pulseScore = 0;
-  if (last.pulse) {
-    const p = last.pulse;
-    if (p >= 60 && p <= 80) pulseScore = 20;
-    else if ((p >= 50 && p < 60) || (p > 80 && p <= 95)) pulseScore = 10;
-    else pulseScore = 0;
-  }
+  // ── Raw module scores ──
+  const bpRaw       = scoreBP(avgSys, avgDia);
+  const pulseRaw    = scorePulse(avgPulse);   // null if no data
+  const pillsRaw    = scorePills();
+  const bmiRaw      = scoreBMI();             // null if no height/weight
+  const activityRaw = scoreActivity();        // null if steps disabled
 
-  // 3. Pills (max 20)
-  let pillScore = 20;
-  const td = today();
-  const duePills = pills.filter(isPillDueToday);
-  if (duePills.length > 0) {
-    const takenCount = Object.values(pillsTaken[td] || {}).filter(Boolean).length;
-    const adherence = takenCount / duePills.length;
-    if (adherence >= 0.9) pillScore = 20;
-    else if (adherence >= 0.5) pillScore = 10;
-    else pillScore = 0;
-  }
+  // ── Redistribute weights for missing optional modules ──
+  // Max possible = sum of modules that actually have data
+  const modules = [
+    { score: bpRaw,       max: 40 },
+    { score: pulseRaw,    max: 20 },
+    { score: pillsRaw,    max: 20 },
+    { score: bmiRaw,      max: 10 },
+    { score: activityRaw, max: 10 },
+  ];
 
-  // 4. BMI (max 10)
-  let bmiScore = 0;
-  const bmi = calcBMI();
-  if (bmi) {
-    if (bmi >= 18.5 && bmi < 25) bmiScore = 10;
-    else if (bmi >= 25 && bmi < 30) bmiScore = 7;
-    else if ((bmi >= 30 && bmi < 35) || bmi < 18.5) bmiScore = 4;
-    else bmiScore = 0;
-  }
+  const activeModules  = modules.filter((m) => m.score !== null);
+  const maxPossible    = activeModules.reduce((s, m) => s + m.max, 0);
+  const rawTotal       = activeModules.reduce((s, m) => s + m.score, 0);
 
-  // 5. Activity (max 10)
-  let activityScore = 0;
-  if (settings.stepsEnabled) {
-    const goal = settings.stepGoal || DEFAULT_STEP_GOAL;
-    const progress = getStepCount() / goal;
-    if (progress >= 1) activityScore = 10;
-    else if (progress >= 0.5) activityScore = 6;
-    else activityScore = 0;
-  }
+  // Scale to 100 if some modules are inactive
+  let finalScore = maxPossible > 0 ? Math.round((rawTotal / maxPossible) * 100) : 0;
 
-  // Total + crisis veto
-  let finalScore = bpScore + pulseScore + pillScore + bmiScore + activityScore;
-  let isVetoApplied = false;
+  // ── Crisis / hypotension veto (based on LAST measurement) ──
+  const last         = measurements[0];
+  let isVetoApplied  = false;
+  let vetoReason     = null;
+
   if (last.sys >= 180 || last.dia >= 120) {
-    finalScore *= 0.3;
+    finalScore    = Math.round(finalScore * 0.30);
     isVetoApplied = true;
+    vetoReason    = 'hypertensive-crisis';
   } else if (last.sys >= 160 || last.dia >= 100) {
-    finalScore *= 0.6;
+    finalScore    = Math.round(finalScore * 0.60);
     isVetoApplied = true;
+    vetoReason    = 'hypertension-2';
+  } else if (last.sys < 85 || last.dia < 55) {
+    finalScore    = Math.round(finalScore * 0.55);
+    isVetoApplied = true;
+    vetoReason    = 'hypotension';
   }
 
+  // ── Store breakdown for UI ──
   currentDetailedScores = {
-    bp: bpScore,
-    pulse: pulseScore,
-    pills: pillScore,
-    bmi: bmiScore,
-    activity: activityScore,
+    bp:           bpRaw       ?? 0,
+    pulse:        pulseRaw    ?? 0,
+    pills:        pillsRaw    ?? 0,
+    bmi:          bmiRaw      ?? 0,
+    activity:     activityRaw ?? 0,
+    pulseExcluded:   pulseRaw    === null,
+    bmiExcluded:     bmiRaw      === null,
+    activityExcluded:activityRaw === null,
     isVetoApplied,
+    vetoReason,
+    // Norm info for UI tooltip
+    bpPersonal:    getBPThresholds().personal ?? false,
+    pulsePersonal: getPulseThresholds().personal,
+    avgSys,
+    avgDia,
+    avgPulse,
   };
 
-  return Math.max(0, Math.min(100, Math.round(finalScore)));
+  return Math.max(0, Math.min(100, finalScore));
 }
+
+// ─── UI helpers (unchanged API, extended veto display) ────────────────────────
 
 function setScoreColor(id, value, max) {
   const el = document.getElementById(id);
@@ -116,16 +249,39 @@ export function toggleHealthTooltip() {
   if (!el) return;
   const isShowing = el.classList.contains('show');
   if (!isShowing && currentDetailedScores) {
-    document.getElementById('score-bp').textContent = currentDetailedScores.bp;
-    document.getElementById('score-pulse').textContent = currentDetailedScores.pulse;
-    document.getElementById('score-pills').textContent = currentDetailedScores.pills;
-    document.getElementById('score-activity').textContent = currentDetailedScores.activity;
-    document.getElementById('score-bmi').textContent = currentDetailedScores.bmi;
-    setScoreColor('score-bp', currentDetailedScores.bp, 40);
-    setScoreColor('score-pulse', currentDetailedScores.pulse, 20);
-    setScoreColor('score-pills', currentDetailedScores.pills, 20);
-    setScoreColor('score-activity', currentDetailedScores.activity, 20);
-    document.getElementById('veto-status').style.display = currentDetailedScores.isVetoApplied ? 'block' : 'none';
+    const d = currentDetailedScores;
+    document.getElementById('score-bp').textContent       = d.bp;
+    document.getElementById('score-pulse').textContent    = d.pulseExcluded    ? '—' : d.pulse;
+    document.getElementById('score-pills').textContent    = d.pills;
+    document.getElementById('score-activity').textContent = d.activityExcluded ? '—' : d.activity;
+    document.getElementById('score-bmi').textContent      = d.bmiExcluded      ? '—' : d.bmi;
+
+    setScoreColor('score-bp',       d.bp,       40);
+    setScoreColor('score-pulse',    d.pulse,    20);
+    setScoreColor('score-pills',    d.pills,    20);
+    setScoreColor('score-activity', d.activity, 10);
+    setScoreColor('score-bmi',      d.bmi,      10);
+
+    // Veto status
+    const vetoEl = document.getElementById('veto-status');
+    if (vetoEl) {
+      vetoEl.style.display = d.isVetoApplied ? 'block' : 'none';
+      if (d.isVetoApplied) {
+        const labels = {
+          'hypertensive-crisis': '🚨 Гіпертонічний криз — штраф ×0.30',
+          'hypertension-2':      '⚠️ Гіпертонія 2 ст. — штраф ×0.60',
+          'hypotension':         '⬇️ Гіпотонія — штраф ×0.55',
+        };
+        vetoEl.textContent = labels[d.vetoReason] || '⚠️ Вето застосовано';
+      }
+    }
+
+    // Personal norm badge
+    const normEl = document.getElementById('norm-mode');
+    if (normEl) {
+      normEl.textContent    = d.bpPersonal ? '👤 Особиста норма' : '📋 Стандартна норма';
+      normEl.style.display  = 'block';
+    }
   }
   el.classList.toggle('show');
 }
