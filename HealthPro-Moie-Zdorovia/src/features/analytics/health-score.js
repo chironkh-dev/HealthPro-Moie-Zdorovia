@@ -25,7 +25,7 @@ export function getDetailedScores() { return currentDetailedScores; }
  * If normalSys/normalDia are set → personal mode.
  * Otherwise → age-based WHO/AHA defaults.
  */
-function getBPThresholds() {
+export function getBPThresholds() {
   const ns = parseInt(state.settings.normalSys);
   const nd = parseInt(state.settings.normalDia);
   if (ns >= 80 && ns <= 200 && nd >= 50 && nd <= 130) {
@@ -53,7 +53,7 @@ function getBPThresholds() {
  * normalPulse → ±10 = perfect, ±20 = acceptable.
  * Otherwise age/gender defaults.
  */
-function getPulseThresholds() {
+export function getPulseThresholds() {
   const np = parseInt(state.settings.normalPulse);
   if (np >= 40 && np <= 120) {
     return {
