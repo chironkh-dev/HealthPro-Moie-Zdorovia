@@ -292,4 +292,15 @@ export const T_RU ={
   'st-on':'🦶 Счётчик шагов включён!',
   'st-goal-pref':'цель:',
   'app-step-sub':'Через сенсоры телефона.',
+
+  // ─── settings/data ───
+  'data-clear-confirm':'Удалить ВСЕ данные? Действие отменить нельзя.',
+
+  // ─── health-score veto / norm labels ───
+  'hs-veto-crisis':'🚨 Гипертонический криз — штраф ×0.30',
+  'hs-veto-ht2':'⚠️ Гипертония 2 ст. — штраф ×0.60',
+  'hs-veto-hypo':'⬇️ Гипотония — штраф ×0.55',
+  'hs-veto-default':'⚠️ Вето применено',
+  'hs-norm-personal':'👤 Личная норма',
+  'hs-norm-standard':'📋 Стандартная норма',
 };

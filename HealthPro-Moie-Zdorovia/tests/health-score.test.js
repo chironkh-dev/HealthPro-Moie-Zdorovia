@@ -27,14 +27,19 @@ describe('calcHealthScore()', () => {
     expect(calcHealthScore()).toBe(0);
   });
 
-  it('awards near-perfect score for ideal BP (115/75) + perfect pulse + no pills/BMI/activity', () => {
+  it('awards score for good BP (115/75) + ok pulse + no pills/BMI/activity', () => {
     addMeasurement(115, 75, 70);
     const score = calcHealthScore();
-    // BP 40 + pulse 20 + pills 20 (no due pills) + bmi 0 + activity 0 = 80
-    expect(score).toBe(80);
+    // Default profile: male age 50, no personal norms.
+    // BP 40 (115<=120 & 75<=80 → perfect band)
+    // Pulse: perfectHi = base(68) + adj(0) = 68; 70 > 68 → ok band (10 pts)
+    // Pills 20 (no due pills), BMI null (excluded), Activity null (excluded)
+    // Active modules max = 40+20+20 = 80; raw = 40+10+20 = 70
+    // finalScore = round(70/80 * 100) = round(87.5) = 88
+    expect(score).toBe(88);
     const d = getDetailedScores();
     expect(d.bp).toBe(40);
-    expect(d.pulse).toBe(20);
+    expect(d.pulse).toBe(10);
     expect(d.pills).toBe(20);
     expect(d.bmi).toBe(0);
     expect(d.activity).toBe(0);
@@ -44,24 +49,33 @@ describe('calcHealthScore()', () => {
   it('reduces score for stage-I hypertension (145/92)', () => {
     addMeasurement(145, 92, 75);
     const score = calcHealthScore();
-    // BP 15 + pulse 20 + pills 20 = 55
-    expect(score).toBe(55);
+    // BP: fair={140,90} < 145/92 <= poor={160,100} → 15 pts
+    // Pulse(75): ok band → 10 pts
+    // Pills 20; active max=80; raw=45
+    // finalScore = round(45/80 * 100) = round(56.25) = 56
+    expect(score).toBe(56);
     expect(getDetailedScores().bp).toBe(15);
   });
 
   it('applies crisis veto (×0.3) when sys >= 180', () => {
     addMeasurement(185, 110, 70);
     const score = calcHealthScore();
-    // BP 0 (no band matches sys=185) + pulse 20 + pills 20 = 40 → ×0.3 = 12
-    expect(score).toBe(12);
+    // BP: sys=185 > bad.sys=180 → 0 pts
+    // Pulse(70): ok → 10 pts; Pills 20
+    // active max=80; raw=30; pre-veto = round(30/80*100) = round(37.5) = 38
+    // Crisis veto ×0.3: round(38 * 0.3) = round(11.4) = 11
+    expect(score).toBe(11);
     expect(getDetailedScores().isVetoApplied).toBe(true);
   });
 
   it('applies severe veto (×0.6) for stage-II hypertension (165/105)', () => {
     addMeasurement(165, 105, 70);
     const score = calcHealthScore();
-    // BP 5 + pulse 20 + pills 20 = 45 → ×0.6 = 27
-    expect(score).toBe(27);
+    // BP: poor={160,100} < 165/105 <= bad={180,110} → 5 pts
+    // Pulse(70): ok → 10 pts; Pills 20
+    // active max=80; raw=35; pre-veto = round(35/80*100) = round(43.75) = 44
+    // HT-2 veto ×0.6: round(44 * 0.6) = round(26.4) = 26
+    expect(score).toBe(26);
     expect(getDetailedScores().isVetoApplied).toBe(true);
   });
 
@@ -70,7 +84,10 @@ describe('calcHealthScore()', () => {
     state.settings.height = 175;
     state.settings.weight = 70;
     const score = calcHealthScore();
-    expect(score).toBe(90); // 80 + 10 BMI
+    // BP 40 + Pulse(70) 10 + Pills 20 + BMI(22.9 in 18.5-24.9) 10
+    // Activity still null (stepsEnabled false); active max=90; raw=80
+    // finalScore = round(80/90 * 100) = round(88.89) = 89
+    expect(score).toBe(89);
     expect(getDetailedScores().bmi).toBe(10);
   });
 
@@ -79,13 +96,13 @@ describe('calcHealthScore()', () => {
     state.pills = [{ id: 1, name: 'Test', dose: '10mg', time: '08:00', days: 'daily' }];
     state.pillsTaken[today()] = {}; // none taken
     const score = calcHealthScore();
-    // BP 40 + pulse 20 + pills 0 + bmi 0 + activity 0 = 60
-    expect(score).toBe(60);
+    // BP 40 + Pulse(70) 10 + Pills 0; active max=80; raw=50
+    // finalScore = round(50/80 * 100) = round(62.5) = 63
+    expect(score).toBe(63);
     expect(getDetailedScores().pills).toBe(0);
   });
 
   it('caps result to [0, 100]', () => {
-    // Trigger every bonus possible
     addMeasurement(115, 75, 70);
     state.settings.height = 175;
     state.settings.weight = 70;
@@ -95,11 +112,14 @@ describe('calcHealthScore()', () => {
     expect(score).toBeLessThanOrEqual(100);
   });
 
-  it('zero pulse contribution when measurement lacks pulse value', () => {
+  it('pulse module excluded (not zero-penalised) when measurement lacks pulse value', () => {
     addMeasurement(115, 75, null);
     const score = calcHealthScore();
-    // BP 40 + pulse 0 + pills 20 = 60
-    expect(score).toBe(60);
+    // Pulse=null → module excluded from both numerator & denominator (weight redistribution)
+    // BP 40 + Pills 20; active max=60; raw=60
+    // finalScore = round(60/60 * 100) = 100
+    expect(score).toBe(100);
+    // d.pulse stored as 0 (null ?? 0) for UI display
     expect(getDetailedScores().pulse).toBe(0);
   });
 });

@@ -285,4 +285,12 @@ export const T_UK ={
   // ─── critical (SMS) ───
   'cr-emergency-name-default':'Увага',
   'cr-test-sms-body':'Тест HealthPro — перевірка зв\'язку. Все гаразд!',
+
+  // ─── health-score veto / norm labels ───
+  'hs-veto-crisis':'🚨 Гіпертонічний криз — штраф ×0.30',
+  'hs-veto-ht2':'⚠️ Гіпертонія 2 ст. — штраф ×0.60',
+  'hs-veto-hypo':'⬇️ Гіпотонія — штраф ×0.55',
+  'hs-veto-default':'⚠️ Вето застосовано',
+  'hs-norm-personal':'👤 Особиста норма',
+  'hs-norm-standard':'📋 Стандартна норма',
 };

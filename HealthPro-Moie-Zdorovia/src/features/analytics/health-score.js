@@ -10,6 +10,7 @@ import { DEFAULT_STEP_GOAL } from '../../core/constants.js';
 import { isPillDueToday } from '../meds/index.js';
 import { getStepCount } from '../steps/index.js';
 import { calcBMI } from './bmi.js';
+import { t } from '../../i18n/index.js';
 
 const avg = (arr) =>
   arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null;
@@ -268,18 +269,18 @@ export function toggleHealthTooltip() {
       vetoEl.style.display = d.isVetoApplied ? 'block' : 'none';
       if (d.isVetoApplied) {
         const labels = {
-          'hypertensive-crisis': '🚨 Гіпертонічний криз — штраф ×0.30',
-          'hypertension-2':      '⚠️ Гіпертонія 2 ст. — штраф ×0.60',
-          'hypotension':         '⬇️ Гіпотонія — штраф ×0.55',
+          'hypertensive-crisis': t('hs-veto-crisis'),
+          'hypertension-2':      t('hs-veto-ht2'),
+          'hypotension':         t('hs-veto-hypo'),
         };
-        vetoEl.textContent = labels[d.vetoReason] || '⚠️ Вето застосовано';
+        vetoEl.textContent = labels[d.vetoReason] || t('hs-veto-default');
       }
     }
 
     // Personal norm badge
     const normEl = document.getElementById('norm-mode');
     if (normEl) {
-      normEl.textContent    = d.bpPersonal ? '👤 Особиста норма' : '📋 Стандартна норма';
+      normEl.textContent    = d.bpPersonal ? t('hs-norm-personal') : t('hs-norm-standard');
       normEl.style.display  = 'block';
     }
   }
