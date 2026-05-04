@@ -47,6 +47,33 @@ function pillIdHash(id) {
   return Math.abs(h) % 9000;
 }
 
+// Дні тижня: 0=нед, 1=пн … 6=сб
+const DAY_MAP = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
+
+// Повертає дату наступного спрацювання для днів-тижня розкладу.
+// days = 'mon' | 'tue,fri' | 'weekdays' | тощо.
+// Перевіряє сьогодні + наступні 7 днів, щоб знайти перший відповідний момент у майбутньому.
+function nextWeekdayOccurrence(days, hour, minute) {
+  let allowed;
+  if (days === 'weekdays') {
+    allowed = [1, 2, 3, 4, 5];
+  } else {
+    allowed = String(days).split(',')
+      .map((k) => DAY_MAP[k.trim()])
+      .filter((n) => n != null);
+  }
+  if (!allowed.length) return null;
+  const now = new Date();
+  for (let offset = 0; offset <= 7; offset++) {
+    const candidate = new Date(now);
+    candidate.setDate(now.getDate() + offset);
+    candidate.setHours(hour, minute, 0, 0);
+    if (candidate <= now) continue;
+    if (allowed.includes(candidate.getDay())) return candidate;
+  }
+  return null;
+}
+
 // ─── Toggles ──────────────────────────────────────────────────
 export async function toggleNotifications() {
   const next = !state.settings.pillReminder;
@@ -163,16 +190,33 @@ export async function scheduleAllReminders() {
   // ── Пігулки (тільки якщо pillReminder увімкнено) ──────────
   if (state.settings.pillReminder) {
     const pills = Array.isArray(state.pills) ? state.pills : [];
+    const todayStr = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
     for (const p of pills) {
       if (!p || !p.time) continue;
       const { hour, minute } = parseHM(p.time);
-      items.push({
-        id: PILL_ID_BASE + pillIdHash(String(p.id)),
-        title: t('notif-pill-title').replace('{{name}}', p.name || ''),
-        dailyAt: { hour, minute },
-        body: t('notif-pill-body'),
-        extra: { type: 'pill', pillId: p.id },
-      });
+      const id    = PILL_ID_BASE + pillIdHash(String(p.id));
+      const title = t('notif-pill-title').replace('{{name}}', p.name || '');
+      const body  = t('notif-pill-body');
+      const extra = { type: 'pill', pillId: p.id, pillDays: p.days };
+
+      if (p.days === 'daily') {
+        // Щодня — повторюваний будильник
+        items.push({ id, title, dailyAt: { hour, minute }, body, extra });
+
+      } else if (p.days === 'date') {
+        // Конкретна дата — одноразовий будильник
+        if (!p.date || p.date < todayStr) continue; // минула дата — пропускаємо
+        const at = new Date(`${p.date}T${p.time}:00`);
+        if (at <= new Date()) continue; // час вже минув сьогодні
+        items.push({ id, title, at, body, extra });
+
+      } else {
+        // Дні тижня: 'mon', 'tue,fri', 'weekdays' тощо
+        // Одноразово на НАСТУПНЕ входження; після спрацювання — перепланування.
+        const at = nextWeekdayOccurrence(p.days, hour, minute);
+        if (!at) continue;
+        items.push({ id, title, at, body, extra });
+      }
     }
   }
 
@@ -194,9 +238,22 @@ export async function scheduleNotifications() {
 // Re-schedule whenever pill list changes (kept for compatibility hooks).
 on('pills:changed', () => { scheduleAllReminders(); });
 
-// Після спрацювання — перепланувати наступне на завтра
+// Після спрацювання сповіщення — перепланувати:
+//   bp    → повний перепланувальник (dailyAt зазвичай справляється сам,
+//           але залишаємо для сумісності з попередньою логікою)
+//   pill (date / weekdays) → одноразові будильники потребують нового планування
 addNotificationReceivedListener((notification) => {
-  if (notification.extra?.type === 'bp') {
+  const type = notification.extra?.type;
+  if (type === 'bp') {
     scheduleAllReminders();
+    return;
+  }
+  if (type === 'pill' && state.settings.pillReminder) {
+    const days = notification.extra?.pillDays;
+    // 'daily' — dailyAt повторюється сам; 'date' — більше не потрібен.
+    // Тільки тижневі розклади потребують перепланування на наступне входження.
+    if (days && days !== 'daily' && days !== 'date') {
+      scheduleAllReminders();
+    }
   }
 });
