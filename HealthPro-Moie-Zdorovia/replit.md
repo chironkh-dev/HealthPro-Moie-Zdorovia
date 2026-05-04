@@ -63,14 +63,14 @@ Cross-module комунікація — через мінішину `on('event',
 - **PDF/canvas через npm**: `jspdf` і `html2canvas` бандляться Vite, без CDN.
 
 ## Генерація PDF-звітів (scripts/)
-- **ОБОВ'ЯЗКОВО використовувати шрифти з підтримкою кирилиці** — стандартні вбудовані шрифти pdfkit (Helvetica, Times-Roman, Courier) не мають кириличних символів і показують каракулі замість тексту.
-- Правильний підхід: реєструвати TTF-шрифт з кирилицею через `doc.registerFont('Arial', path)` та викликати `doc.font('Arial')` перед будь-яким кириличним текстом.
-- Рекомендовані шрифти (TTF): **Arial** (`arial.ttf` / `arialbd.ttf`), **DejaVu Sans** (open-source, є у системі `/usr/share/fonts/`), **Roboto** (завантажити з Google Fonts).
-- Приклад реєстрації у скрипті генерації:
+- **ШРИФТ: ТІЛЬКИ Arial.** Ніяких інших шрифтів для кирилиці не використовувати.
+- Вбудовані шрифти pdfkit (Helvetica, Times-Roman, Courier, Courier-Bold тощо) не підтримують кирилицю — замість тексту виводяться каракулі. Заборонено.
+- Правильний підхід: реєструвати Arial через `doc.registerFont()` до будь-якого виклику `doc.font()`:
   ```js
-  const FONTS = '/usr/share/fonts/truetype/dejavu';
-  doc.registerFont('Regular', `${FONTS}/DejaVuSans.ttf`);
-  doc.registerFont('Bold',    `${FONTS}/DejaVuSans-Bold.ttf`);
-  doc.font('Regular'); // далі весь текст кирилицею працює коректно
+  doc.registerFont('Arial',      '/usr/share/fonts/truetype/msttcorefonts/Arial.ttf');
+  doc.registerFont('Arial-Bold', '/usr/share/fonts/truetype/msttcorefonts/Arial_Bold.ttf');
+  doc.font('Arial');      // звичайний текст
+  doc.font('Arial-Bold'); // жирний текст
   ```
-- Латинські скрипти (`Helvetica` тощо) допустимі лише для суто латинського тексту (назви модулів, числа).
+- Якщо Arial відсутній у системі — встановити: `sudo apt-get install ttf-mscorefonts-installer`.
+- **Заборонено** використовувати DejaVu, Roboto, Helvetica або будь-який інший шрифт замість Arial.
