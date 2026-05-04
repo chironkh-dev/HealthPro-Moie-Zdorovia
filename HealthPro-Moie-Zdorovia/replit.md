@@ -61,3 +61,16 @@ Cross-module комунікація — через мінішину `on('event',
 - **Без inline-обробників**: усі `onclick=`/`onchange=`/`oninput=` замінено на атрибути `data-action`/`data-change`/`data-input`. Один делегований listener у `src/app.js` (карта `ACTIONS`) маршрутизує події.
 - **Бекенд видалено**: усі дані зберігаються лише на пристрої. Async-міграція з `localStorage` у `IndexedDB` запускається при старті.
 - **PDF/canvas через npm**: `jspdf` і `html2canvas` бандляться Vite, без CDN.
+
+## Генерація PDF-звітів (scripts/)
+- **ОБОВ'ЯЗКОВО використовувати шрифти з підтримкою кирилиці** — стандартні вбудовані шрифти pdfkit (Helvetica, Times-Roman, Courier) не мають кириличних символів і показують каракулі замість тексту.
+- Правильний підхід: реєструвати TTF-шрифт з кирилицею через `doc.registerFont('Arial', path)` та викликати `doc.font('Arial')` перед будь-яким кириличним текстом.
+- Рекомендовані шрифти (TTF): **Arial** (`arial.ttf` / `arialbd.ttf`), **DejaVu Sans** (open-source, є у системі `/usr/share/fonts/`), **Roboto** (завантажити з Google Fonts).
+- Приклад реєстрації у скрипті генерації:
+  ```js
+  const FONTS = '/usr/share/fonts/truetype/dejavu';
+  doc.registerFont('Regular', `${FONTS}/DejaVuSans.ttf`);
+  doc.registerFont('Bold',    `${FONTS}/DejaVuSans-Bold.ttf`);
+  doc.font('Regular'); // далі весь текст кирилицею працює коректно
+  ```
+- Латинські скрипти (`Helvetica` тощо) допустимі лише для суто латинського тексту (назви модулів, числа).
