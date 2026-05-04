@@ -7,7 +7,7 @@ export { STORAGE_KEYS } from './storage.js';
 
 // ─── App / disclaimer versioning ───
 export const APP_VERSION = '4.0';
-export const APP_BUILD_LABEL = `HealthPro v${APP_VERSION} PWA`;
+export const APP_BUILD_LABEL = `HealthPro v${APP_VERSION}`;
 export const DISCLAIMER_VERSION = '1.0';
 export const DISCLAIMER_HISTORY_KEY = 'healthpro_disclaimer_history';
 export const LEGACY_DISCLAIMER_KEY_PREFIX = 'healthpro_disclaimer_v';

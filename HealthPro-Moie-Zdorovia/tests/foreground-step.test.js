@@ -185,15 +185,29 @@ describe('enableSteps() — foreground mode (Android native)', () => {
     getPlatform.mockReturnValue('android');
   });
 
-  it('calls startStepService with goal + i18n keys + initialSteps', async () => {
+  it('calls startStepService with DB steps as initialSteps when service is NOT running', async () => {
     state.settings.stepGoal = 8000;
-    DB.get.mockReturnValue(150); // DB has 150 steps for today
+    DB.get.mockReturnValue(150);
+    // Сервіс не запущений — повинен стартувати з DB значенням
+    getServiceStatus.mockResolvedValueOnce({ steps: 0, running: false, sensorAvailable: true });
     await enableSteps('foreground');
-    // 4th arg is initialSteps (today's DB count passed to the service)
     expect(startStepService).toHaveBeenCalledWith(8000, 'st-notif-title', 'st-notif-text', 150);
   });
 
-  it('registers addStepUpdateListener', async () => {
+  it('registers addStepUpdateListener when service starts fresh', async () => {
+    // Скидаємо модульний стан fgUnsubscribe через disableSteps перед тестом
+    disableSteps();
+    vi.clearAllMocks();
+    // Відновлюємо моки після clearAllMocks
+    isNative.mockReturnValue(true);
+    getPlatform.mockReturnValue('android');
+    startStepService.mockResolvedValue(true);
+    addStepUpdateListener.mockReturnValue(() => {});
+    getBatteryOptStatus.mockResolvedValue(true);
+    onResume.mockReturnValue(() => {});
+    DB.get.mockReturnValue(0);
+    // Сервіс не запущений → startStepService → addStepUpdateListener
+    getServiceStatus.mockResolvedValueOnce({ steps: 0, running: false, sensorAvailable: true });
     await enableSteps('foreground');
     expect(addStepUpdateListener).toHaveBeenCalled();
   });
@@ -210,14 +224,17 @@ describe('enableSteps() — foreground mode (Android native)', () => {
     expect(getStepCount()).toBe(350);
   });
 
-  it('keeps DB count when service count is lower', async () => {
+  it('service data has priority even when service count is lower than DB', async () => {
+    // Баг #4: сервіс запущений → його дані мають пріоритет над БД
     DB.get.mockReturnValue(400);
     getServiceStatus.mockResolvedValueOnce({ steps: 50, running: true, sensorAvailable: true });
     await enableSteps('foreground');
-    expect(getStepCount()).toBe(400);
+    expect(getStepCount()).toBe(50);
   });
 
-  it('falls back to active-only when startStepService returns false', async () => {
+  it('falls back to active-only when service not running and startStepService returns false', async () => {
+    // Сервіс не запущений → намагаємось стартувати → fail → active-only
+    getServiceStatus.mockResolvedValueOnce({ steps: 0, running: false, sensorAvailable: true });
     startStepService.mockResolvedValueOnce(false);
     await enableSteps('foreground');
     expect(state.settings.stepMode).toBe('active-only');
@@ -327,14 +344,16 @@ describe('restoreSteps()', () => {
     expect(DB.set).toHaveBeenCalled();
   });
 
-  it('does NOT override DB count when service count is lower', async () => {
+  it('service data has priority even when lower than DB count (Баг #4 fix)', async () => {
+    // Після reboot: сервіс нарахував 200 кроків, БД має 500 (стара дата).
+    // Дані сервісу завжди мають пріоритет.
     isNative.mockReturnValue(true);
     getPlatform.mockReturnValue('android');
     state.settings.stepMode = 'foreground';
     DB.get.mockReturnValue(500);
     getServiceStatus.mockResolvedValueOnce({ steps: 200, running: true, sensorAvailable: true });
     await restoreSteps();
-    expect(getStepCount()).toBe(500);
+    expect(getStepCount()).toBe(200);
   });
 });
 

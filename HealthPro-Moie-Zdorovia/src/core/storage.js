@@ -3,7 +3,7 @@
 // Three-tier strategy:
 //   1. SQLite (native only) — persistent file under app private storage.
 //                              Survives WebView cache eviction. PRIMARY on Android.
-//   2. IndexedDB (HealthProDB / store "state") — async store, PRIMARY on web/PWA.
+//   2. IndexedDB (HealthProDB / store "state") — async store, резервне сховище у браузері.
 //   3. localStorage           — synchronous mirror used for the very first
 //                               render before bootstrapStorage() completes.
 //

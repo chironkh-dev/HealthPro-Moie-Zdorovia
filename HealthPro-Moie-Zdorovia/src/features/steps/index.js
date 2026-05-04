@@ -171,48 +171,71 @@ export async function enableSteps(mode) {
   if (toggle) toggle.classList.add('on');
   if (card)   card.style.display = 'block';
 
-  stepCount = DB.get('stepCount-' + today(), 0);
-
   const goal = state.settings.stepGoal || DEFAULT_STEP_GOAL;
 
   if (mode === 'foreground' && isNative() && getPlatform() === 'android') {
     // ── Native Foreground Service path ──
-    // Pass stepCount (DB daily total) as initialSteps so the service
-    // broadcasts the true daily total (not just session delta).
-    // This fixes the notification ≠ app count mismatch.
-    const ok = await startStepService(
-      goal,
-      t('st-notif-title'),
-      t('st-notif-text'),
-      stepCount,          // ← initialSteps offset
-    );
-    if (ok) {
-      fgUnsubscribe = addStepUpdateListener((steps, _goal) => {
-        // Service already adds initialSteps, so `steps` is the full daily total.
-        stepCount = steps;
-        DB.set('stepCount-' + today(), stepCount);
-        updateStepUI();
-      });
+    // КРОК 1: перевіряємо, чи сервіс вже запущений (наприклад, після BootReceiver).
+    // Дані сервісу мають пріоритет над локальною БД.
+    const existingStatus = await getServiceStatus();
 
-      // Sync initial count in case service already had more steps (e.g. restart)
-      const status = await getServiceStatus();
-      if (status && status.running && status.steps > stepCount) {
-        stepCount = status.steps;
-        DB.set('stepCount-' + today(), stepCount);
+    if (existingStatus && existingStatus.running) {
+      // Сервіс вже активний — беремо кроки З СЕРВІСУ, оновлюємо БД.
+      // НЕ перезапускаємо сервіс, щоб не скинути нараховані кроки.
+      stepCount = existingStatus.steps;
+      DB.set('stepCount-' + today(), stepCount);
+
+      if (!fgUnsubscribe) {
+        fgUnsubscribe = addStepUpdateListener((steps, _goal) => {
+          stepCount = steps;
+          DB.set('stepCount-' + today(), stepCount);
+          updateStepUI();
+        });
       }
 
       showToast(t('st-mode-fg'));
       _setupResumeHealthCheck();
       _checkBatteryOptOnce();
     } else {
-      // Service failed to start → fall back to active-only
-      state.settings.stepMode = 'active-only';
-      saveData();
-      _attachDeviceMotion();
-      showToast(t('st-mode-active'));
+      // Сервіс не запущений — стартуємо з поточним значенням з БД.
+      stepCount = DB.get('stepCount-' + today(), 0);
+
+      const ok = await startStepService(
+        goal,
+        t('st-notif-title'),
+        t('st-notif-text'),
+        stepCount,
+      );
+      if (ok) {
+        if (!fgUnsubscribe) {
+          fgUnsubscribe = addStepUpdateListener((steps, _goal) => {
+            stepCount = steps;
+            DB.set('stepCount-' + today(), stepCount);
+            updateStepUI();
+          });
+        }
+
+        // Sync якщо сервіс вже встиг нарахувати кроки до підключення listener-а
+        const status = await getServiceStatus();
+        if (status && status.running && status.steps > stepCount) {
+          stepCount = status.steps;
+          DB.set('stepCount-' + today(), stepCount);
+        }
+
+        showToast(t('st-mode-fg'));
+        _setupResumeHealthCheck();
+        _checkBatteryOptOnce();
+      } else {
+        // Сервіс не вдалося запустити → fallback на active-only
+        state.settings.stepMode = 'active-only';
+        saveData();
+        _attachDeviceMotion();
+        showToast(t('st-mode-active'));
+      }
     }
   } else {
     // ── DeviceMotion (active-only) path ──
+    stepCount = DB.get('stepCount-' + today(), 0);
     state.settings.stepMode = 'active-only';
     saveData();
     _attachDeviceMotion();
@@ -436,35 +459,52 @@ export function updateStepUI() {
 // ── Restore on load / app resume ───────────────────────────────────────────
 
 export async function restoreSteps() {
-  stepCount = DB.get('stepCount-' + today(), 0);
-
   const mode = state.settings.stepMode || 'active-only';
 
   if (mode === 'foreground' && isNative() && getPlatform() === 'android') {
     const status = await getServiceStatus();
     if (status) {
-      if (!status.running) {
-        // Service dead (Doze / kill) — restart transparently
+      if (status.running) {
+        // Сервіс живий — його дані мають пріоритет над БД.
+        stepCount = status.steps;
+        DB.set('stepCount-' + today(), stepCount);
+        stepEnabled = true;
+        state.settings.stepsEnabled = true;
+
+        if (!fgUnsubscribe) {
+          fgUnsubscribe = addStepUpdateListener((steps) => {
+            stepCount = steps;
+            DB.set('stepCount-' + today(), stepCount);
+            updateStepUI();
+          });
+        }
+        _setupResumeHealthCheck();
+      } else {
+        // Сервіс мертвий (Doze / kill) — перезапускаємо з даними БД.
+        stepCount = DB.get('stepCount-' + today(), 0);
         const goal = state.settings.stepGoal || DEFAULT_STEP_GOAL;
-        await startStepService(
+        const ok = await startStepService(
           goal,
           t('st-notif-title'),
           t('st-notif-text'),
           stepCount,
         );
-      } else if (status.steps > stepCount) {
-        stepCount = status.steps;
-        DB.set('stepCount-' + today(), stepCount);
+        if (ok) {
+          stepEnabled = true;
+          state.settings.stepsEnabled = true;
+          if (!fgUnsubscribe) {
+            fgUnsubscribe = addStepUpdateListener((steps) => {
+              stepCount = steps;
+              DB.set('stepCount-' + today(), stepCount);
+              updateStepUI();
+            });
+          }
+          _setupResumeHealthCheck();
+        }
       }
     }
-
-    if (stepEnabled && !fgUnsubscribe) {
-      fgUnsubscribe = addStepUpdateListener((steps) => {
-        stepCount = steps;
-        DB.set('stepCount-' + today(), stepCount);
-        updateStepUI();
-      });
-    }
+  } else {
+    stepCount = DB.get('stepCount-' + today(), 0);
   }
 }
 

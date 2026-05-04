@@ -2,7 +2,7 @@
 // Responsibilities of this file:
 //   • Wire showToast (DOM-bound) into the shared state container.
 //   • Define showPage() because it crosses every feature.
-//   • Run init() (theme, lang, profile, pressure listeners, charts, pills, PWA).
+//   • Run init() (theme, lang, profile, pressure listeners, charts, pills).
 //   • Bind cross-module events (measurement saved/deleted -> chart + analytics re-render).
 //   • Action dispatcher for data-action / data-change / data-input attributes.
 
@@ -61,10 +61,6 @@ import {
   acceptNotifPerm, declineNotifPerm,
   sendEmailReminder, sendSmsReminder, renderEmailSmsTargets,
 } from './features/settings/index.js';
-import {
-  // PWA
-  installApp, registerSW, applyUpdate, setupOnlineIndicator,
-} from './features/pwa/index.js';
 
 // ── Toast (DOM-bound) ─────────────────────────────────────────
 function showToast(msg, dur = 2500) {
@@ -164,9 +160,6 @@ function init() {
   updateHeaderStatus();
   setTimeout(() => { renderChart(); setupChartTooltip(); }, 100);
   renderPills();
-  registerSW();
-  setupOnlineIndicator();
-
   // Step counter restore
   if (state.settings.stepsEnabled) enableSteps();
 
@@ -187,12 +180,6 @@ function init() {
     if (dx < -40 && idx < pages.length - 1) showPage(pages[idx + 1]);
     else if (dx > 40 && idx > 0) showPage(pages[idx - 1]);
   }, { passive: true });
-
-  // Step counter PWA note
-  const stepSubEl = document.getElementById('t-step-sub');
-  if (stepSubEl) {
-    stepSubEl.textContent = t('app-step-sub');
-  }
 
   onPillDaysChange();
 
@@ -300,9 +287,6 @@ const ACTIONS = {
   // pills form
   onPillDaysChange: () => onPillDaysChange(),
   checkDrugName: () => checkDrugName(),
-  // PWA
-  installApp: () => installApp(),
-  applyUpdate: () => applyUpdate(),
   // generic dismissals
   stop: (el, ev) => ev.stopPropagation(),
   dismissDisclaimer: (el, ev) => { if (ev.target === el) closeDisclaimerModal(); },

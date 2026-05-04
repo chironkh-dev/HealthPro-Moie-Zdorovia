@@ -1,5 +1,5 @@
 // Platform abstraction layer.
-// Provides one API surface for web (PWA) and native Capacitor builds.
+// Provides one API surface for browser preview and native Capacitor (Android) builds.
 // Each function falls back to a web implementation when running in the
 // browser, and switches to a Capacitor plugin on native builds (when the
 // plugin module is present). Feature modules MUST go through this file
