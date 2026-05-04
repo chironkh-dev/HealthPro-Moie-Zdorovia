@@ -28,12 +28,23 @@
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
 
-        <!-- Foreground Service: step counter (hardware TYPE_STEP_COUNTER) -->
-        <!-- foregroundServiceType="health" required on Android 14+ (API 34) -->
+        <!-- Foreground Service: step counter (hardware TYPE_STEP_COUNTER)       -->
+        <!-- stopWithTask="false" keeps service alive on swipe-kill (recents). -->
         <service
             android:name=".StepCounterService"
             android:foregroundServiceType="health"
+            android:stopWithTask="false"
             android:exported="false" />
+
+        <!-- BootReceiver: restarts step service after reboot or app update -->
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
     </application>
 
     <!-- Permissions -->
@@ -52,7 +63,10 @@
     <!-- step counter / measurement reminder use case.                       -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
 
-    <!-- Step counter (Round 3 #13) -->
+    <!-- Battery optimisation exemption (step counter resilience on Samsung) -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <!-- Step counter -->
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
     <uses-feature android:name="android.hardware.sensor.stepcounter" android:required="false" />
     <uses-feature android:name="android.hardware.sensor.stepdetector" android:required="false" />

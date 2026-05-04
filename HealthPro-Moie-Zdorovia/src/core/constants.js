@@ -22,9 +22,14 @@ export const STEP_ACCEL_THRESHOLD = 12;
 export const STEP_MIN_INTERVAL_MS = 250;          // debounce: max ~4 steps/sec
 
 // Improved algorithm — uses linear acceleration (e.acceleration, no gravity).
-// Walking peaks ≈ 2–4 m/s². Threshold chosen to filter micro-vibrations.
-export const STEP_LINEAR_THRESHOLD = 2.0;         // m/s² for pure linear accel
+// Walking peaks ≈ 3–6 m/s². Threshold raised to 3.0 to reject tap/vibration
+// artefacts (screen taps produce ~2–4 m/s² spikes that are too brief to sustain).
+export const STEP_LINEAR_THRESHOLD = 3.0;         // m/s² for pure linear accel
 export const STEP_GRAVITY_FILTER_ALPHA = 0.8;     // LP filter coefficient (gravity removal)
+// Require this many consecutive DeviceMotion samples above threshold before
+// declaring a peak. At ~50 Hz each sample ≈ 20 ms, so 2 samples = 40 ms
+// minimum peak duration. Real walking steps last ≥ 80 ms; screen taps < 20 ms.
+export const STEP_MIN_PEAK_SAMPLES = 2;
 
 // ─── Emergency / regional ───
 export const EMERGENCY_PHONE_UA = '103';

@@ -1,4 +1,4 @@
-// Tests verifying the four pedometer fixes:
+// Tests verifying pedometer fixes:
 //
 //  Fix 1 — _inPeak reset on enableSteps()
 //           Ensures peak-detection starts clean on every new session.
@@ -6,22 +6,31 @@
 //           Prevents stale gravity estimate after a pause.
 //  Fix 3 — _motionDetected / no-sensor toast after 3 s with no events
 //           Shows st-no-sensor when DeviceMotion never fires.
-//  Fix 4 — _lastMag removed (dead variable)
-//           Verified by confirming step counting still works correctly.
+//  Fix 4 — step counting still correct with MIN_PEAK_SAMPLES=2 filter
+//           Two consecutive rise events required to declare a peak
+//           (rejects brief tap/vibration spikes < ~40 ms).
+//
+// NOTE: As of the tap-filter refactor STEP_MIN_PEAK_SAMPLES=2, so all
+//       step-count tests must fire the rise event TWICE before the fall.
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { state } from '../src/core/state.js';
 
 // ── Mock platform.js ─────────────────────────────────────────────────────────
 vi.mock('../src/core/platform.js', () => ({
-  isNative:                  vi.fn().mockReturnValue(false),
-  getPlatform:               vi.fn().mockReturnValue('web'),
-  requestActivityPermission: vi.fn().mockResolvedValue('granted'),
-  checkActivityPermission:   vi.fn().mockResolvedValue('granted'),
-  startStepService:          vi.fn().mockResolvedValue(true),
-  stopStepService:           vi.fn().mockResolvedValue(true),
-  getServiceStepCount:       vi.fn().mockResolvedValue(0),
-  addStepUpdateListener:     vi.fn().mockReturnValue(() => {}),
+  isNative:                   vi.fn().mockReturnValue(false),
+  getPlatform:                vi.fn().mockReturnValue('web'),
+  requestActivityPermission:  vi.fn().mockResolvedValue('granted'),
+  checkActivityPermission:    vi.fn().mockResolvedValue('granted'),
+  startStepService:           vi.fn().mockResolvedValue(true),
+  stopStepService:            vi.fn().mockResolvedValue(true),
+  getServiceStatus:           vi.fn().mockResolvedValue({ steps: 0, running: true, sensorAvailable: true }),
+  getServiceStepCount:        vi.fn().mockResolvedValue(0),
+  addStepUpdateListener:      vi.fn().mockReturnValue(() => {}),
+  getBatteryOptStatus:        vi.fn().mockResolvedValue(true),
+  requestBatteryOptExemption: vi.fn().mockResolvedValue(undefined),
+  openAppSettings:            vi.fn(),
+  onResume:                   vi.fn().mockReturnValue(() => {}),
 }));
 
 // ── Mock state helpers ───────────────────────────────────────────────────────
@@ -94,41 +103,45 @@ import { enableSteps, disableSteps } from '../src/features/steps/index.js';
 
 // ── Helpers to fire synthetic DeviceMotion events ────────────────────────────
 
-// Builds a minimal DeviceMotionEvent-like object with linear acceleration.
 function makeLinearEvent(x, y, z) {
   return { acceleration: { x, y, z }, accelerationIncludingGravity: null };
 }
 
-// Builds an event that only carries accelerationIncludingGravity (Path 2 fallback).
 function makeGravityEvent(x, y, z) {
   return { acceleration: null, accelerationIncludingGravity: { x, y, z } };
 }
 
-// Fires the handler that was last registered via window.addEventListener('devicemotion', ...).
-// We capture it by wrapping window.addEventListener in setup.
 let capturedMotionHandler = null;
 
 function fireMotion(event) {
   if (capturedMotionHandler) capturedMotionHandler(event);
 }
 
+/**
+ * Fire `n` consecutive rise events (linear acceleration path).
+ * With STEP_MIN_PEAK_SAMPLES=2 the default n=2 sets _inPeak=true.
+ */
+function fireRise(x, y, z, n = 2) {
+  for (let i = 0; i < n; i++) fireMotion(makeLinearEvent(x, y, z));
+}
+
+/**
+ * Fire `n` consecutive rise events (gravity-fallback path).
+ */
+function fireGravityRise(x, y, z, n = 2) {
+  for (let i = 0; i < n; i++) fireMotion(makeGravityEvent(x, y, z));
+}
+
 // ── Setup / teardown ─────────────────────────────────────────────────────────
 beforeEach(() => {
   vi.clearAllMocks();
 
-  // Use a fixed system time far in the future so Date.now() is always much
-  // greater than any lastStepTs left by a previous test (which runs in the
-  // same module instance). This prevents debounce from blocking the first step.
   vi.useFakeTimers({ now: new Date('2030-01-01T00:00:00.000Z').getTime() });
 
   setupDOMStubs();
   resetState();
   capturedMotionHandler = null;
 
-  // In the Node test environment `window` is a plain stub (from setup.js)
-  // without addEventListener/removeEventListener. Assign vi.fn() directly
-  // so the step module can call window.addEventListener('devicemotion', …)
-  // and we can intercept the registered handler.
   global.window.addEventListener = vi.fn((type, handler) => {
     if (type === 'devicemotion') capturedMotionHandler = handler;
   });
@@ -143,55 +156,66 @@ afterEach(() => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Fix 1 — _inPeak reset on enableSteps()
+// Fix 1 — _inPeak and _peakSamples reset on enableSteps()
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe('Fix 1 — _inPeak reset on enableSteps()', () => {
+describe('Fix 1 — _inPeak/_peakSamples reset on enableSteps()', () => {
 
-  it('step is counted when motion rises above then falls below threshold after re-enable', async () => {
-    // Session 1: start a peak but never finish it (disable mid-peak)
-    await enableSteps('active-only');
-    fireMotion(makeLinearEvent(3, 0, 0));  // rise → _inPeak = true
-
-    disableSteps();
-
-    // Session 2: re-enable — _inPeak must be false so the peak cycle works correctly
-    vi.clearAllMocks();
-    DB.get.mockReturnValue(0);
+  it('step counted correctly after a full rise→fall cycle on fresh session', async () => {
     await enableSteps('active-only');
 
-    // Rising edge: magnitude = 3 > 2.0 threshold
-    fireMotion(makeLinearEvent(3, 0, 0));
-    // Falling edge: magnitude = 0.1 < 2.0 threshold → must count one step
-    vi.advanceTimersByTime(300);  // past MIN_INTERVAL_MS (250 ms)
-    fireMotion(makeLinearEvent(0.1, 0, 0));
+    // Need 2 consecutive rise events (MIN_PEAK_SAMPLES=2) to declare a peak.
+    fireRise(4, 0, 0);             // 2 events above threshold → _inPeak = true
+    vi.advanceTimersByTime(300);   // past MIN_INTERVAL_MS (250 ms)
+    fireMotion(makeLinearEvent(0.1, 0, 0)); // fall → step #1
 
     expect(DB.set).toHaveBeenCalledWith('stepCount-2026-05-04', 1);
   });
 
-  it('does not double-count a step if re-enabled while inPeak was true', async () => {
+  it('_peakSamples resets to 0 on re-enable (stale count does not bleed)', async () => {
+    // Session 1: fire ONE rise event (peakSamples=1 but inPeak=false), then disable.
     await enableSteps('active-only');
-    fireMotion(makeLinearEvent(3, 0, 0));  // _inPeak → true
+    fireMotion(makeLinearEvent(4, 0, 0)); // peakSamples=1, inPeak=false
     disableSteps();
 
+    // Session 2: re-enable. peakSamples must be 0 so the first event alone
+    // cannot trigger a peak (we still need a full 2-event rise).
+    vi.clearAllMocks();
     DB.get.mockReturnValue(0);
     await enableSteps('active-only');
 
-    // Without the fix the first falling-edge event would immediately count
-    // a step (because stale _inPeak=true). With the fix _inPeak=false so we
-    // need a full rise→fall cycle.
+    // Only ONE rise event → peakSamples=1, inPeak=false.
     // Falling edge only — must NOT count a step.
+    fireMotion(makeLinearEvent(4, 0, 0));  // peakSamples=1
+    vi.advanceTimersByTime(300);
+    fireMotion(makeLinearEvent(0.1, 0, 0)); // below threshold → peakSamples reset to 0, no step
+
+    const stepCalls = DB.set.mock.calls.filter(([k]) => k.startsWith('stepCount-'));
+    expect(stepCalls).toHaveLength(0);
+  });
+
+  it('does not double-count if re-enabled while _inPeak was true', async () => {
+    // Session 1: get _inPeak=true (2 rise events), then disable mid-peak.
+    await enableSteps('active-only');
+    fireRise(4, 0, 0); // 2 events → _inPeak = true
+    disableSteps();
+
+    // Session 2: _inPeak must be reset to false by disableSteps().
+    DB.get.mockReturnValue(0);
+    vi.clearAllMocks();
+    await enableSteps('active-only');
+
+    // Falling edge only (no rise cycle). With inPeak=false, no step counted.
     vi.advanceTimersByTime(300);
     fireMotion(makeLinearEvent(0.1, 0, 0));
 
-    // DB.set for stepCount should NOT have been called (no full peak cycle yet)
     const stepCalls = DB.set.mock.calls.filter(([k]) => k.startsWith('stepCount-'));
     expect(stepCalls).toHaveLength(0);
   });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Fix 2 — Gravity filter reset on enableSteps()
+// Fix 2 — Gravity filter (_gx/_gy/_gz) reset on enableSteps()
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('Fix 2 — gravity filter (_gx/_gy/_gz) reset on enableSteps()', () => {
@@ -199,33 +223,32 @@ describe('Fix 2 — gravity filter (_gx/_gy/_gz) reset on enableSteps()', () => 
   it('step cycle completes correctly from zero gravity state on new session', async () => {
     await enableSteps('active-only');
 
-    // With _gx/_gy/_gz = 0 (freshly reset) and ag = (5, 0, 0):
-    //   gravity estimate ≈ 0 (first sample, α=0.8: gx = 0.8*0 + 0.2*5 = 1)
-    //   linear component = 5 - 1 = 4 > 2.0 → _inPeak = true
-
-    fireMotion(makeGravityEvent(5, 0, 0));   // rise → inPeak
+    // Path 2 (gravity fallback). With gx=0:
+    //  Event 1: gx=0.8*0+0.2*5=1.0; lx=5-1.0=4.0 > 3.0 → peakSamples=1
+    //  Event 2: gx=0.8*1.0+0.2*5=1.8+0.2*5=1.8+1=... wait:
+    //           gx=0.8*1.0+0.2*5 = 0.8+1.0 = 1.8; lx=5-1.8=3.2 > 3.0 → peakSamples=2 → inPeak=true
+    fireGravityRise(5, 0, 0);
     vi.advanceTimersByTime(300);
-    fireMotion(makeGravityEvent(0.1, 0, 0)); // fall → step counted
+    fireMotion(makeGravityEvent(0.1, 0, 0)); // fall → step
 
     const stepCalls = DB.set.mock.calls.filter(([k]) => k.startsWith('stepCount-'));
     expect(stepCalls.length).toBeGreaterThan(0);
   });
 
   it('gravity filter starts from 0 on second session (not carried over)', async () => {
-    // Session 1: drive gx high via gravity events
+    // Session 1: drive gx high
     await enableSteps('active-only');
     for (let i = 0; i < 10; i++) {
-      fireMotion(makeGravityEvent(20, 0, 0)); // large x → drives gx toward 20
+      fireMotion(makeGravityEvent(20, 0, 0));
     }
     disableSteps();
 
-    // Session 2: re-enable — gx must be 0 again
+    // Session 2: gx must be 0 again → peak can form with ag.x=5
     DB.get.mockReturnValue(0);
     vi.clearAllMocks();
     await enableSteps('active-only');
 
-    // With fresh gx=0 and ag.x=5: lx = 5 - (0.8*0 + 0.2*5) = 5 - 1 = 4 > 2.0 → peak
-    fireMotion(makeGravityEvent(5, 0, 0));
+    fireGravityRise(5, 0, 0);
     vi.advanceTimersByTime(300);
     fireMotion(makeGravityEvent(0.1, 0, 0));
 
@@ -242,21 +265,14 @@ describe('Fix 3 — no-sensor warning toast', () => {
 
   it('shows st-no-sensor toast when no devicemotion event arrives within 3 s', async () => {
     await enableSteps('active-only');
-
-    // Advance 3 seconds without any motion event
     vi.advanceTimersByTime(3000);
-
     expect(showToast).toHaveBeenCalledWith('st-no-sensor');
   });
 
   it('does NOT show st-no-sensor toast when a devicemotion event arrives before 3 s', async () => {
     await enableSteps('active-only');
-
-    // Motion event arrives at 1 s
     vi.advanceTimersByTime(1000);
-    fireMotion(makeLinearEvent(3, 0, 0));
-
-    // Advance past the 3 s mark
+    fireMotion(makeLinearEvent(4, 0, 0));
     vi.advanceTimersByTime(2500);
 
     const noSensorCalls = showToast.mock.calls.filter(([k]) => k === 'st-no-sensor');
@@ -265,12 +281,8 @@ describe('Fix 3 — no-sensor warning toast', () => {
 
   it('does NOT show st-no-sensor toast after steps are disabled before 3 s', async () => {
     await enableSteps('active-only');
-
-    // Disable before timer fires
     vi.advanceTimersByTime(1000);
     disableSteps();
-
-    // Advance past the 3 s mark — timer must have been cancelled
     vi.advanceTimersByTime(2500);
 
     const noSensorCalls = showToast.mock.calls.filter(([k]) => k === 'st-no-sensor');
@@ -279,41 +291,38 @@ describe('Fix 3 — no-sensor warning toast', () => {
 
   it('resets detection flag on disable so next enable can show toast again if needed', async () => {
     await enableSteps('active-only');
-    fireMotion(makeLinearEvent(3, 0, 0));  // sensor detected
-    vi.advanceTimersByTime(3000);          // timer fires but no-toast (already detected)
-
+    fireMotion(makeLinearEvent(4, 0, 0));
+    vi.advanceTimersByTime(3000);
     disableSteps();
 
-    // Re-enable — detection flag must be reset
     DB.get.mockReturnValue(0);
     vi.clearAllMocks();
     await enableSteps('active-only');
 
-    // No events for 3 s → should warn again
     vi.advanceTimersByTime(3000);
     expect(showToast).toHaveBeenCalledWith('st-no-sensor');
   });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Fix 4 — _lastMag removed (dead variable) — step counting still works
+// Fix 4 — step counting with MIN_PEAK_SAMPLES=2 tap filter
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe('Fix 4 — step counting still correct after _lastMag removal', () => {
+describe('Fix 4 — step counting with MIN_PEAK_SAMPLES=2 tap filter', () => {
 
-  it('counts one step per rise→fall cycle (linear path)', async () => {
+  it('counts one step per rise→fall cycle (linear path, 2 rise events)', async () => {
     await enableSteps('active-only');
 
-    // Cycle 1: rise → advance past debounce → fall → step #1
-    fireMotion(makeLinearEvent(3, 0, 0));   // rise → _inPeak = true
-    vi.advanceTimersByTime(300);            // T+300 ms, past debounce
-    fireMotion(makeLinearEvent(0.1, 0, 0)); // fall → step #1, lastStepTs = T+300
+    // Cycle 1
+    fireRise(4, 0, 0);              // 2 events → _inPeak = true
+    vi.advanceTimersByTime(300);
+    fireMotion(makeLinearEvent(0.1, 0, 0)); // fall → step #1
 
-    // Advance again past debounce before cycle 2
-    vi.advanceTimersByTime(300);            // T+600 ms
-    // Cycle 2: rise → advance → fall → step #2
-    fireMotion(makeLinearEvent(3, 0, 0));   // rise → _inPeak = true
-    vi.advanceTimersByTime(300);            // T+900 ms
+    vi.advanceTimersByTime(300);
+
+    // Cycle 2
+    fireRise(4, 0, 0);
+    vi.advanceTimersByTime(300);
     fireMotion(makeLinearEvent(0.1, 0, 0)); // fall → step #2
 
     const stepCalls = DB.set.mock.calls.filter(([k]) => k.startsWith('stepCount-'));
@@ -321,42 +330,68 @@ describe('Fix 4 — step counting still correct after _lastMag removal', () => {
     expect(stepCalls[stepCalls.length - 1][1]).toBe(2);
   });
 
+  it('single rise event does NOT declare a peak (tap filter active)', async () => {
+    await enableSteps('active-only');
+
+    // Only 1 rise event (not enough for MIN_PEAK_SAMPLES=2)
+    fireMotion(makeLinearEvent(4, 0, 0)); // peakSamples=1, inPeak=false
+    vi.advanceTimersByTime(300);
+    fireMotion(makeLinearEvent(0.1, 0, 0)); // below threshold → reset, no step
+
+    const stepCalls = DB.set.mock.calls.filter(([k]) => k.startsWith('stepCount-'));
+    expect(stepCalls).toHaveLength(0);
+  });
+
   it('debounce prevents a second step within MIN_INTERVAL_MS (250 ms)', async () => {
     await enableSteps('active-only');
 
-    // Step #1: full cycle, lastStepTs = T+300
-    fireMotion(makeLinearEvent(3, 0, 0));   // rise
+    // Step #1: full cycle → T+300 ms (lastStepTs = T+300)
+    fireRise(4, 0, 0);
     vi.advanceTimersByTime(300);
-    fireMotion(makeLinearEvent(0.1, 0, 0)); // fall → step #1
+    fireMotion(makeLinearEvent(0.1, 0, 0)); // step #1
 
-    // Immediately start next cycle (only 100 ms since last step)
-    fireMotion(makeLinearEvent(3, 0, 0));   // rise
-    vi.advanceTimersByTime(100);            // T+400 — only 100 ms since step #1
-    fireMotion(makeLinearEvent(0.1, 0, 0)); // fall → debounced (400-300=100 < 250)
+    // Next cycle: only 100 ms since step #1 → debounced
+    fireRise(4, 0, 0);
+    vi.advanceTimersByTime(100);            // T+400, only 100 ms since step #1
+    fireMotion(makeLinearEvent(0.1, 0, 0)); // debounced (100 < 250 ms)
 
-    // Now advance past the debounce window
-    vi.advanceTimersByTime(200);            // T+600 — 300 ms since step #1
-    fireMotion(makeLinearEvent(3, 0, 0));   // rise
+    // Advance past debounce, then another full cycle
+    vi.advanceTimersByTime(200);            // T+600, 300 ms since step #1
+    fireRise(4, 0, 0);
     vi.advanceTimersByTime(300);            // T+900
-    fireMotion(makeLinearEvent(0.1, 0, 0)); // fall → step #2 (300 ms since step #1 ≥ 250)
+    fireMotion(makeLinearEvent(0.1, 0, 0)); // step #2
 
     const stepCalls = DB.set.mock.calls.filter(([k]) => k.startsWith('stepCount-'));
-    expect(stepCalls).toHaveLength(2);     // step #1 + step #2 (debounced attempt not counted)
+    expect(stepCalls).toHaveLength(2);
     expect(stepCalls[stepCalls.length - 1][1]).toBe(2);
   });
 
-  it('counts steps via gravity-fallback path (Path 2)', async () => {
+  it('counts steps via gravity-fallback path (Path 2), 2 rise events', async () => {
     await enableSteps('active-only');
 
-    // Path 2: accelerationIncludingGravity only (no linear acceleration).
-    // With _gx=0 (reset on enableSteps): lx = ag.x - 0.2*ag.x = 0.8*ag.x for first sample.
-    // ag.x=10 → gx after 1st event = 0.8*0 + 0.2*10 = 2; lx = 10-2 = 8 > 2.0 → peak.
-    fireMotion(makeGravityEvent(10, 0, 0)); // rise → _inPeak = true
-    vi.advanceTimersByTime(300);            // past debounce
-    // ag.x=0: gx = 0.8*2 + 0.2*0 = 1.6; lx = 0 - 1.6 = -1.6 → mag=1.6 < 2.0 → fall
-    fireMotion(makeGravityEvent(0, 0, 0));  // fall → step counted
+    // 2× ag.x=10 events to build peak:
+    //  Event 1: gx=0.8*0+0.2*10=2.0; lx=10-2=8.0 > 3.0 → peakSamples=1
+    //  Event 2: gx=0.8*2+0.2*10=1.6+2=3.6; lx=10-3.6=6.4 > 3.0 → peakSamples=2 → inPeak=true
+    fireGravityRise(10, 0, 0);
+    vi.advanceTimersByTime(300);
+    // ag.x=0: gx=0.8*3.6+0.2*0=2.88; lx=0-2.88=-2.88 → mag=2.88 < 3.0 → fall
+    fireMotion(makeGravityEvent(0, 0, 0));
 
     const stepCalls = DB.set.mock.calls.filter(([k]) => k.startsWith('stepCount-'));
     expect(stepCalls).toHaveLength(1);
+  });
+
+  it('_peakSamples resets to 0 when signal dips below threshold between rise events', async () => {
+    await enableSteps('active-only');
+
+    // Interrupted rise: high → low → high → low (never 2 consecutive highs)
+    fireMotion(makeLinearEvent(4, 0, 0));   // peakSamples=1
+    fireMotion(makeLinearEvent(0.1, 0, 0)); // below threshold → peakSamples=0
+    vi.advanceTimersByTime(300);
+    fireMotion(makeLinearEvent(4, 0, 0));   // peakSamples=1
+    fireMotion(makeLinearEvent(0.1, 0, 0)); // below threshold → peakSamples=0, no step
+
+    const stepCalls = DB.set.mock.calls.filter(([k]) => k.startsWith('stepCount-'));
+    expect(stepCalls).toHaveLength(0);
   });
 });

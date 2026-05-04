@@ -9,22 +9,30 @@ import { state } from '../src/core/state.js';
 
 // ── Mock platform.js ─────────────────────────────────────────────────────────
 vi.mock('../src/core/platform.js', () => ({
-  isNative:                  vi.fn().mockReturnValue(false),
-  getPlatform:               vi.fn().mockReturnValue('web'),
-  requestActivityPermission: vi.fn().mockResolvedValue('granted'),
-  checkActivityPermission:   vi.fn().mockResolvedValue('granted'),
-  startStepService:          vi.fn().mockResolvedValue(true),
-  stopStepService:           vi.fn().mockResolvedValue(true),
-  getServiceStepCount:       vi.fn().mockResolvedValue(0),
-  addStepUpdateListener:     vi.fn().mockReturnValue(() => {}),
+  isNative:                   vi.fn().mockReturnValue(false),
+  getPlatform:                vi.fn().mockReturnValue('web'),
+  requestActivityPermission:  vi.fn().mockResolvedValue('granted'),
+  checkActivityPermission:    vi.fn().mockResolvedValue('granted'),
+  startStepService:           vi.fn().mockResolvedValue(true),
+  stopStepService:            vi.fn().mockResolvedValue(true),
+  // getServiceStatus replaces getServiceStepCount (returns { steps, running, sensorAvailable })
+  getServiceStatus:           vi.fn().mockResolvedValue({ steps: 0, running: true, sensorAvailable: true }),
+  getServiceStepCount:        vi.fn().mockResolvedValue(0),
+  addStepUpdateListener:      vi.fn().mockReturnValue(() => {}),
+  getBatteryOptStatus:        vi.fn().mockResolvedValue(true),
+  requestBatteryOptExemption: vi.fn().mockResolvedValue(undefined),
+  openAppSettings:            vi.fn(),
+  onResume:                   vi.fn().mockReturnValue(() => {}),
 }));
 
 import {
   isNative, getPlatform,
   requestActivityPermission,
   startStepService, stopStepService,
-  getServiceStepCount,
+  getServiceStatus, getServiceStepCount,
   addStepUpdateListener,
+  getBatteryOptStatus,
+  onResume,
 } from '../src/core/platform.js';
 
 // ── Mock state helpers ───────────────────────────────────────────────────────
@@ -118,8 +126,11 @@ beforeEach(() => {
   requestActivityPermission.mockResolvedValue('granted');
   startStepService.mockResolvedValue(true);
   stopStepService.mockResolvedValue(true);
+  getServiceStatus.mockResolvedValue({ steps: 0, running: true, sensorAvailable: true });
   getServiceStepCount.mockResolvedValue(0);
   addStepUpdateListener.mockReturnValue(() => {});
+  getBatteryOptStatus.mockResolvedValue(true);
+  onResume.mockReturnValue(() => {});
   DB.get.mockReturnValue(0);
 
   setupDOMStubs();
@@ -174,10 +185,12 @@ describe('enableSteps() — foreground mode (Android native)', () => {
     getPlatform.mockReturnValue('android');
   });
 
-  it('calls startStepService with goal + i18n keys', async () => {
+  it('calls startStepService with goal + i18n keys + initialSteps', async () => {
     state.settings.stepGoal = 8000;
+    DB.get.mockReturnValue(150); // DB has 150 steps for today
     await enableSteps('foreground');
-    expect(startStepService).toHaveBeenCalledWith(8000, 'st-notif-title', 'st-notif-text');
+    // 4th arg is initialSteps (today's DB count passed to the service)
+    expect(startStepService).toHaveBeenCalledWith(8000, 'st-notif-title', 'st-notif-text', 150);
   });
 
   it('registers addStepUpdateListener', async () => {
@@ -192,14 +205,14 @@ describe('enableSteps() — foreground mode (Android native)', () => {
 
   it('syncs step count from service when service has more steps than DB', async () => {
     DB.get.mockReturnValue(100);
-    getServiceStepCount.mockResolvedValueOnce(350);
+    getServiceStatus.mockResolvedValueOnce({ steps: 350, running: true, sensorAvailable: true });
     await enableSteps('foreground');
     expect(getStepCount()).toBe(350);
   });
 
   it('keeps DB count when service count is lower', async () => {
     DB.get.mockReturnValue(400);
-    getServiceStepCount.mockResolvedValueOnce(50);
+    getServiceStatus.mockResolvedValueOnce({ steps: 50, running: true, sensorAvailable: true });
     await enableSteps('foreground');
     expect(getStepCount()).toBe(400);
   });
@@ -307,7 +320,8 @@ describe('restoreSteps()', () => {
     getPlatform.mockReturnValue('android');
     state.settings.stepMode = 'foreground';
     DB.get.mockReturnValue(300);
-    getServiceStepCount.mockResolvedValueOnce(800);
+    // restoreSteps() calls getServiceStatus(); running=true + steps=800 > 300
+    getServiceStatus.mockResolvedValueOnce({ steps: 800, running: true, sensorAvailable: true });
     await restoreSteps();
     expect(getStepCount()).toBe(800);
     expect(DB.set).toHaveBeenCalled();
@@ -318,7 +332,7 @@ describe('restoreSteps()', () => {
     getPlatform.mockReturnValue('android');
     state.settings.stepMode = 'foreground';
     DB.get.mockReturnValue(500);
-    getServiceStepCount.mockResolvedValueOnce(200);
+    getServiceStatus.mockResolvedValueOnce({ steps: 200, running: true, sensorAvailable: true });
     await restoreSteps();
     expect(getStepCount()).toBe(500);
   });

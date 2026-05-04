@@ -24,20 +24,23 @@ import {
   STEP_MIN_INTERVAL_MS,
   STEP_LINEAR_THRESHOLD,
   STEP_GRAVITY_FILTER_ALPHA,
+  STEP_MIN_PEAK_SAMPLES,
 } from '../../core/constants.js';
 import { t } from '../../i18n/index.js';
 import {
   isNative, getPlatform,
   requestActivityPermission, checkActivityPermission,
   startStepService, stopStepService,
-  getServiceStepCount, addStepUpdateListener,
-  openAppSettings,
+  getServiceStatus, getServiceStepCount, addStepUpdateListener,
+  getBatteryOptStatus, requestBatteryOptExemption,
+  openAppSettings, onResume,
 } from '../../core/platform.js';
 
 const MIN_INTERVAL_MS  = STEP_MIN_INTERVAL_MS;
 const LINEAR_THRESH    = STEP_LINEAR_THRESHOLD;
-const GRAVITY_THRESH   = STEP_ACCEL_THRESHOLD;  // fallback with gravity
+const GRAVITY_THRESH   = STEP_ACCEL_THRESHOLD;
 const LP_ALPHA         = STEP_GRAVITY_FILTER_ALPHA;
+const MIN_PEAK_SAMPLES = STEP_MIN_PEAK_SAMPLES;
 
 // ── Module-level state ──────────────────────────────────────────────────────
 let stepCount     = 0;
@@ -46,12 +49,16 @@ let stepEnabled   = false;
 let fgUnsubscribe = null;   // cleanup fn for addStepUpdateListener
 
 // DeviceMotion peak-detection state
-let _inPeak  = false;       // currently inside an acceleration peak
+let _inPeak       = false;  // currently inside an acceleration peak
+let _peakSamples  = 0;      // consecutive samples above threshold (tap filter)
 let _gx = 0, _gy = 0, _gz = 0;  // gravity low-pass filter state (LP)
 
 // Accelerometer availability detection
-let _motionDetected = false;  // set to true on first real devicemotion event
-let _motionCheckTimer = null; // timer handle for no-sensor warning
+let _motionDetected   = false;
+let _motionCheckTimer = null;
+
+// onResume handler cleanup (avoid duplicate registration)
+let _resumeUnsubscribe = null;
 
 // ── Public toggle ───────────────────────────────────────────────────────────
 
@@ -67,7 +74,7 @@ export function toggleStepCounter() {
 
 function _showStepPermModal() {
   const m = document.getElementById('stepPermModal');
-  if (!m) { _startPermFlow(); return; }       // no modal → go straight to perm
+  if (!m) { _startPermFlow(); return; }
   m.classList.add('show');
   document.body.style.overflow = 'hidden';
 }
@@ -97,17 +104,13 @@ async function _startPermFlow() {
     const status = await requestActivityPermission();
     if (status !== 'granted') {
       showToast(t('st-perm-denied'));
-      // Exactly like the notification flow: offer to open system settings
-      // so the user can grant the permission manually (Android 10+).
       setTimeout(() => {
         if (window.confirm(t('st-open-settings-confirm'))) openAppSettings();
       }, 400);
       return;
     }
-    // Permission granted on Android → show FG consent modal
     _showStepFgModal();
   } else {
-    // Web / iOS: request DeviceMotion permission (iOS Safari) or just enable
     if (typeof DeviceMotionEvent !== 'undefined' &&
         typeof DeviceMotionEvent.requestPermission === 'function') {
       try {
@@ -123,7 +126,7 @@ async function _startPermFlow() {
 
 function _showStepFgModal() {
   const m = document.getElementById('stepFgModal');
-  if (!m) { enableSteps('foreground'); return; }   // no modal → direct enable
+  if (!m) { enableSteps('foreground'); return; }
   m.classList.add('show');
   document.body.style.overflow = 'hidden';
 }
@@ -157,10 +160,10 @@ export async function enableSteps(mode) {
   state.settings.stepMode     = mode;
   saveData();
 
-  // Reset peak-detection, debounce and gravity-filter state so a stale state
-  // from a previous session does not affect the new counting session.
-  _inPeak = false;
-  lastStepTs = 0;
+  // Reset all motion-detection state for a clean new session.
+  _inPeak      = false;
+  _peakSamples = 0;
+  lastStepTs   = 0;
   _gx = 0; _gy = 0; _gz = 0;
 
   const toggle = document.getElementById('stepToggle');
@@ -174,21 +177,33 @@ export async function enableSteps(mode) {
 
   if (mode === 'foreground' && isNative() && getPlatform() === 'android') {
     // ── Native Foreground Service path ──
-    const ok = await startStepService(goal, t('st-notif-title'), t('st-notif-text'));
+    // Pass stepCount (DB daily total) as initialSteps so the service
+    // broadcasts the true daily total (not just session delta).
+    // This fixes the notification ≠ app count mismatch.
+    const ok = await startStepService(
+      goal,
+      t('st-notif-title'),
+      t('st-notif-text'),
+      stepCount,          // ← initialSteps offset
+    );
     if (ok) {
-      // Real-time updates from service → JS
       fgUnsubscribe = addStepUpdateListener((steps, _goal) => {
+        // Service already adds initialSteps, so `steps` is the full daily total.
         stepCount = steps;
         DB.set('stepCount-' + today(), stepCount);
         updateStepUI();
       });
-      // Sync initial count from service
-      const serviceSteps = await getServiceStepCount();
-      if (serviceSteps !== null && serviceSteps > stepCount) {
-        stepCount = serviceSteps;
+
+      // Sync initial count in case service already had more steps (e.g. restart)
+      const status = await getServiceStatus();
+      if (status && status.running && status.steps > stepCount) {
+        stepCount = status.steps;
         DB.set('stepCount-' + today(), stepCount);
       }
+
       showToast(t('st-mode-fg'));
+      _setupResumeHealthCheck();
+      _checkBatteryOptOnce();
     } else {
       // Service failed to start → fall back to active-only
       state.settings.stepMode = 'active-only';
@@ -217,7 +232,6 @@ export function disableSteps() {
   if (toggle) toggle.classList.remove('on');
   if (card)   card.style.display = 'none';
 
-  // Stop foreground service if running
   if (fgUnsubscribe) { fgUnsubscribe(); fgUnsubscribe = null; }
   if (isNative() && getPlatform() === 'android') {
     stopStepService().catch(() => {});
@@ -227,31 +241,93 @@ export function disableSteps() {
     window.removeEventListener('devicemotion', _handleMotion);
   }
 
-  // Cancel pending no-sensor warning and reset detection flag
   if (_motionCheckTimer !== null) {
     clearTimeout(_motionCheckTimer);
     _motionCheckTimer = null;
   }
   _motionDetected = false;
 
-  // Reset peak-detection and debounce state so re-enable starts clean.
-  // Without this reset, lastStepTs from the previous session could block
-  // the very first step of the next session for up to MIN_INTERVAL_MS.
-  _inPeak = false;
-  lastStepTs = 0;
+  // Clear onResume handler
+  if (_resumeUnsubscribe) { _resumeUnsubscribe(); _resumeUnsubscribe = null; }
+
+  // Reset debounce & peak state so re-enable starts clean.
+  _inPeak      = false;
+  _peakSamples = 0;
+  lastStepTs   = 0;
 
   showToast(t('st-off'));
+}
+
+// ── Foreground service health check (onResume) ─────────────────────────────
+
+/**
+ * Register a single onResume handler that checks whether the foreground
+ * service is still alive. If Samsung / Doze killed it, restart automatically.
+ * Safe to call multiple times — previous handler is cleaned up first.
+ */
+function _setupResumeHealthCheck() {
+  if (_resumeUnsubscribe) { _resumeUnsubscribe(); _resumeUnsubscribe = null; }
+
+  _resumeUnsubscribe = onResume(async () => {
+    if (!stepEnabled || state.settings.stepMode !== 'foreground') return;
+
+    const status = await getServiceStatus();
+    if (!status) return;  // plugin not available (web)
+
+    if (!status.running) {
+      // Service was killed — restart it transparently
+      const goal = state.settings.stepGoal || DEFAULT_STEP_GOAL;
+      const ok = await startStepService(
+        goal,
+        t('st-notif-title'),
+        t('st-notif-text'),
+        stepCount,
+      );
+      if (ok && !fgUnsubscribe) {
+        fgUnsubscribe = addStepUpdateListener((steps) => {
+          stepCount = steps;
+          DB.set('stepCount-' + today(), stepCount);
+          updateStepUI();
+        });
+        showToast(t('st-service-restored'));
+      }
+    } else if (status.steps > stepCount) {
+      // Service has more steps than our JS variable (counted while backgrounded)
+      stepCount = status.steps;
+      DB.set('stepCount-' + today(), stepCount);
+      updateStepUI();
+    }
+  });
+}
+
+/**
+ * After starting the foreground service, check battery optimisation once
+ * and prompt the user if the app is still being optimised.
+ * Shown only once per app session (not on every enable).
+ */
+let _batteryOptChecked = false;
+async function _checkBatteryOptOnce() {
+  if (_batteryOptChecked) return;
+  _batteryOptChecked = true;
+
+  const ignored = await getBatteryOptStatus();
+  if (!ignored) {
+    // Delay so the mode toast is read first
+    setTimeout(async () => {
+      showToast(t('st-battery-opt'));
+      await new Promise(r => setTimeout(r, 2600));
+      await requestBatteryOptExemption();
+    }, 2800);
+  }
 }
 
 // ── DeviceMotion handler ───────────────────────────────────────────────────
 
 function _attachDeviceMotion() {
   if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') return;
-  window.removeEventListener('devicemotion', _handleMotion); // avoid duplicates
+  window.removeEventListener('devicemotion', _handleMotion);
   window.addEventListener('devicemotion', _handleMotion);
 
-  // After 3 seconds, if no motion event arrived the device has no accelerometer.
-  // Cancel any previous pending check first.
   if (_motionCheckTimer !== null) clearTimeout(_motionCheckTimer);
   _motionDetected = false;
   _motionCheckTimer = setTimeout(() => {
@@ -264,9 +340,7 @@ function _attachDeviceMotion() {
 
 function _handleMotion(e) {
   const now = Date.now();
-  let mag = 0;
 
-  // Mark that the accelerometer is actually delivering events.
   if (!_motionDetected) {
     _motionDetected = true;
     if (_motionCheckTimer !== null) {
@@ -275,17 +349,28 @@ function _handleMotion(e) {
     }
   }
 
+  let mag = 0;
+
   // Path 1: pure linear acceleration (no gravity) — preferred, more accurate.
-  // Available on Android Chrome and most Capacitor WebViews.
   const la = e.acceleration;
   if (la && (la.x !== null || la.y !== null || la.z !== null)) {
     mag = Math.sqrt((la.x || 0) ** 2 + (la.y || 0) ** 2 + (la.z || 0) ** 2);
 
-    // Peak detection: enter peak when mag rises above threshold,
-    // count step at the falling edge (more robust than rising edge).
-    if (!_inPeak && mag >= LINEAR_THRESH) {
-      _inPeak = true;
-    } else if (_inPeak && mag < LINEAR_THRESH) {
+    if (!_inPeak) {
+      if (mag >= LINEAR_THRESH) {
+        // Accumulate consecutive samples above threshold.
+        // MIN_PEAK_SAMPLES consecutive events are required before declaring a peak.
+        // This rejects brief tap / vibration spikes (< ~40 ms) while accepting
+        // genuine walking steps (≥ 80 ms above threshold at 50 Hz).
+        _peakSamples++;
+        if (_peakSamples >= MIN_PEAK_SAMPLES) {
+          _inPeak = true;
+          _peakSamples = 0;
+        }
+      } else {
+        _peakSamples = 0;  // reset accumulator when signal drops below threshold
+      }
+    } else if (mag < LINEAR_THRESH) {
       _inPeak = false;
       if (now - lastStepTs >= MIN_INTERVAL_MS) {
         stepCount++;
@@ -298,7 +383,6 @@ function _handleMotion(e) {
   }
 
   // Path 2: accelerationIncludingGravity — fallback (older devices / iOS).
-  // Use low-pass filter to isolate gravity, then subtract to get linear component.
   const ag = e.accelerationIncludingGravity;
   if (!ag) return;
 
@@ -306,15 +390,22 @@ function _handleMotion(e) {
   _gy = LP_ALPHA * _gy + (1 - LP_ALPHA) * (ag.y || 0);
   _gz = LP_ALPHA * _gz + (1 - LP_ALPHA) * (ag.z || 0);
 
-  // High-pass: subtract gravity estimate → linear motion component
   const lx = (ag.x || 0) - _gx;
   const ly = (ag.y || 0) - _gy;
   const lz = (ag.z || 0) - _gz;
   mag = Math.sqrt(lx ** 2 + ly ** 2 + lz ** 2);
 
-  if (!_inPeak && mag >= LINEAR_THRESH) {
-    _inPeak = true;
-  } else if (_inPeak && mag < LINEAR_THRESH) {
+  if (!_inPeak) {
+    if (mag >= LINEAR_THRESH) {
+      _peakSamples++;
+      if (_peakSamples >= MIN_PEAK_SAMPLES) {
+        _inPeak = true;
+        _peakSamples = 0;
+      }
+    } else {
+      _peakSamples = 0;
+    }
+  } else if (mag < LINEAR_THRESH) {
     _inPeak = false;
     if (now - lastStepTs >= MIN_INTERVAL_MS) {
       stepCount++;
@@ -349,14 +440,24 @@ export async function restoreSteps() {
 
   const mode = state.settings.stepMode || 'active-only';
 
-  // If foreground mode was active, try to sync count from running service
   if (mode === 'foreground' && isNative() && getPlatform() === 'android') {
-    const serviceSteps = await getServiceStepCount();
-    if (serviceSteps !== null && serviceSteps > stepCount) {
-      stepCount = serviceSteps;
-      DB.set('stepCount-' + today(), stepCount);
+    const status = await getServiceStatus();
+    if (status) {
+      if (!status.running) {
+        // Service dead (Doze / kill) — restart transparently
+        const goal = state.settings.stepGoal || DEFAULT_STEP_GOAL;
+        await startStepService(
+          goal,
+          t('st-notif-title'),
+          t('st-notif-text'),
+          stepCount,
+        );
+      } else if (status.steps > stepCount) {
+        stepCount = status.steps;
+        DB.set('stepCount-' + today(), stepCount);
+      }
     }
-    // Re-attach live listener in case it was lost
+
     if (stepEnabled && !fgUnsubscribe) {
       fgUnsubscribe = addStepUpdateListener((steps) => {
         stepCount = steps;
@@ -372,9 +473,8 @@ export function saveStepGoal() {
   const goal = parseInt(el && el.value, 10) || DEFAULT_STEP_GOAL;
   state.settings.stepGoal = goal;
   saveData();
-  // Update live service notification if running
   if (state.settings.stepMode === 'foreground' && isNative() && getPlatform() === 'android') {
-    startStepService(goal, t('st-notif-title'), t('st-notif-text')).catch(() => {});
+    startStepService(goal, t('st-notif-title'), t('st-notif-text'), stepCount).catch(() => {});
   }
   updateStepUI();
 }

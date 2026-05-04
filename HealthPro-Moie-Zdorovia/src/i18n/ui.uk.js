@@ -246,6 +246,8 @@ export const T_UK ={
   // ─── step mode toasts ───
   'st-mode-fg':'🦶 Фоновий крокомір увімкнено!',
   'st-mode-active':'🦶 Крокомір (тільки активний режим) увімкнено!',
+  'st-service-restored':'🦶 Крокомір відновлено після збою системи.',
+  'st-battery-opt':'⚠️ Увімкніть «Без обмежень» у налаштуваннях батареї, щоб крокомір не вимикався у фоні.',
 
   // ─── foreground service notification texts ───
   'st-notif-title':'HealthPro 🦶',

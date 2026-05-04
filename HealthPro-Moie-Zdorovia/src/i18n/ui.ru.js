@@ -245,6 +245,8 @@ export const T_RU ={
   // ─── step mode toasts ───
   'st-mode-fg':'🦶 Фоновый шагомер включён!',
   'st-mode-active':'🦶 Шагомер (только активный режим) включён!',
+  'st-service-restored':'🦶 Шагомер восстановлен после сбоя системы.',
+  'st-battery-opt':'⚠️ Включите «Без ограничений» в настройках батареи, чтобы шагомер не отключался в фоне.',
 
   // ─── foreground service notification texts ───
   'st-notif-title':'HealthPro 🦶',

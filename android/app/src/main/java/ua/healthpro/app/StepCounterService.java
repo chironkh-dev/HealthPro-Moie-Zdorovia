@@ -1,11 +1,13 @@
 package ua.healthpro.app;
 
+import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -17,6 +19,10 @@ import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
 /**
  * Foreground Service for step counting.
  *
@@ -24,50 +30,53 @@ import androidx.core.app.NotificationCompat;
  * works even when WebView process is killed. Keeps a persistent notification
  * so Android OS guarantees the process stays alive.
  *
- * Architecture: ForegroundStepPlugin binds to this service and relays
- * step updates to JS via Capacitor notifyListeners("stepUpdate", data).
+ * Bug-fix (sync):
+ *   Accepts EXTRA_INITIAL_STEPS so the service's broadcast always sends the
+ *   full daily step count (initialSteps + session delta), not just the delta
+ *   since service start. This fixes the notification ≠ app count mismatch.
+ *
+ * Resilience:
+ *   - START_STICKY  : OS restarts service after low-memory kill.
+ *   - onTaskRemoved : schedules AlarmManager restart after swipe-kill.
+ *   - SharedPrefs   : persists running state + last step count for BootReceiver.
  */
 public class StepCounterService extends Service implements SensorEventListener {
 
     public static final String TAG = "StepCounterService";
 
-    // Notification channel (low importance → no sound, no heads-up)
     public static final String CHANNEL_ID      = "hp_step_counter";
     public static final int    NOTIF_ID        = 8001;
 
-    // Broadcast sent to plugin on every step-count change
     public static final String ACTION_STEP_UPDATE = "ua.healthpro.app.STEP_UPDATE";
     public static final String EXTRA_STEPS        = "steps";
     public static final String EXTRA_GOAL         = "goal";
 
-    // Extras passed to startService()
     public static final String EXTRA_START_GOAL   = "start_goal";
     public static final String EXTRA_NOTIF_TITLE  = "notif_title";
     public static final String EXTRA_NOTIF_TEXT   = "notif_text";
+    /** Daily steps already counted before this service session started. */
+    public static final String EXTRA_INITIAL_STEPS = "initial_steps";
 
     private SensorManager sensorManager;
     private Sensor        stepCounterSensor;
 
-    // Hardware counter value at service start; used to compute delta steps.
-    private int  baselineSteps    = -1;
-    private int  currentSteps     = 0;
-    private int  dailyGoal        = 10000;
-    private String notifTitle     = "HealthPro \uD83E\uDDB6";
-    private String notifText      = "\u0420\u0430\u0445\u0443\u044e \u043a\u0440\u043e\u043a\u0438...";
+    private int  baselineSteps  = -1;
+    private int  initialSteps   = 0;      // steps from DB before service started
+    private int  currentSteps   = 0;      // total daily steps (initial + session)
+    private int  dailyGoal      = 10000;
+    private String notifTitle   = "HealthPro \uD83E\uDDB6";
+    private String notifText    = "\u0420\u0430\u0445\u0443\u044e \u043a\u0440\u043e\u043a\u0438...";
     private boolean sensorAvailable = false;
 
-    // Throttle: update notification every N steps to avoid battery drain
     private static final int NOTIF_THROTTLE_STEPS = 10;
 
-    // Local binder for plugin access
     private final IBinder binder = new LocalBinder();
 
     public class LocalBinder extends Binder {
         public StepCounterService getService() { return StepCounterService.this; }
     }
 
-    @Override
-    public IBinder onBind(Intent intent) { return binder; }
+    @Override public IBinder onBind(Intent intent) { return binder; }
 
     @Override
     public void onCreate() {
@@ -79,30 +88,37 @@ public class StepCounterService extends Service implements SensorEventListener {
             sensorAvailable   = (stepCounterSensor != null);
         }
         if (!sensorAvailable) {
-            Log.w(TAG, "TYPE_STEP_COUNTER hardware sensor not available on this device");
+            Log.w(TAG, "TYPE_STEP_COUNTER not available on this device");
         }
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null) {
-            dailyGoal  = intent.getIntExtra(EXTRA_START_GOAL, 10000);
+            dailyGoal     = intent.getIntExtra(EXTRA_START_GOAL,   10000);
+            initialSteps  = intent.getIntExtra(EXTRA_INITIAL_STEPS, 0);
+            // Allow refreshing goal/title/text when called from saveStepGoal()
             String t   = intent.getStringExtra(EXTRA_NOTIF_TITLE);
             String txt = intent.getStringExtra(EXTRA_NOTIF_TEXT);
             if (t   != null && !t.isEmpty())   notifTitle = t;
             if (txt != null && !txt.isEmpty()) notifText  = txt;
         }
 
+        // Re-seed currentSteps on every (re)start so UI is consistent immediately.
+        currentSteps = initialSteps;
+        // Reset baseline so the first sensor event re-establishes the reference.
+        baselineSteps = -1;
+
         startForeground(NOTIF_ID, buildNotification(currentSteps, dailyGoal));
+        saveRunningState(true);
 
         if (sensorAvailable) {
+            sensorManager.unregisterListener(this); // avoid duplicate registration
             sensorManager.registerListener(
                     this, stepCounterSensor, SensorManager.SENSOR_DELAY_NORMAL);
         }
         return START_STICKY;
     }
-
-    // ── SensorEventListener ─────────────────────────────────────────────────
 
     @Override
     public void onSensorChanged(SensorEvent event) {
@@ -110,36 +126,105 @@ public class StepCounterService extends Service implements SensorEventListener {
 
         int rawSteps = (int) event.values[0];
 
-        // First event: establish baseline.
-        // TYPE_STEP_COUNTER is a cumulative hardware counter that resets only
-        // on reboot — we subtract the value at service start to get session steps.
         if (baselineSteps < 0) {
+            // First event after (re)start — establish delta baseline.
+            // TYPE_STEP_COUNTER is cumulative since last boot, so we only
+            // care about the delta from this moment forward.
             baselineSteps = rawSteps;
         }
-        currentSteps = rawSteps - baselineSteps;
 
-        // Throttle notification refresh
+        currentSteps = (rawSteps - baselineSteps) + initialSteps;
+
         if (currentSteps % NOTIF_THROTTLE_STEPS == 0) {
             updateNotification(currentSteps, dailyGoal);
+            saveStepState(currentSteps);
         }
 
         broadcastStepUpdate(currentSteps);
     }
 
     @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) { /* no-op */ }
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {}
 
     // ── Public API (called by ForegroundStepPlugin via LocalBinder) ──────────
 
-    public int  getStepCount()       { return currentSteps; }
-    public boolean isSensorAvailable() { return sensorAvailable; }
+    public int     getStepCount()       { return currentSteps; }
+    public boolean isSensorAvailable()  { return sensorAvailable; }
 
     public void setGoal(int goal) {
         this.dailyGoal = goal;
         updateNotification(currentSteps, goal);
+        saveRunningState(true);
     }
 
-    // ── Internal helpers ─────────────────────────────────────────────────────
+    // ── Resilience ───────────────────────────────────────────────────────────
+
+    /**
+     * When the user swipes the app from recents, schedule an AlarmManager
+     * one-shot to restart the service 1 second later. The service keeps
+     * counting steps even if the Activity is gone (START_STICKY also helps,
+     * but onTaskRemoved gives us an extra safety net on Samsung One UI).
+     */
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        Log.d(TAG, "onTaskRemoved — scheduling restart");
+        saveRunningState(true);
+
+        Intent restartIntent = new Intent(getApplicationContext(), StepCounterService.class);
+        restartIntent.putExtra(EXTRA_START_GOAL,    dailyGoal);
+        restartIntent.putExtra(EXTRA_INITIAL_STEPS, currentSteps);
+
+        int piFlags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
+                ? PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_ONE_SHOT
+                : PendingIntent.FLAG_ONE_SHOT;
+
+        PendingIntent pi = PendingIntent.getService(
+                getApplicationContext(), 1, restartIntent, piFlags);
+
+        AlarmManager am = (AlarmManager) getSystemService(ALARM_SERVICE);
+        if (am != null) {
+            am.set(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 1000, pi);
+        }
+        super.onTaskRemoved(rootIntent);
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (sensorManager != null) sensorManager.unregisterListener(this);
+        // Only clear was_running if WE decided to stop (stopService from JS).
+        // onTaskRemoved already saved true before this is reached in kill scenarios.
+    }
+
+    // ── SharedPreferences helpers ─────────────────────────────────────────────
+
+    private void saveRunningState(boolean running) {
+        String today = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
+        getSharedPreferences(BootReceiver.PREFS_NAME, MODE_PRIVATE)
+                .edit()
+                .putBoolean(BootReceiver.KEY_WAS_RUNNING, running)
+                .putInt(BootReceiver.KEY_GOAL, dailyGoal)
+                .putString(BootReceiver.KEY_DATE, today)
+                .apply();
+    }
+
+    private void saveStepState(int steps) {
+        String today = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
+        getSharedPreferences(BootReceiver.PREFS_NAME, MODE_PRIVATE)
+                .edit()
+                .putInt(BootReceiver.KEY_SAVED_STEPS, steps)
+                .putString(BootReceiver.KEY_DATE, today)
+                .apply();
+    }
+
+    void clearRunningState() {
+        getSharedPreferences(BootReceiver.PREFS_NAME, MODE_PRIVATE)
+                .edit()
+                .putBoolean(BootReceiver.KEY_WAS_RUNNING, false)
+                .apply();
+    }
+
+    // ── Broadcast / Notification ──────────────────────────────────────────────
 
     private void broadcastStepUpdate(int steps) {
         Intent i = new Intent(ACTION_STEP_UPDATE);
@@ -152,8 +237,8 @@ public class StepCounterService extends Service implements SensorEventListener {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel ch = new NotificationChannel(
                     CHANNEL_ID,
-                    "\u041a\u0440\u043e\u043a\u043e\u043c\u0456\u0440",          // "Крокомір"
-                    NotificationManager.IMPORTANCE_LOW                             // silent, no heads-up
+                    "\u041a\u0440\u043e\u043a\u043e\u043c\u0456\u0440",
+                    NotificationManager.IMPORTANCE_LOW
             );
             ch.setDescription("\u041f\u0456\u0434\u0440\u0430\u0445\u0443\u043d\u043e\u043a \u043a\u0440\u043e\u043a\u0456\u0432 \u0443 \u0444\u043e\u043d\u043e\u0432\u043e\u043c\u0443 \u0440\u0435\u0436\u0438\u043c\u0456");
             ch.setShowBadge(false);
@@ -196,13 +281,5 @@ public class StepCounterService extends Service implements SensorEventListener {
     private void updateNotification(int steps, int goal) {
         NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         if (nm != null) nm.notify(NOTIF_ID, buildNotification(steps, goal));
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        if (sensorManager != null) {
-            sensorManager.unregisterListener(this);
-        }
     }
 }

@@ -613,12 +613,18 @@ export async function requestActivityPermission() {
   } catch { return 'denied'; }
 }
 
-/** Start the foreground step-counter service with a persistent notification. */
-export async function startStepService(goal, notifTitle, notifText) {
+/**
+ * Start the foreground step-counter service with a persistent notification.
+ * @param {number} initialSteps  Daily steps already stored in the app DB before
+ *   this service session starts.  The service adds this offset to its session
+ *   delta so every broadcast reflects the true daily total (fixes notification
+ *   ≠ app count mismatch).
+ */
+export async function startStepService(goal, notifTitle, notifText, initialSteps = 0) {
   const p = _fgStep();
   if (!p || typeof p.start !== 'function') return false;
   try {
-    await p.start({ goal, notifTitle, notifText });
+    await p.start({ goal, notifTitle, notifText, initialSteps });
     return true;
   } catch { return false; }
 }
@@ -633,14 +639,51 @@ export async function stopStepService() {
   } catch { return false; }
 }
 
-/** Get step count directly from the running service (bypasses JS counter). */
-export async function getServiceStepCount() {
+/**
+ * Get step count + service health from the running service.
+ * Returns { steps, running, sensorAvailable } or null if plugin absent.
+ * Use `running` to detect a Doze/Samsung-killed service without a separate call.
+ */
+export async function getServiceStatus() {
   const p = _fgStep();
   if (!p || typeof p.getSteps !== 'function') return null;
   try {
     const r = await p.getSteps();
-    return (r && r.steps != null) ? r.steps : 0;
+    return {
+      steps:           (r && r.steps   != null) ? r.steps   : 0,
+      running:         !!(r && r.running),
+      sensorAvailable: !!(r && r.sensorAvailable),
+    };
   } catch { return null; }
+}
+
+/** Legacy shim — returns step count only. Prefer getServiceStatus(). */
+export async function getServiceStepCount() {
+  const s = await getServiceStatus();
+  return s ? s.steps : null;
+}
+
+/**
+ * Check whether this app is excluded from battery optimisation.
+ * Returns true on Android < M (no opt) or when already whitelisted.
+ */
+export async function getBatteryOptStatus() {
+  const p = _fgStep();
+  if (!p || typeof p.getBatteryOptStatus !== 'function') return true;
+  try {
+    const r = await p.getBatteryOptStatus();
+    return r && r.ignored !== undefined ? r.ignored : true;
+  } catch { return true; }
+}
+
+/**
+ * Open the system dialog asking the user to whitelist this app from battery
+ * optimisation. No-op on web / iOS / Android < M / already whitelisted.
+ */
+export async function requestBatteryOptExemption() {
+  const p = _fgStep();
+  if (!p || typeof p.requestBatteryOpt !== 'function') return;
+  try { await p.requestBatteryOpt(); } catch {}
 }
 
 /**
