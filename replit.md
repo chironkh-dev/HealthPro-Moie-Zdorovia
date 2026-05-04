@@ -1,53 +1,234 @@
 # HealthPro · Моє Здоров'я
 
-### Overview
-HealthPro is a Ukrainian Progressive Web App (PWA) designed for monitoring blood pressure, pulse, and medication intake. It is being prepared for native build via Capacitor (Android/iOS). The project aims to provide a comprehensive health management solution with features for tracking vital signs, medication reminders, and health analytics, offering a user-friendly experience on both web and mobile platforms.
+## Про проєкт
 
-### User Preferences
-- Користувач спілкується українською. Без емодзі без явного запиту.
+**HealthPro** — персональний PWA-щоденник здоров'я для моніторингу артеріального тиску, пульсу, прийому ліків, кроків та аналітики стану організму. Повністю офлайн, без сервера, без хмари. Планується нативна збірка для Android/iOS через Capacitor.
 
-### System Architecture
+### Уподобання користувача
+- Спілкування виключно українською. Без емодзі без явного запиту.
 
-The application is built with Vite 5 and Vanilla JS (ESM modules). The core architecture emphasizes a modular approach, with a thin orchestrator (`app.js`) managing various feature modules.
+---
 
-**Core Principles:**
-- **State Management:** A single, centralized `state.js` in `core/` handles application state, data saving, event emission, and toast notifications.
-- **Modularity:** Features are organized into independent modules under `features/`, each responsible for a specific domain (e.g., `pressure`, `charts`, `analytics`, `history`, `export`, `settings`, `pwa`, `meds`, `steps`).
-- **Data Persistence:** The application supports a 3-tier persistence model using `@capacitor-community/sqlite`, IndexedDB, and LocalStorage, with auto-migration from legacy storage types to SQLite on native platforms.
-- **Cross-Module Communication:** Achieved via an event bus (`emit('event:name')` / `on('event:name', ...)`) to avoid direct coupling and cyclic imports.
-- **Internationalization (i18n):** Language changes trigger re-rendering in registered modules through `settings/i18n.js` to dynamically update UI text.
-- **UI/UX:** The application prioritizes clear data visualization and user-friendly interaction. Theming (light/dark) is supported.
-- **Native Integration (Capacitor):** The project is transitioning to a native wrapper using Capacitor, incorporating plugins for app functionality, filesystem access, haptics, local notifications, preferences, sharing, splash screen, and status bar.
-- **Background Notifications:** Implemented using Capacitor's Local Notifications, ensuring reminders (medication, blood pressure) are delivered even when the app is closed, leveraging Android's AlarmManager.
-- **Step Counter:** Utilizes `@capacitor/motion` for step detection with adjusted acceleration thresholds and debounce mechanisms to prevent erroneous readings.
-- **Dynamic Styling:** CSS variables like `--header-height` are used for adaptive UI elements, such as sticky navigation, incorporating `ResizeObserver` for dynamic adjustments.
+## Технічний стек
 
-**Key Feature Specifications:**
-- **Pressure Module:** Manages blood pressure readings, displaying normal, WHO classifications, and critical values.
-- **Charts Module:** Visualizes blood pressure data.
-- **Analytics Module:** Provides health scores, BMI calculations, recommendations, and trend analysis.
-- **History Module:** A journal with filtering capabilities for past records.
-- **Export Module:** Supports exporting data in CSV, PDF, and print formats, including native sharing functionalities.
-- **Settings Module:** Manages user preferences, themes, language, profile, notifications, and data management.
-- **PWA Module:** Handles PWA installation, service worker registration, and update mechanisms.
-- **Meds Module:** Manages medication intake with a drug database and scheduling.
-- **Localization:** All hardcoded UA/RU strings removed and managed through `i18n.t`/`tt` and `getLocale()`.
+| Шар | Технологія |
+|---|---|
+| Збірка / dev-сервер | Vite 5 (порт 5000, host 0.0.0.0) |
+| Мова | Vanilla JS (ES-модулі, без TypeScript) |
+| Нативна оболонка | Capacitor 8 (Android) |
+| Сховище даних | IndexedDB (`HealthProDB`) — основне; localStorage — синхронне дзеркало; SQLite (`@capacitor-community/sqlite`) — на нативі |
+| PDF / зображення | `jspdf` + `html2canvas` (через npm, без CDN) |
+| Тести | Vitest 4.1.5 (node-середовище, без jsdom) |
 
-### External Dependencies
-- **Vite 5:** Build tool and development server.
-- **jsPDF + html2canvas:** For generating PDF reports.
-- **Capacitor 8:** Native wrapper for Android/iOS.
-    - `@capacitor/app`
-    - `@capacitor/filesystem`
-    - `@capacitor/haptics`
-    - `@capacitor/local-notifications`
-    - `@capacitor/preferences`
-    - `@capacitor/share`
-    - `@capacitor/splash-screen`
-    - `@capacitor/status-bar`
-    - `@capacitor/motion`
-    - `@capacitor/cli`
-    - `@capacitor/core`
-    - `@capacitor/android`
-- **@capacitor-community/sqlite@8.1.0:** For local database persistence on native platforms.
-- **@capacitor/assets:** Used for generating native app icons and splash screens.
+---
+
+## Команди
+
+```bash
+npm run dev      # Vite dev-сервер на порті 5000 (workflow "Start application")
+npm run build    # Продакшн збірка → dist/
+npm run test     # Запуск тестів (228 тестів у 9 файлах, ~2.4с)
+```
+
+---
+
+## Структура проєкту
+
+```
+HealthPro-Moie-Zdorovia/
+├── index.html                   # HTML-оболонка (без inline JS, без CDN)
+├── manifest.json                # PWA-маніфест
+├── service-worker.js            # Service Worker (офлайн)
+├── vite.config.js               # dev: port 5000; build → ../dist/
+└── src/
+    ├── main.js                  # Точка входу: bootstrapStorage() + bootApp()
+    ├── app.js                   # ACTIONS-диспетчер + вся ініціалізація
+    ├── core/
+    │   ├── storage.js           # 3-рівнева персистентність + defaultSettings
+    │   ├── state.js             # Спільний стан + toast + event-bus
+    │   ├── platform.js          # Capacitor-обгортки (сповіщення, кроки, файли)
+    │   └── constants.js         # Константи (DEFAULT_STEP_GOAL, порогові значення)
+    ├── i18n/
+    │   ├── index.js             # Реекспорт усіх словників
+    │   ├── ui.uk.js             # T_UK — весь UA інтерфейс
+    │   ├── ui.ru.js             # T_RU — весь RU інтерфейс
+    │   ├── welcome-disclaimer.js
+    │   └── pdf.js               # Словник для PDF-звітів
+    └── features/
+        ├── pressure/            # Тиск і пульс, класифікація ВООЗ/АНА
+        ├── analytics/
+        │   ├── index.js         # Сторінка аналітики, рендер дашборду
+        │   ├── health-score.js  # Розрахунок Індексу здоров'я (ІЗ)
+        │   ├── bmi.js           # Розрахунок ІМТ (з корекцією для 65+)
+        │   ├── recommendations.js
+        │   └── trend-modal.js
+        ├── steps/
+        │   └── index.js         # Крокомір: режими foreground / active-only
+        ├── meds/                # Менеджер ліків
+        ├── charts/              # Графіки
+        ├── history/             # Журнал вимірювань
+        ├── export/              # PDF / CSV / JSON
+        ├── settings/            # Профіль, теми, сповіщення, i18n
+        └── pwa/                 # PWA-встановлення, SW-реєстрація
+
+android/app/src/main/java/ua/healthpro/app/
+├── StepCounterService.java      # Foreground Service (TYPE_STEP_COUNTER)
+├── ForegroundStepPlugin.java    # Capacitor Plugin bridge → JS
+└── MainActivity.java            # Реєстрація ForegroundStepPlugin
+android/app/src/main/AndroidManifest.xml
+  # Дозволи: FOREGROUND_SERVICE, FOREGROUND_SERVICE_HEALTH, ACTIVITY_RECOGNITION
+```
+
+---
+
+## Архітектурні принципи
+
+- **Без `window.X`** — усі модулі та словники через ES-imports.
+- **Без inline-обробників** — `data-action` / `data-change`. Один делегований listener у `app.js`.
+- **Event bus** — `emit('event:name')` / `on('event:name', cb)` замість прямих залежностей між модулями.
+- **Мутація стану на місці** — `state.X = ...`, не перезаписувати `state`. Після змін — `saveData()`.
+- **i18n через `t()` / `tt()`** — жодних хардкодованих рядків у коді (перевірено grep).
+- **Бекенд видалено** — усі дані зберігаються лише на пристрої.
+
+---
+
+## Індекс здоров'я (ІЗ) — логіка
+
+### Формула (динамічний знаменник)
+
+```
+ІЗ = round(rawTotal / maxPossible × 100)
+```
+
+| Модуль | Вага (max) | Виключається коли |
+|---|---|---|
+| Тиск (BP) | 40 балів | Ніколи — завжди активний |
+| Пульс | 20 балів | Ніколи (відсутні дані → 0 балів) |
+| Ліки | 20 балів | Ніколи (0% = 0 балів у знаменнику) |
+| ІМТ | 10 балів | `height` або `weight` не задано → null → виключається |
+| Активність | 10 балів | `stepsEnabled = false` → null → виключається |
+
+### ВЕТО-коефіцієнти (за останнім виміром)
+
+| Умова | Коефіцієнт | status |
+|---|---|---|
+| sys ≥ 180 АБО dia ≥ 120 | ×0.30 | `crisis` |
+| sys ≥ 160 АБО dia ≥ 100 | ×0.60 | `hypertension-2` |
+| sys < 85 АБО dia < 55 | ×0.55 | `hypotension` |
+
+При активному ВЕТО — кільце та числовий бал у UI стають червоними (#ef4444), незалежно від числового значення.
+
+### Персоналізовані норми
+
+- **BP**: якщо `normalSys` / `normalDia` задані у профілі → особиста шкала відносно базового тиску.
+- **Пульс**: якщо `normalPulse` задано → ±10 = ідеально, ±20 = прийнятно.
+- **ІМТ (65+)**: нормальна зона зміщена до 22–27 (замість 18.5–24.9).
+
+---
+
+## Крокомір — архітектура
+
+### Два режими
+
+| Режим | Реалізація | Зупиняється |
+|---|---|---|
+| `foreground` | `StepCounterService.java` (Android Foreground Service, TYPE_STEP_COUNTER) | Тільки при явній зупинці |
+| `active-only` | DeviceMotion listener у JS | При закритті вкладки |
+
+### Потік дозволів (UX)
+
+```
+toggleStepCounter()
+  └── showStepPermModal()        ← Modal A: пояснення
+        └── acceptStepPerm() → requestActivityPermission() (системний діалог)
+              ├── granted + Android → showStepFgModal()   ← Modal B: FG-consent
+              │     ├── acceptStepFg()  → enableSteps('foreground')
+              │     └── declineStepFg() → enableSteps('active-only')
+              └── denied → showToast(st-perm-denied)
+```
+
+---
+
+## ІМТ (BMI)
+
+- `calcBMI()` — вага(кг) / зріст(м)²
+- `getBMICategory(bmi, age)` — для 65+ застосовуються підвищені норми (22–27 = норма)
+- `renderBMI()` — показує вікову позначку та ідеальний діапазон ваги
+
+---
+
+## Сповіщення (Android)
+
+- Канал `reminders` з importance=5 (HIGH), звук, вібрація, lights.
+- Планування через Android AlarmManager (`schedule.on`, `allowWhileIdle: true`) — спрацьовує навіть при вбитому додатку.
+- `platform.ensureNotificationChannel()` — один раз після надання дозволу.
+- `notifications.scheduleAllReminders()` — cancel(all) + schedule для кожного ліку + ранкового/вечірнього нагадування.
+
+---
+
+## PDF-звіти
+
+- **Шрифт: ТІЛЬКИ Arial** (кирилиця). Заборонено: DejaVu, Roboto, Helvetica.
+- На Android: `Filesystem.writeFile → Directory.Documents → Share.share` (системний sheet).
+- На вебі: `<a download>` / `URL.createObjectURL`.
+
+---
+
+## Тести (Vitest)
+
+| Файл | Тестів | Що перевіряє |
+|---|---|---|
+| `health-score.test.js` | 16 | calcHealthScore(): ВЕТО, статус, пульс, ІМТ, ліки |
+| `bp-pulse-thresholds.test.js` | 57 | getBPThresholds(), getPulseThresholds(): вікові групи, особиста норма |
+| `health-score-i18n.test.js` | 22 | toggleHealthTooltip(): ВЕТО/норма uk↔ru, DOM-мок |
+| `veto-boundary.test.js` | 41 | Граничні значення sys/dia, коефіцієнти, пріоритет ВЕТО |
+| `activity-score.test.js` | 36 | scoreActivity(): 5 смуг прогресу, кастомна ціль |
+| `pills-score.test.js` | 31 | scorePills(): 0%/50%/90%+, граничні точки |
+| `bmi.test.js` | 6 | calcBMI(), getBMICategory(): категорії, i18n |
+| `bp-norm.test.js` | 8 | getBPNorm(): вікові смуги, мова |
+| `pill-schedule.test.js` | 11 | isPillDueToday(): daily, weekdays, legacy |
+| **Разом** | **228** | **Усі проходять (~2.4 с)** |
+
+---
+
+## Збірка APK (GitHub Actions)
+
+- Workflow: `.github/workflows/android-apk.yml`
+- Тригер: push до `main`, `workflow_dispatch`
+- Стек: JDK 21, Android SDK, `npm ci` → `vite build` → `cap sync android` → `./gradlew assembleDebug`
+- Артефакт: `HealthPro-debug-<git-sha>.apk` (зберігається 30 днів)
+
+---
+
+## Зовнішні залежності (npm)
+
+| Пакет | Версія | Призначення |
+|---|---|---|
+| `vite` | ^5.4.10 | Збірка / dev-сервер |
+| `vitest` | 4.1.5 | Тести |
+| `jspdf` | 2.5.2 | PDF-генерація |
+| `html2canvas` | 1.4.1 | Скріншот для PDF |
+| `@capacitor/core` | 8.x | Capacitor runtime |
+| `@capacitor/android` | 8.x | Android-нативна оболонка |
+| `@capacitor-community/sqlite` | 8.1.0 | SQLite на нативі |
+| `@capacitor/local-notifications` | 8.0.2 | Нативні сповіщення |
+| `@capacitor/filesystem` | 8.1.2 | Запис файлів на Android |
+| `@capacitor/share` | 8.0.1 | Системний Share Sheet |
+| `@capacitor/preferences` | 8.0.1 | KV-сховище дрібних налаштувань |
+| `@capacitor/motion` | 8.0.0 | DeviceMotion (резервний крокомір) |
+| `@capacitor/haptics` | 8.0.2 | Тактильний відгук |
+| `@capacitor/app` | 8.1.0 | Lifecycle (foreground/background) |
+| `@capacitor/splash-screen` | 8.0.1 | Splash-екран |
+| `@capacitor/status-bar` | 8.0.2 | Стиль статус-бару |
+
+---
+
+## Історія розробки
+
+| Фаза | Опис |
+|---|---|
+| Фаза 1 | Рефакторинг: модулі, `data-action`, видалення `window.X`, i18n |
+| Фаза 2 (квітень 2026) | 10 BugFix, збірка APK через GitHub Actions, SQLite-інтеграція |
+| APK Round 3 | Нативні сповіщення (AlarmManager), іконка, PDF/CSV через Filesystem+Share, кнопка Назад |
+| APK Round 4 | Android Foreground Step Service, BMI 65+, 34 нових тести |
+| Фаза 3 (травень 2026) | ІЗ: динамічний знаменник, ВЕТО-коефіцієнти, 228 тестів, i18n повний |
