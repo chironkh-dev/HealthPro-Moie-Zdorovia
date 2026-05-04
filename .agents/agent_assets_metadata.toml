@@ -78,3 +78,9 @@ id = "Dj6J7b-g6oONt4RD19vM7"
 uri = "file://HealthPro-Moie-Zdorovia/HealthPro_Session_May2026_Report.pdf"
 type = "pdf"
 title = "HealthPro — Звіт сесії травень 2026"
+
+[[outputs]]
+id = "1nKk6Pj5rCiXOecuC0oA8"
+uri = "file://HealthPro-Moie-Zdorovia/HealthPro_Pedometer_BugFix_Report.pdf"
+type = "pdf"
+title = "HealthPro — Звіт: Рефакторинг крокоміра (Баги #1 #2 #3)"
