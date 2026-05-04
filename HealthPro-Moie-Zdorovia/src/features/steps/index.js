@@ -46,7 +46,8 @@ let fgUnsubscribe = null;   // cleanup fn for addStepUpdateListener
 
 // DeviceMotion peak-detection state
 let _inPeak  = false;       // currently inside an acceleration peak
-let _gx = 0, _gy = 0, _gz = 0;  // gravity low-pass filter state
+let _gx = 0, _gy = 0, _gz = 0;  // gravity low-pass filter state (LP)
+let _lastMag = 0;           // previous frame magnitude (for peak edge detection)
 
 // ── Public toggle ───────────────────────────────────────────────────────────
 
@@ -222,24 +223,59 @@ function _attachDeviceMotion() {
 }
 
 function _handleMotion(e) {
-  const a = e.accelerationIncludingGravity || (e.acceleration && {
-    x: (e.acceleration.x || 0),
-    y: (e.acceleration.y || 0),
-    z: ((e.acceleration.z || 0) + 9.81),
-  });
-  if (!a) return;
-
-  const acc = Math.sqrt((a.x || 0) ** 2 + (a.y || 0) ** 2 + (a.z || 0) ** 2);
   const now = Date.now();
+  let mag = 0;
 
-  if (acc > STEP_THRESHOLD && lastAcc <= STEP_THRESHOLD &&
-      (now - lastStepTs) >= MIN_INTERVAL_MS) {
-    stepCount++;
-    lastStepTs = now;
-    DB.set('stepCount-' + today(), stepCount);
-    updateStepUI();
+  // Path 1: pure linear acceleration (no gravity) — preferred, more accurate.
+  // Available on Android Chrome and most Capacitor WebViews.
+  const la = e.acceleration;
+  if (la && (la.x !== null || la.y !== null || la.z !== null)) {
+    mag = Math.sqrt((la.x || 0) ** 2 + (la.y || 0) ** 2 + (la.z || 0) ** 2);
+
+    // Peak detection: enter peak when mag rises above threshold,
+    // count step at the falling edge (more robust than rising edge).
+    if (!_inPeak && mag >= LINEAR_THRESH) {
+      _inPeak = true;
+    } else if (_inPeak && mag < LINEAR_THRESH) {
+      _inPeak = false;
+      if (now - lastStepTs >= MIN_INTERVAL_MS) {
+        stepCount++;
+        lastStepTs = now;
+        DB.set('stepCount-' + today(), stepCount);
+        updateStepUI();
+      }
+    }
+    _lastMag = mag;
+    return;
   }
-  lastAcc = acc;
+
+  // Path 2: accelerationIncludingGravity — fallback (older devices / iOS).
+  // Use low-pass filter to isolate gravity, then subtract to get linear component.
+  const ag = e.accelerationIncludingGravity;
+  if (!ag) return;
+
+  _gx = LP_ALPHA * _gx + (1 - LP_ALPHA) * (ag.x || 0);
+  _gy = LP_ALPHA * _gy + (1 - LP_ALPHA) * (ag.y || 0);
+  _gz = LP_ALPHA * _gz + (1 - LP_ALPHA) * (ag.z || 0);
+
+  // High-pass: subtract gravity estimate → linear motion component
+  const lx = (ag.x || 0) - _gx;
+  const ly = (ag.y || 0) - _gy;
+  const lz = (ag.z || 0) - _gz;
+  mag = Math.sqrt(lx ** 2 + ly ** 2 + lz ** 2);
+
+  if (!_inPeak && mag >= LINEAR_THRESH) {
+    _inPeak = true;
+  } else if (_inPeak && mag < LINEAR_THRESH) {
+    _inPeak = false;
+    if (now - lastStepTs >= MIN_INTERVAL_MS) {
+      stepCount++;
+      lastStepTs = now;
+      DB.set('stepCount-' + today(), stepCount);
+      updateStepUI();
+    }
+  }
+  _lastMag = mag;
 }
 
 // ── UI ─────────────────────────────────────────────────────────────────────
