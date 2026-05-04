@@ -28,6 +28,8 @@ import {
 import {
   // steps
   toggleStepCounter, enableSteps, saveStepGoal,
+  acceptStepPerm, declineStepPerm,
+  acceptStepFg,   declineStepFg,
 } from './features/steps/index.js';
 import {
   // charts
@@ -289,6 +291,12 @@ const ACTIONS = {
   acceptNotifPerm: () => acceptNotifPerm(),
   declineNotifPerm: () => declineNotifPerm(),
   dismissNotifPerm: (el, ev) => { if (ev.target === el) declineNotifPerm(); },
+  // step permission modal (Modal A)
+  acceptStepPerm: () => acceptStepPerm(),
+  declineStepPerm: () => declineStepPerm(),
+  // step foreground consent modal (Modal B)
+  acceptStepFg: () => acceptStepFg(),
+  declineStepFg: () => declineStepFg(),
   // pills form
   onPillDaysChange: () => onPillDaysChange(),
   checkDrugName: () => checkDrugName(),

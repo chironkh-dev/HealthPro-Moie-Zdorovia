@@ -32,7 +32,7 @@ export const defaultSettings = {
   notif: false, measureReminder: false,
   emergencyPhone: '', emergencyName: '',
   morningTime: '08:00', eveningTime: '20:00',
-  stepGoal: 10000, stepsEnabled: false, // see DEFAULT_STEP_GOAL in core/constants.js
+  stepGoal: 10000, stepsEnabled: false, stepMode: 'active-only', // see DEFAULT_STEP_GOAL in core/constants.js
 };
 
 const DB_NAME = 'HealthProDB';

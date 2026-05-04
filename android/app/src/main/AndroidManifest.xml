@@ -27,6 +27,13 @@
             android:grantUriPermissions="true">
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
+
+        <!-- Foreground Service: step counter (hardware TYPE_STEP_COUNTER) -->
+        <!-- foregroundServiceType="health" required on Android 14+ (API 34) -->
+        <service
+            android:name=".StepCounterService"
+            android:foregroundServiceType="health"
+            android:exported="false" />
     </application>
 
     <!-- Permissions -->

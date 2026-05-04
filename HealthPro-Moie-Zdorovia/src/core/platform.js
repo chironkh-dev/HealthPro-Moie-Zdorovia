@@ -582,3 +582,82 @@ export async function addNotificationReceivedListener(handler) {
   if (!ln || typeof ln.addListener !== 'function') return;
   await ln.addListener('localNotificationReceived', handler);
 }
+
+// ─── Foreground Step Service (Android only) ──────────────────────────────────
+// Wraps the ForegroundStepPlugin Capacitor plugin.
+// On web / iOS all functions gracefully no-op or return sensible defaults.
+// Architecture: StepCounterService.java (Foreground Service) ←→
+//               ForegroundStepPlugin.java (Capacitor bridge) ←→ these helpers.
+
+function _fgStep() {
+  return getPlugin('ForegroundStep');
+}
+
+/** Check ACTIVITY_RECOGNITION permission without prompting. */
+export async function checkActivityPermission() {
+  const p = _fgStep();
+  if (!p || typeof p.checkActivityPermission !== 'function') return 'granted';
+  try {
+    const r = await p.checkActivityPermission();
+    return r && r.status ? r.status : 'denied';
+  } catch { return 'denied'; }
+}
+
+/** Request ACTIVITY_RECOGNITION (shows system dialog on Android 10+). */
+export async function requestActivityPermission() {
+  const p = _fgStep();
+  if (!p || typeof p.requestActivityPermission !== 'function') return 'granted';
+  try {
+    const r = await p.requestActivityPermission();
+    return r && r.status ? r.status : 'denied';
+  } catch { return 'denied'; }
+}
+
+/** Start the foreground step-counter service with a persistent notification. */
+export async function startStepService(goal, notifTitle, notifText) {
+  const p = _fgStep();
+  if (!p || typeof p.start !== 'function') return false;
+  try {
+    await p.start({ goal, notifTitle, notifText });
+    return true;
+  } catch { return false; }
+}
+
+/** Stop the foreground step-counter service. */
+export async function stopStepService() {
+  const p = _fgStep();
+  if (!p || typeof p.stop !== 'function') return false;
+  try {
+    await p.stop();
+    return true;
+  } catch { return false; }
+}
+
+/** Get step count directly from the running service (bypasses JS counter). */
+export async function getServiceStepCount() {
+  const p = _fgStep();
+  if (!p || typeof p.getSteps !== 'function') return null;
+  try {
+    const r = await p.getSteps();
+    return (r && r.steps != null) ? r.steps : 0;
+  } catch { return null; }
+}
+
+/**
+ * Register a real-time step update listener.
+ * Handler receives (steps: number, goal: number).
+ * Returns an unsubscribe function.
+ */
+export function addStepUpdateListener(handler) {
+  const p = _fgStep();
+  if (!p || typeof p.addListener !== 'function') return () => {};
+  try {
+    let handle = null;
+    p.addListener('stepUpdate', (data) => {
+      handler(data.steps ?? 0, data.goal ?? 10000);
+    }).then((h) => { handle = h; }).catch(() => {});
+    return () => {
+      try { if (handle && handle.remove) handle.remove(); } catch {}
+    };
+  } catch { return () => {}; }
+}

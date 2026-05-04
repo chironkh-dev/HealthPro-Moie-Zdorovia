@@ -110,6 +110,36 @@
   </div>
 </div>
 
+<!-- ══════════ STEP PERMISSION MODAL (Modal A: explain step tracking) ══════════ -->
+<div class="modal-overlay" id="stepPermModal" data-action="declineStepPerm">
+  <div class="modal-card" data-action="stop" style="max-width:380px">
+    <div class="modal-title">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      <span id="st-perm-title">Відстеження активності</span>
+    </div>
+    <div id="st-perm-body" style="font-size:14px;line-height:1.55;color:var(--muted);margin:6px 0 14px">HealthPro хоче рахувати ваші кроки через сенсор телефону. Дані зберігаються лише на пристрої.</div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+      <button class="btn btn-outline btn-sm" data-action="declineStepPerm" id="st-perm-no">Ні, дякую</button>
+      <button class="btn btn-blue btn-sm" data-action="acceptStepPerm" id="st-perm-yes">Так, дозволити</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ STEP FG MODAL (Modal B: explain Foreground Service) ══════════ -->
+<div class="modal-overlay" id="stepFgModal" data-action="declineStepFg">
+  <div class="modal-card" data-action="stop" style="max-width:400px">
+    <div class="modal-title">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>
+      <span id="st-fg-title">Крокомір у фоновому режимі</span>
+    </div>
+    <div id="st-fg-body" style="font-size:14px;line-height:1.55;color:var(--muted);margin:6px 0 14px">Для точного підрахунку кроків навіть коли додаток закритий, HealthPro запустить фоновий сервіс. Ви побачите постійне сповіщення з прогресом. Батарея: +1–3% на день.</div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+      <button class="btn btn-outline btn-sm" data-action="declineStepFg" id="st-fg-no">Тільки при відкритому</button>
+      <button class="btn btn-blue btn-sm" data-action="acceptStepFg" id="st-fg-yes">Запустити у фоні</button>
+    </div>
+  </div>
+</div>
+
 <!-- CRITICAL ALERT -->
 <div class="critical-wrap" id="criticalAlert">
   <div class="critical-inner">
