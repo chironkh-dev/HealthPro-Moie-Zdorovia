@@ -48,7 +48,10 @@ let fgUnsubscribe = null;   // cleanup fn for addStepUpdateListener
 // DeviceMotion peak-detection state
 let _inPeak  = false;       // currently inside an acceleration peak
 let _gx = 0, _gy = 0, _gz = 0;  // gravity low-pass filter state (LP)
-let _lastMag = 0;           // previous frame magnitude (for peak edge detection)
+
+// Accelerometer availability detection
+let _motionDetected = false;  // set to true on first real devicemotion event
+let _motionCheckTimer = null; // timer handle for no-sensor warning
 
 // ── Public toggle ───────────────────────────────────────────────────────────
 
@@ -154,6 +157,12 @@ export async function enableSteps(mode) {
   state.settings.stepMode     = mode;
   saveData();
 
+  // Reset peak-detection, debounce and gravity-filter state so a stale state
+  // from a previous session does not affect the new counting session.
+  _inPeak = false;
+  lastStepTs = 0;
+  _gx = 0; _gy = 0; _gz = 0;
+
   const toggle = document.getElementById('stepToggle');
   const card   = document.getElementById('stepCard');
   if (toggle) toggle.classList.add('on');
@@ -217,6 +226,20 @@ export function disableSteps() {
   if (typeof window !== 'undefined' && typeof window.removeEventListener === 'function') {
     window.removeEventListener('devicemotion', _handleMotion);
   }
+
+  // Cancel pending no-sensor warning and reset detection flag
+  if (_motionCheckTimer !== null) {
+    clearTimeout(_motionCheckTimer);
+    _motionCheckTimer = null;
+  }
+  _motionDetected = false;
+
+  // Reset peak-detection and debounce state so re-enable starts clean.
+  // Without this reset, lastStepTs from the previous session could block
+  // the very first step of the next session for up to MIN_INTERVAL_MS.
+  _inPeak = false;
+  lastStepTs = 0;
+
   showToast(t('st-off'));
 }
 
@@ -226,11 +249,31 @@ function _attachDeviceMotion() {
   if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') return;
   window.removeEventListener('devicemotion', _handleMotion); // avoid duplicates
   window.addEventListener('devicemotion', _handleMotion);
+
+  // After 3 seconds, if no motion event arrived the device has no accelerometer.
+  // Cancel any previous pending check first.
+  if (_motionCheckTimer !== null) clearTimeout(_motionCheckTimer);
+  _motionDetected = false;
+  _motionCheckTimer = setTimeout(() => {
+    _motionCheckTimer = null;
+    if (!_motionDetected && stepEnabled) {
+      showToast(t('st-no-sensor'));
+    }
+  }, 3000);
 }
 
 function _handleMotion(e) {
   const now = Date.now();
   let mag = 0;
+
+  // Mark that the accelerometer is actually delivering events.
+  if (!_motionDetected) {
+    _motionDetected = true;
+    if (_motionCheckTimer !== null) {
+      clearTimeout(_motionCheckTimer);
+      _motionCheckTimer = null;
+    }
+  }
 
   // Path 1: pure linear acceleration (no gravity) — preferred, more accurate.
   // Available on Android Chrome and most Capacitor WebViews.
@@ -251,7 +294,6 @@ function _handleMotion(e) {
         updateStepUI();
       }
     }
-    _lastMag = mag;
     return;
   }
 
@@ -281,7 +323,6 @@ function _handleMotion(e) {
       updateStepUI();
     }
   }
-  _lastMag = mag;
 }
 
 // ── UI ─────────────────────────────────────────────────────────────────────
