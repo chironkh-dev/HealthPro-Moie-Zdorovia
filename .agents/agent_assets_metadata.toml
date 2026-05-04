@@ -90,3 +90,9 @@ id = "kM3aAdBJYTOIehwHaBuBt"
 uri = "file://HealthPro_Session_May2026_2_Report.pdf"
 type = "pdf"
 title = "HealthPro · Звіт сесії #2 (травень 2026)"
+
+[[outputs]]
+id = "DB9CClqUwjmZZPEo2fYXU"
+uri = "file://HealthPro_Session_May2026_3_Report.pdf"
+type = "pdf"
+title = "HealthPro · Звіт сесії #3 (травень 2026)"
