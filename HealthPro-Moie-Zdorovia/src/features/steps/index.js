@@ -18,7 +18,13 @@
 //   declineStepFg() → enableSteps('active-only')
 
 import { state, saveData, showToast, today, DB } from '../../core/state.js';
-import { DEFAULT_STEP_GOAL, STEP_ACCEL_THRESHOLD, STEP_MIN_INTERVAL_MS } from '../../core/constants.js';
+import {
+  DEFAULT_STEP_GOAL,
+  STEP_ACCEL_THRESHOLD,
+  STEP_MIN_INTERVAL_MS,
+  STEP_LINEAR_THRESHOLD,
+  STEP_GRAVITY_FILTER_ALPHA,
+} from '../../core/constants.js';
 import { t } from '../../i18n/index.js';
 import {
   isNative, getPlatform,
@@ -27,15 +33,20 @@ import {
   getServiceStepCount, addStepUpdateListener,
 } from '../../core/platform.js';
 
-const STEP_THRESHOLD  = STEP_ACCEL_THRESHOLD;
-const MIN_INTERVAL_MS = STEP_MIN_INTERVAL_MS;
+const MIN_INTERVAL_MS  = STEP_MIN_INTERVAL_MS;
+const LINEAR_THRESH    = STEP_LINEAR_THRESHOLD;
+const GRAVITY_THRESH   = STEP_ACCEL_THRESHOLD;  // fallback with gravity
+const LP_ALPHA         = STEP_GRAVITY_FILTER_ALPHA;
 
 // ── Module-level state ──────────────────────────────────────────────────────
 let stepCount     = 0;
-let lastAcc       = 0;
 let lastStepTs    = 0;
 let stepEnabled   = false;
 let fgUnsubscribe = null;   // cleanup fn for addStepUpdateListener
+
+// DeviceMotion peak-detection state
+let _inPeak  = false;       // currently inside an acceleration peak
+let _gx = 0, _gy = 0, _gz = 0;  // gravity low-pass filter state
 
 // ── Public toggle ───────────────────────────────────────────────────────────
 
