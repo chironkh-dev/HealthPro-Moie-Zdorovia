@@ -66,3 +66,9 @@ id = "20pKTU7LuYXT2MLOOQ5a3"
 uri = "file://HealthPro-Moie-Zdorovia/HealthPro_Test_Report.pdf"
 type = "pdf"
 title = "HealthPro — Підсумковий технічний звіт"
+
+[[outputs]]
+id = "4IpIN5sB5rqGeuoifSiRR"
+uri = "file://HealthPro-Moie-Zdorovia/HealthPro_Pedometer_ForegroundService_Plan.pdf"
+type = "pdf"
+title = "План: Крокомір як невбиваний процес (Foreground Service)"

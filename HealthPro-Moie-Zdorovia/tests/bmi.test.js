@@ -46,7 +46,7 @@ describe('calcBMI()', () => {
   });
 });
 
-describe('getBMICategory()', () => {
+describe('getBMICategory() — standard thresholds (age < 65)', () => {
   beforeEach(resetState);
 
   it('categorises severe deficit (< 16)', () => {
@@ -72,5 +72,61 @@ describe('getBMICategory()', () => {
   it('returns Russian labels when state.lang === "ru"', () => {
     state.lang = 'ru';
     expect(getBMICategory(22).label).toBe('Норма ✓');
+  });
+});
+
+describe('getBMICategory() — age 65+ adjusted norms (22–27 normal band)', () => {
+  beforeEach(resetState);
+
+  it('bmi=26 is NORMAL for age 65+ (inside 22–27 band)', () => {
+    expect(getBMICategory(26, 65).label).toMatch(/Норма/);
+  });
+
+  it('bmi=26 is OVERWEIGHT for age 50 (above standard 24.9 threshold)', () => {
+    expect(getBMICategory(26, 50).label).toMatch(/[Нн]адмірна|[Ии]збыточный/);
+  });
+
+  it('bmi=27 is NORMAL at upper boundary for 65+ (inclusive)', () => {
+    expect(getBMICategory(27, 70).label).toMatch(/Норма/);
+  });
+
+  it('bmi=27.1 is OVERWEIGHT just above 65+ boundary', () => {
+    expect(getBMICategory(27.1, 70).label).toMatch(/[Нн]адмірна|[Ии]збыточный/);
+  });
+
+  it('bmi=21 is DEFICIT for 65+ (below lo=22)', () => {
+    expect(getBMICategory(21, 70).label).toMatch(/[Дд]ефіцит|[Дд]ефицит/);
+  });
+
+  it('bmi=18.5 is NORMAL for standard but DEFICIT for 65+ (below lo=22)', () => {
+    expect(getBMICategory(18.5, 70).label).toMatch(/[Дд]ефіцит|[Дд]ефицит/);
+    expect(getBMICategory(18.5, 50).label).toMatch(/Норма/);
+  });
+
+  it('bmi=30 is OVERWEIGHT for 65+ (27–32 band) but OBESITY I for standard', () => {
+    expect(getBMICategory(30, 70).label).toMatch(/[Нн]адмірна|[Ии]збыточный/);
+    expect(getBMICategory(30, 50).label).toMatch(/І ст\./);
+  });
+
+  it('bmi=35 is OBESITY I for 65+ (32–37 band) but OBESITY II for standard', () => {
+    expect(getBMICategory(35, 70).label).toMatch(/І ст\./);
+    expect(getBMICategory(35, 50).label).toMatch(/ІІ ст\./);
+  });
+
+  it('bmi=18.9 is SEVERE deficit for 65+ (below lo-3=19)', () => {
+    expect(getBMICategory(18.9, 70).label).toMatch(/[Дд]ефіцит|[Дд]ефицит/);
+  });
+
+  it('age=65 boundary — exactly 65 uses 65+ norms', () => {
+    expect(getBMICategory(26, 65).label).toMatch(/Норма/);
+  });
+
+  it('age=64 boundary — 64 uses standard norms', () => {
+    expect(getBMICategory(26, 64).label).toMatch(/[Нн]адмірна|[Ии]збыточный/);
+  });
+
+  it('reads age from state.settings when age arg is omitted', () => {
+    state.settings.age = 70;
+    expect(getBMICategory(26).label).toMatch(/Норма/);
   });
 });
