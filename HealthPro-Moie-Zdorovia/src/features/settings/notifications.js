@@ -22,6 +22,7 @@ import {
   notify,
   cancelAllNotifications,
   ensureNotificationChannel,
+  ensureExactAlarmPermission,
   openAppSettings,
   addNotificationReceivedListener
 } from '../../core/platform.js';
@@ -29,15 +30,63 @@ import {
 // Stable ID space — never collide with random IDs from one-shot notify().
 const ID_BP_MORNING = 90001;
 const ID_BP_EVENING = 90002;
+// Pill IDs: 91000–99999 (deterministic hash від pill.id)
+const PILL_ID_BASE = 91000;
+
 function parseHM(s) {
   const [h, m] = String(s || '08:00').split(':').map((x) => parseInt(x, 10) || 0);
   return { hour: h, minute: m };
 }
 
+// djb2-variant: pill.id (string) → стабільний int у діапазоні [0, 8999]
+function pillIdHash(id) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) {
+    h = (Math.imul(31, h) + id.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h) % 9000;
+}
+
 // ─── Toggles ──────────────────────────────────────────────────
 export async function toggleNotifications() {
-  // Toggle #1 reserved for future FCM server push reminders.
-  showToast(t('notif-fcm-soon'));
+  const next = !state.settings.pillReminder;
+
+  // ── Вимкнення ─────────────────────────────────────────────
+  if (!next) {
+    state.settings.pillReminder = false;
+    document.getElementById('notifToggle')?.classList.remove('on');
+    saveData();
+    showToast(t('notif-off'));
+    await scheduleAllReminders();
+    return;
+  }
+
+  // ── Вмикання ──────────────────────────────────────────────
+  // Крок 1: дозвіл на сповіщення
+  const granted = await requestNotificationPermission();
+  if (!granted) {
+    showToast(t('notif-denied'));
+    setTimeout(() => {
+      if (confirm(t('notif-open-settings-confirm'))) openAppSettings();
+    }, 400);
+    return;
+  }
+
+  await ensureNotificationChannel();
+
+  // Крок 2: Android 12+ — SCHEDULE_EXACT_ALARM
+  const exactOk = await ensureExactAlarmPermission();
+  if (!exactOk) {
+    // Система відкрила налаштування; користувач має надати дозвіл і натиснути тогл ще раз.
+    showToast(t('notif-exact-alarm-needed'), 6000);
+    return;
+  }
+
+  state.settings.pillReminder = true;
+  document.getElementById('notifToggle')?.classList.add('on');
+  saveData();
+  showToast(t('notif-pill-on'));
+  await scheduleAllReminders();
 }
 
 export async function toggleMeasureReminder() {
@@ -87,32 +136,47 @@ export async function saveReminderTimes() {
 // ─── Core re-scheduler ────────────────────────────────────────
 export async function scheduleAllReminders() {
   await cancelAllNotifications();
-  if (!state.settings.measureReminder) return;
+  if (!state.settings.measureReminder && !state.settings.pillReminder) return;
 
   const items = [];
 
-  // Morning + evening BP reminders.
-  const m = parseHM(state.settings.morningTime || '08:00');
-  const e = parseHM(state.settings.eveningTime || '20:00');
-  items.push({
-    id: ID_BP_MORNING,
-    title: t('notif-bp-title'),
-    dailyAt: m,
-    body: t('notif-bp-body'),
-    extra: { type: 'bp', slot: 'morning' },
-  });
-  items.push({
-    id: ID_BP_EVENING,
-    title: t('notif-bp-title'),
-    dailyAt: e,
-    body: t('notif-bp-body'),
-    extra: { type: 'bp', slot: 'evening' },
-  });
+  // ── BP: ранок + вечір (тільки якщо measureReminder увімкнено) ─
+  if (state.settings.measureReminder) {
+    const m = parseHM(state.settings.morningTime || '08:00');
+    const e = parseHM(state.settings.eveningTime || '20:00');
+    items.push({
+      id: ID_BP_MORNING,
+      title: t('notif-bp-title'),
+      dailyAt: m,
+      body: t('notif-bp-body'),
+      extra: { type: 'bp', slot: 'morning' },
+    });
+    items.push({
+      id: ID_BP_EVENING,
+      title: t('notif-bp-title'),
+      dailyAt: e,
+      body: t('notif-bp-body'),
+      extra: { type: 'bp', slot: 'evening' },
+    });
+  }
 
+  // ── Пігулки (тільки якщо pillReminder увімкнено) ──────────
+  if (state.settings.pillReminder) {
+    const pills = Array.isArray(state.pills) ? state.pills : [];
+    for (const p of pills) {
+      if (!p || !p.time) continue;
+      const { hour, minute } = parseHM(p.time);
+      items.push({
+        id: PILL_ID_BASE + pillIdHash(String(p.id)),
+        title: t('notif-pill-title').replace('{{name}}', p.name || ''),
+        dailyAt: { hour, minute },
+        body: t('notif-pill-body'),
+        extra: { type: 'pill', pillId: p.id },
+      });
+    }
+  }
 
-  // Schedule sequentially so the LocalNotifications plugin queues each one
-  // with its own unique id (single-batch schedule also works, but this
-  // gives clearer error reporting if a single item fails).
+  // Плануємо послідовно — краще відстежувати помилки по кожному елементу.
   for (const it of items) {
     try { await notify(it.title, it); } catch { /* noop */ }
   }

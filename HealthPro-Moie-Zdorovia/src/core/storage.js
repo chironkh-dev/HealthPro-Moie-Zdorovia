@@ -29,7 +29,7 @@ export const defaultSettings = {
   name: '', age: '', height: '', weight: '', gender: '',
   phone: '', email: '', viber: '', telegram: '', whatsapp: '',
   normalSys: '', normalDia: '', normalPulse: '',
-  notif: false, measureReminder: false,
+  notif: false, measureReminder: false, pillReminder: false,
   emergencyPhone: '', emergencyName: '',
   morningTime: '08:00', eveningTime: '20:00',
   stepGoal: 10000, stepsEnabled: false, stepMode: 'active-only', // see DEFAULT_STEP_GOAL in core/constants.js

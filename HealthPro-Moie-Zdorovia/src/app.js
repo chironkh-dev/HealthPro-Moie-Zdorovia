@@ -134,12 +134,7 @@ function init() {
 
   loadProfileFields();
   if (state.settings.name) updateHeader();
-  const notifToggle = document.getElementById('notifToggle');
-  if (notifToggle) {
-    notifToggle.classList.remove('on');
-    notifToggle.classList.add('is-disabled');
-    notifToggle.setAttribute('aria-disabled', 'true');
-  }
+  document.getElementById('notifToggle')?.classList.toggle('on', !!state.settings.pillReminder);
   document.getElementById('measureToggle')?.classList.toggle('on', !!state.settings.measureReminder);
   document.getElementById('lang-uk')?.classList.toggle('active', state.lang === 'uk');
   document.getElementById('lang-ru')?.classList.toggle('active', state.lang === 'ru');
@@ -151,6 +146,14 @@ function init() {
       if (!granted) {
         state.settings.measureReminder = false;
         document.getElementById('measureToggle')?.classList.remove('on');
+      }
+    });
+  }
+  if (state.settings.pillReminder) {
+    checkNotificationPermission().then((granted) => {
+      if (!granted) {
+        state.settings.pillReminder = false;
+        document.getElementById('notifToggle')?.classList.remove('on');
       }
     });
   }

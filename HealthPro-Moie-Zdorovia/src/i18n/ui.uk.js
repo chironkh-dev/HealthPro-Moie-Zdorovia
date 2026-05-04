@@ -280,6 +280,8 @@ export const T_UK ={
   'notif-bp-body':'Час для щоденного виміру тиску',
   'notif-bp-toast':'🩺 Час для виміру тиску',
   'notif-pill-title':'💊 Час прийняти: {{name}}',
+  'notif-pill-body':'Натисніть, щоб відмітити як прийнятий',
+  'notif-pill-on':'💊 Нагадування про ліки увімкнено!',
   'notif-open-settings-confirm':'Сповіщення заборонені. Відкрити налаштування додатку, щоб увімкнути?',
   'notif-fcm-soon':'FCM push — скоро',
   'notif-set-times-first':'Спочатку задайте час Ранок/Вечір',

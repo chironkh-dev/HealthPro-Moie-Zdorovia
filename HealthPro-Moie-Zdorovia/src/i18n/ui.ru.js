@@ -279,6 +279,8 @@ export const T_RU ={
   'notif-bp-body':'Время для ежедневного измерения давления',
   'notif-bp-toast':'🩺 Время измерить давление',
   'notif-pill-title':'💊 Время принять: {{name}}',
+  'notif-pill-body':'Нажмите, чтобы отметить как принятый',
+  'notif-pill-on':'💊 Напоминания о лекарствах включены!',
   'notif-open-settings-confirm':'Уведомления запрещены. Открыть настройки приложения, чтобы включить?',
   'notif-fcm-soon':'FCM push — скоро',
   'notif-set-times-first':'Сначала задайте время Утро/Вечер',
