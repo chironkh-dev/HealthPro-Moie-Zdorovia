@@ -39,8 +39,8 @@ jobs:
         working-directory: HealthPro-Moie-Zdorovia
         run: npm run build
 
-      - name: Install Capacitor in root
-        run: npm install @capacitor/android@8.3.1 @capacitor/core@8.3.1 @capacitor/cli@8.3.1 --no-save
+      - name: Install root dependencies
+        run: npm install
 
       - name: Capacitor sync
         run: npx cap sync android
