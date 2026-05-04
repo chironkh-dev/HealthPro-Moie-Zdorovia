@@ -234,6 +234,7 @@ export const T_RU ={
   'st-perm-yes':'Да, разрешить',
   'st-perm-no':'Нет, спасибо',
   'st-perm-denied':'❌ Разрешение отклонено. Включите в настройках приложения.',
+  'st-open-settings-confirm':'Доступ к активности запрещён. Открыть настройки приложения, чтобы включить?',
 
   // ─── foreground service consent modal (Modal B) ───
   'st-fg-title':'Шагомер в фоновом режиме',

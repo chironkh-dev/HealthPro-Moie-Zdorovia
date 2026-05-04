@@ -234,6 +234,7 @@ export const T_UK ={
   'st-perm-yes':'Так, дозволити',
   'st-perm-no':'Ні, дякую',
   'st-perm-denied':'❌ Дозвіл відхилено. Увімкніть у налаштуваннях додатку.',
+  'st-open-settings-confirm':'Доступ до активності заборонено. Відкрити налаштування додатку, щоб увімкнути?',
 
   // ─── foreground service consent modal (Modal B) ───
   'st-fg-title':'Крокомір у фоновому режимі',

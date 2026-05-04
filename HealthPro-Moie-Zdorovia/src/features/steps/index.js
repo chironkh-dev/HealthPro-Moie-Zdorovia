@@ -31,6 +31,7 @@ import {
   requestActivityPermission, checkActivityPermission,
   startStepService, stopStepService,
   getServiceStepCount, addStepUpdateListener,
+  openAppSettings,
 } from '../../core/platform.js';
 
 const MIN_INTERVAL_MS  = STEP_MIN_INTERVAL_MS;
@@ -93,6 +94,11 @@ async function _startPermFlow() {
     const status = await requestActivityPermission();
     if (status !== 'granted') {
       showToast(t('st-perm-denied'));
+      // Exactly like the notification flow: offer to open system settings
+      // so the user can grant the permission manually (Android 10+).
+      setTimeout(() => {
+        if (window.confirm(t('st-open-settings-confirm'))) openAppSettings();
+      }, 400);
       return;
     }
     // Permission granted on Android → show FG consent modal
