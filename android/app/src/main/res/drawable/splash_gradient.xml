@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://android.com" android:shape="rectangle">
+    <gradient
+        android:startColor="#080d1a"
+        android:centerColor="#0d1630"
+        android:endColor="#162050"
+        android:angle="340" /> <!-- Приблизно 160deg у CSS -->
+</shape>
