@@ -26,6 +26,15 @@
 </head>
 <body>
 
+<!-- ════════════ SPLASH SCREEN ════════════ -->
+<div id="splashScreen">
+  <div class="splash-logo">
+    <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+  </div>
+  <div class="splash-title">HealthPro</div>
+  <div class="splash-sub">Моє Здоров'я</div>
+</div>
+
 <!-- ════════════ WELCOME / DISCLAIMER SCREEN ════════════ -->
 <div class="welcome-overlay" id="welcomeScreen">
   <div class="welcome-lang">
@@ -620,7 +629,7 @@
 
   <div class="card">
     <div class="card-title"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span id="t-about">Про додаток</span></div>
-    <div class="settings-row"><div><div class="settings-label" id="t-version">Версія</div><div class="settings-sub">HealthPro v4.0 PWA</div></div></div>
+    <div class="settings-row"><div><div class="settings-label" id="t-version">Версія</div><div class="settings-sub" id="hp-version-label">HealthPro v5.0</div></div></div>
     <div class="settings-row"><div><div class="settings-label" id="t-data">Дані</div><div class="settings-sub" id="t-data-sub">Зберігаються тільки на вашому пристрої</div></div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
     <div class="warn-box" style="margin-top:10px" id="t-disclaimer">⚠️ Додаток не замінює консультацію лікаря. При погіршенні самопочуття — зверніться до медика негайно.</div>
     <button class="btn btn-outline" data-action="openDisclaimerModal" style="margin-top:10px;font-size:13px"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><span id="t-view-discl">Переглянути медичний дисклеймер</span></button>

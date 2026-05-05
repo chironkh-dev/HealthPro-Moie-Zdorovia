@@ -314,11 +314,22 @@ function _setupResumeHealthCheck() {
         });
         showToast(t('st-service-restored'));
       }
-    } else if (status.steps > stepCount) {
-      // Service has more steps than our JS variable (counted while backgrounded)
-      stepCount = status.steps;
-      DB.set('stepCount-' + today(), stepCount);
-      updateStepUI();
+    } else {
+      // Service running (може бути перезапущено AlarmManager після змахування)
+      // Синхронізуємо кроки
+      if (status.steps !== stepCount) {
+        stepCount = status.steps;
+        DB.set('stepCount-' + today(), stepCount);
+        updateStepUI();
+      }
+      // Якщо listener не підключено — підключаємо (JS не знав що сервіс живий)
+      if (!fgUnsubscribe) {
+        fgUnsubscribe = addStepUpdateListener((steps) => {
+          stepCount = steps;
+          DB.set('stepCount-' + today(), stepCount);
+          updateStepUI();
+        });
+      }
     }
   });
 }

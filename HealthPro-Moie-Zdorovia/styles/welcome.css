@@ -1,4 +1,15 @@
-/* welcome.css — welcome overlay, disclaimer modal, history */
+/* welcome.css — splash screen, welcome overlay, disclaimer modal, history */
+
+/* ════════════ SPLASH SCREEN ════════════ */
+#splashScreen{position:fixed;inset:0;z-index:10001;background:linear-gradient(160deg,#080d1a 0%,#0d1630 50%,#162050 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;animation:splashFadeOut .45s ease 1.35s forwards}
+#splashScreen.hidden{display:none}
+@keyframes splashFadeOut{from{opacity:1;pointer-events:all}to{opacity:0;pointer-events:none}}
+.splash-logo{width:100px;height:100px;border-radius:28px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;box-shadow:0 16px 48px rgba(59,130,246,.45),inset 0 1px 0 rgba(255,255,255,.2);animation:splashPulse 1.4s ease-in-out infinite}
+.splash-logo svg{width:56px;height:56px;color:#fff;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.splash-title{font-size:28px;font-weight:900;letter-spacing:-.5px;background:linear-gradient(135deg,#fff,#bfdbfe);-webkit-background-clip:text;background-clip:text;color:transparent}
+.splash-sub{font-size:13px;color:#64748b;font-style:italic}
+@keyframes splashPulse{0%,100%{box-shadow:0 16px 48px rgba(59,130,246,.45),inset 0 1px 0 rgba(255,255,255,.2)}50%{box-shadow:0 20px 60px rgba(59,130,246,.7),inset 0 1px 0 rgba(255,255,255,.25)}}
+
 /* ════════════ WELCOME / DISCLAIMER SCREEN ════════════ */
 .welcome-overlay{position:fixed;inset:0;z-index:9999;background:linear-gradient(160deg,#080d1a 0%,#0d1630 45%,#162050 100%);display:flex;align-items:center;justify-content:center;padding:24px;overflow-y:auto;animation:welcomeFade .4s ease}
 .welcome-overlay.hidden{display:none}
@@ -9,14 +20,14 @@
 @keyframes welcomePulse{0%,100%{transform:scale(1);opacity:.7}50%{transform:scale(1.1);opacity:1}}
 .welcome-logo{position:relative;width:120px;height:120px;border-radius:32px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;box-shadow:0 12px 40px rgba(59,130,246,.4),inset 0 1px 0 rgba(255,255,255,.2)}
 .welcome-logo svg{width:64px;height:64px;color:#fff}
-.welcome-title{font-size:30px;font-weight:900;margin-bottom:6px;background:linear-gradient(135deg,#fff,#bfdbfe);-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:-.5px}
-.welcome-subtitle{font-size:15px;color:#94a3b8;margin-bottom:8px;font-weight:500}
-.welcome-tagline{font-size:13px;color:#64748b;margin-bottom:26px;font-style:italic}
+.welcome-title{font-size:26px;font-weight:900;margin-bottom:6px;background:linear-gradient(135deg,#fff,#bfdbfe);-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:-.5px}
+.welcome-subtitle{font-size:13px;color:#94a3b8;margin-bottom:6px;font-weight:500}
+.welcome-tagline{font-size:12px;color:#64748b;margin-bottom:20px;font-style:italic}
 .welcome-features{display:flex;flex-direction:column;gap:10px;width:100%;margin-bottom:24px}
 .welcome-feat{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.04);border:1px solid rgba(99,140,255,.15);border-radius:14px;padding:12px 14px;text-align:left}
 .welcome-feat-ico{flex-shrink:0;width:36px;height:36px;border-radius:10px;background:rgba(59,130,246,.15);display:flex;align-items:center;justify-content:center;color:#60a5fa}
 .welcome-feat-ico svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.welcome-feat-txt{font-size:13px;color:#cbd5e1;font-weight:500;line-height:1.35}
+.welcome-feat-txt{font-size:12px;color:#cbd5e1;font-weight:500;line-height:1.35}
 .welcome-disclaimer-link{font-size:13px;color:#60a5fa;text-decoration:none;cursor:pointer;padding:9px 14px;border-radius:10px;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);margin-bottom:14px;display:inline-flex;align-items:center;gap:6px;transition:.2s;font-weight:600}
 .welcome-disclaimer-link:hover,.welcome-disclaimer-link:active{background:rgba(59,130,246,.15)}
 .welcome-disclaimer-link svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2}

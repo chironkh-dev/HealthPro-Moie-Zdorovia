@@ -8,7 +8,7 @@ export const WELCOME_T = {
     feat4: 'Дані зберігаються лише на пристрої',
     discl: 'Переглянути медичний дисклеймер',
     accept: 'Погоджуюсь та продовжити',
-    version: 'HealthPro v4.0 PWA · Дисклеймер v1.0',
+    version: 'HealthPro v5.0 · Дисклеймер v1.0',
   },
   ru: {
     subtitle: 'Моё Здоровье',
@@ -19,7 +19,7 @@ export const WELCOME_T = {
     feat4: 'Данные хранятся только на устройстве',
     discl: 'Посмотреть медицинский дисклеймер',
     accept: 'Согласен и продолжить',
-    version: 'HealthPro v4.0 PWA · Дисклеймер v1.0',
+    version: 'HealthPro v5.0 · Дисклеймер v1.0',
   },
 };
 

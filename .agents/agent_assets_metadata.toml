@@ -102,3 +102,9 @@ id = "0oo3o7daCJmVBSgdxmBUS"
 uri = "file://HealthPro_Round5_Report_05052026.pdf"
 type = "pdf"
 title = "HealthPro · Звіт Round 5 · 05.05.2026"
+
+[[outputs]]
+id = "kCvLSBXqbmKmFVVLWuW2d"
+uri = "file://HealthPro_Round6_Report_05052026.pdf"
+type = "pdf"
+title = "HealthPro · Фінальний звіт Round 6 · 05.05.2026"

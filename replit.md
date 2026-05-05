@@ -142,6 +142,17 @@ android/app/src/main/AndroidManifest.xml
 - Назва сповіщення: `"HealthPro"` (без емодзі 🦶).
 - Іконка кроків: `ic_stat_steps` (walking person); іконка тиску: `ic_stat_notification` (серце).
 
+### Виправлення після змахування (Round 6)
+
+- `_setupResumeHealthCheck()` — гілка `else` (сервіс живий): якщо `fgUnsubscribe = null` → підключає listener автоматично при поверненні в додаток.
+- Попередньо лише синхронізувало лічильник, але не підключало broadcast-listener.
+
+### Захист JSON-імпорту (Round 6)
+
+- `importData()` в `csv.js`: зберігає `prevStepsEnabled` ПЕРЕД `Object.assign(state.settings, ...)`.
+- Якщо кроковмір не був активний до імпорту — `stepsEnabled` примусово `false` після merge.
+- Запобігає краху: при перезавантаженні після імпорту `enableSteps()` не викликається без дозволу.
+
 ### Пріоритет даних (Баг #4 fix — травень 2026)
 
 **Сервіс завжди має пріоритет над локальною БД:**
@@ -250,4 +261,5 @@ toggleStepCounter()
 | Фаза 3 (травень 2026) | ІЗ: динамічний знаменник, ВЕТО-коефіцієнти, 228 тестів, i18n повний |
 | Сесія травень 2026 #2 | Баг #4 крокоміра (пріоритет сервісу), іконка сповіщення, видалення PWA, 475 тестів |
 | Сесія травень 2026 #3 | Тогл 1 "Нагадування про ліки": pillReminder, SCHEDULE_EXACT_ALARM, розклад по типу (daily/date/weekdays), 475 тестів |
-| Round 5 (05.05.2026) | Шторка=Додаток: throttle прибрано (кожен крок), збереження кожні 20; EmojI прибрано з notifTitle; іконки розділені (серце=BP, людина=кроки); тогл ліків спрощено — без ExactAlarm, dailyAt+isPillDueToday для всіх пігулок |
+| Round 5 (05.05.2026) | Шторка=Додаток: throttle прибрано (кожен крок), збереження кожні 20; emoji прибрано з notifTitle; іконки розділені (серце=BP, людина=кроки); тогл ліків спрощено — без ExactAlarm, dailyAt+isPillDueToday для всіх пігулок |
+| Round 6 (05.05.2026) | Баг JSON-імпорту: stepsEnabled захист при importData(); після змахування: onResume підключає fgUnsubscribe якщо сервіс живий; Splash Screen (1.35с, колір іконки); видалено "PWA" з версії; APP_VERSION→5.0; менший шрифт welcome screen |

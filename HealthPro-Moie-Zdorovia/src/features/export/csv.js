@@ -93,6 +93,8 @@ export function importData(e) {
       const data = JSON.parse(ev.target.result);
       if (!data.measurements && !data.pills) throw new Error('Невірний формат');
       if (!confirm(`Відновити?\nВиміри: ${data.measurements?.length || 0}, Ліки: ${data.pills?.length || 0}`)) return;
+      // Зберігаємо стан кроковміра до імпорту — не запускаємо сервіс до ініціалізації плагіну
+      const prevStepsEnabled = !!state.settings.stepsEnabled;
       state.measurements.length = 0;
       state.measurements.push(...(data.measurements || []));
       state.pills.length = 0;
@@ -100,6 +102,8 @@ export function importData(e) {
       Object.keys(state.pillsTaken).forEach((k) => delete state.pillsTaken[k]);
       Object.assign(state.pillsTaken, data.pillsTaken || {});
       Object.assign(state.settings, data.settings || {});
+      // Відновлюємо лише якщо кроковмір уже був активний до імпорту
+      if (!prevStepsEnabled) state.settings.stepsEnabled = false;
       saveData();
       location.reload();
     } catch (err) {

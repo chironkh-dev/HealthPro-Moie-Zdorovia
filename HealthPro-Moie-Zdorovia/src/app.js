@@ -9,6 +9,7 @@
 import { state, setToast, on } from './core/state.js';
 import { t } from './i18n/index.js';
 import { getLocale } from './core/utils.js';
+import { APP_BUILD_LABEL } from './core/constants.js';
 import {
   onBackButton,
   minimizeApp,
@@ -157,6 +158,14 @@ function init() {
       }
     });
   }
+
+  // Splash screen: приховати після завершення CSS-анімації (1.35s + 0.45s = 1.8s)
+  const splash = document.getElementById('splashScreen');
+  if (splash) setTimeout(() => splash.classList.add('hidden'), 1800);
+
+  // Версія додатку в налаштуваннях (без "PWA")
+  const versionEl = document.getElementById('hp-version-label');
+  if (versionEl) versionEl.textContent = APP_BUILD_LABEL;
 
   attachPressureListeners();
   updateLastReading();
