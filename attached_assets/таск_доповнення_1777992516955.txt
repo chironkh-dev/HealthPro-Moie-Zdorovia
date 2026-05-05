@@ -1,0 +1,12 @@
+ 
+1. Знайти де при імпорті JSON викликається 
+степ-сервіс або stepCount до його ініціалізації.
+Додати перевірку: if (state.settings.stepsEnabled)
+перед будь-яким викликом крокоміра при імпорті.
+2. Штока -після змащування: StepCounterService.java — onTaskRemoved():
+Після AlarmManager перезапуску через 1с —
+JS не знає що сервіс живий.
+BootReceiver або onResume health-check
+мають автоматично підключити listener.
+3. Splash screen кольором іконки додатку
+перед дисклеймером.
