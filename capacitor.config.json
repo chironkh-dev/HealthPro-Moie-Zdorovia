@@ -8,6 +8,12 @@
       "iconColor": "#5B7CFF",
       "sound": "default",
       "presentationOptions": ["badge", "sound", "alert"]
+    },
+    "SplashScreen": {
+      "launchShowDuration": 0,
+      "launchAutoHide": true,
+      "backgroundColor": "#0d1630",
+      "androidScaleType": "CENTER_CROP"
     }
   }
 }
