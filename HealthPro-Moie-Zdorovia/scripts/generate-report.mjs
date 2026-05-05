@@ -5,6 +5,8 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(__dirname, '..', 'HealthPro_Test_Report.pdf');
+const FONT_REG  = path.join(__dirname, '..', 'assets', 'fonts', 'Royal_Arial.ttf');
+const FONT_BOLD = path.join(__dirname, '..', 'assets', 'fonts', 'ArialBold.ttf');
 
 const doc = new PDFDocument({ margin: 50, size: 'A4' });
 doc.pipe(fs.createWriteStream(OUT));
@@ -29,7 +31,7 @@ const ML = 50;                     // left margin
 
 function heading1(text) {
   doc.moveDown(0.4)
-     .font('Helvetica-Bold').fontSize(18).fillColor(C.navy)
+     .font(FONT_BOLD).fontSize(18).fillColor(C.navy)
      .text(text, ML, doc.y, { width: W })
      .moveDown(0.3);
   rule(C.navy, 2);
@@ -38,20 +40,20 @@ function heading1(text) {
 
 function heading2(text) {
   doc.moveDown(0.5)
-     .font('Helvetica-Bold').fontSize(13).fillColor(C.blue)
+     .font(FONT_BOLD).fontSize(13).fillColor(C.blue)
      .text(text, ML, doc.y, { width: W })
      .moveDown(0.3);
 }
 
 function heading3(text) {
   doc.moveDown(0.3)
-     .font('Helvetica-Bold').fontSize(11).fillColor(C.navy)
+     .font(FONT_BOLD).fontSize(11).fillColor(C.navy)
      .text(text, ML, doc.y, { width: W })
      .moveDown(0.15);
 }
 
 function body(text, color = C.black) {
-  doc.font('Helvetica').fontSize(10).fillColor(color)
+  doc.font(FONT_REG).fontSize(10).fillColor(color)
      .text(text, ML, doc.y, { width: W, lineGap: 2 })
      .moveDown(0.2);
 }
@@ -64,13 +66,13 @@ function rule(color = C.border, h = 0.5) {
 
 function badge(text, bg, fg = C.white) {
   const pad = 6;
-  const tw  = doc.font('Helvetica-Bold').fontSize(9).widthOfString(text);
+  const tw  = doc.font(FONT_BOLD).fontSize(9).widthOfString(text);
   const bw  = tw + pad * 2;
   const bh  = 14;
   const x   = ML;
   const y   = doc.y;
   doc.roundedRect(x, y, bw, bh, 3).fill(bg);
-  doc.font('Helvetica-Bold').fontSize(9).fillColor(fg)
+  doc.font(FONT_BOLD).fontSize(9).fillColor(fg)
      .text(text, x + pad, y + 2.5, { width: tw, lineBreak: false });
   doc.moveDown(0.05);
   return bw + 8;
@@ -81,7 +83,7 @@ function taskRow(num, title, status, detail) {
   const y0 = doc.y;
 
   // Number cell
-  doc.font('Helvetica-Bold').fontSize(10).fillColor(C.gray)
+  doc.font(FONT_BOLD).fontSize(10).fillColor(C.gray)
      .text(`#${String(num).padStart(2, '0')}`, ML, y0, { width: 30, lineBreak: false });
 
   // Status badge
@@ -89,16 +91,16 @@ function taskRow(num, title, status, detail) {
   const bw  = 72;
   doc.roundedRect(bx, y0 - 1, bw, 14, 3)
      .fill(isOk ? C.green : C.amber);
-  doc.font('Helvetica-Bold').fontSize(8).fillColor(C.white)
+  doc.font(FONT_BOLD).fontSize(8).fillColor(C.white)
      .text(status, bx + 4, y0 + 1.5, { width: bw - 8, lineBreak: false });
 
   // Title
-  doc.font('Helvetica-Bold').fontSize(10).fillColor(C.black)
+  doc.font(FONT_BOLD).fontSize(10).fillColor(C.black)
      .text(title, ML + 110, y0, { width: W - 110 });
 
   // Detail
   if (detail) {
-    doc.font('Helvetica').fontSize(9).fillColor(C.gray)
+    doc.font(FONT_REG).fontSize(9).fillColor(C.gray)
        .text(detail, ML + 110, doc.y, { width: W - 110, lineGap: 1 });
   }
   doc.moveDown(0.5);
@@ -111,9 +113,9 @@ function statBox(label, value, color = C.navy) {
   const x  = doc._currentX || ML;
   const y  = doc.y;
   doc.roundedRect(x, y, bw, bh, 5).fill(C.light);
-  doc.font('Helvetica-Bold').fontSize(20).fillColor(color)
+  doc.font(FONT_BOLD).fontSize(20).fillColor(color)
      .text(String(value), x + 8, y + 6, { width: bw - 16, align: 'center', lineBreak: false });
-  doc.font('Helvetica').fontSize(8).fillColor(C.gray)
+  doc.font(FONT_REG).fontSize(8).fillColor(C.gray)
      .text(label, x + 4, y + 30, { width: bw - 8, align: 'center', lineBreak: false });
   return bw + 10;
 }
@@ -134,7 +136,7 @@ function denominatorTable() {
   let x = ML;
   headers.forEach((h, i) => {
     doc.rect(x, y0, colW[i], 18).fill(C.navy);
-    doc.font('Helvetica-Bold').fontSize(9).fillColor(C.white)
+    doc.font(FONT_BOLD).fontSize(9).fillColor(C.white)
        .text(h, x + 4, y0 + 4, { width: colW[i] - 8, lineBreak: false });
     x += colW[i];
   });
@@ -148,7 +150,7 @@ function denominatorTable() {
     doc.rect(ML, ry, colW[0]+colW[1]+colW[2], 22).fill(bg);
     row.forEach((cell, ci) => {
       const bold = ci === 0;
-      doc.font(bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(9)
+      doc.font(bold ? FONT_BOLD : FONT_REG).fontSize(9)
          .fillColor(ci === 2 ? C.gray : C.black)
          .text(cell, x + 4, ry + 5, { width: colW[ci] - 8, lineBreak: false });
       x += colW[ci];
@@ -173,7 +175,7 @@ function vetoTable() {
   let x = ML;
   headers.forEach((h, i) => {
     doc.rect(x, y0, colW[i], 18).fill(C.navy);
-    doc.font('Helvetica-Bold').fontSize(9).fillColor(C.white)
+    doc.font(FONT_BOLD).fontSize(9).fillColor(C.white)
        .text(h, x + 4, y0 + 4, { width: colW[i] - 8, lineBreak: false });
     x += colW[i];
   });
@@ -187,16 +189,16 @@ function vetoTable() {
     row.forEach((cell, ci) => {
       if (ci === 2) {
         // bold red coefficient
-        doc.font('Helvetica-Bold').fontSize(10).fillColor(C.red)
+        doc.font(FONT_BOLD).fontSize(10).fillColor(C.red)
            .text(cell, x + 4, ry + 4, { width: colW[ci] - 8, lineBreak: false });
       } else if (ci === 4) {
         // colour swatch
         const sw = row[4];
         doc.roundedRect(x + 4, ry + 4, 50, 13, 3).fill(row[4]);
-        doc.font('Helvetica-Bold').fontSize(8).fillColor(C.white)
+        doc.font(FONT_BOLD).fontSize(8).fillColor(C.white)
            .text('#ef4444', x + 7, ry + 6, { width: 44, lineBreak: false });
       } else {
-        doc.font(ci === 0 ? 'Helvetica-Bold' : 'Helvetica').fontSize(9)
+        doc.font(ci === 0 ? FONT_BOLD : FONT_REG).fontSize(9)
            .fillColor(C.black)
            .text(cell, x + 4, ry + 5, { width: colW[ci] - 8, lineBreak: false });
       }
@@ -211,19 +213,19 @@ function testFileRow(file, tests, desc) {
   const y0 = doc.y;
   // Green tick
   doc.circle(ML + 6, y0 + 6, 6).fill(C.green);
-  doc.font('Helvetica-Bold').fontSize(10).fillColor(C.white)
+  doc.font(FONT_BOLD).fontSize(10).fillColor(C.white)
      .text('✓', ML + 2, y0 + 1, { lineBreak: false });
   // Filename
-  doc.font('Helvetica-Bold').fontSize(10).fillColor(C.navy)
+  doc.font(FONT_BOLD).fontSize(10).fillColor(C.navy)
      .text(file, ML + 18, y0, { width: W - 70, lineBreak: false });
   // Test count badge
-  const tw = doc.font('Helvetica-Bold').fontSize(9).widthOfString(`${tests} тестів`);
+  const tw = doc.font(FONT_BOLD).fontSize(9).widthOfString(`${tests} тестів`);
   const bx = ML + W - tw - 12;
   doc.roundedRect(bx, y0, tw + 12, 14, 3).fill(C.blue);
-  doc.font('Helvetica-Bold').fontSize(9).fillColor(C.white)
+  doc.font(FONT_BOLD).fontSize(9).fillColor(C.white)
      .text(`${tests} тестів`, bx + 6, y0 + 2, { lineBreak: false });
   doc.y = y0 + 16;
-  doc.font('Helvetica').fontSize(9).fillColor(C.gray)
+  doc.font(FONT_REG).fontSize(9).fillColor(C.gray)
      .text(desc, ML + 18, doc.y, { width: W - 20, lineGap: 1 });
   doc.moveDown(0.4);
   rule();
@@ -234,13 +236,13 @@ function testFileRow(file, tests, desc) {
 // ══════════════════════════════════════════════════════════════════════════
 // Header band
 doc.rect(0, 0, doc.page.width, 140).fill(C.navy);
-doc.font('Helvetica-Bold').fontSize(26).fillColor(C.white)
+doc.font(FONT_BOLD).fontSize(26).fillColor(C.white)
    .text('HealthPro · Моє Здоров\'я', ML, 28, { width: W });
-doc.font('Helvetica').fontSize(13).fillColor('#93c5fd')
+doc.font(FONT_REG).fontSize(13).fillColor('#93c5fd')
    .text('Підсумковий технічний звіт про тестування', ML, 62, { width: W });
-doc.font('Helvetica').fontSize(10).fillColor('#cbd5e1')
+doc.font(FONT_REG).fontSize(10).fillColor('#cbd5e1')
    .text('Vitest · Vanilla JS ESM · Vite 5 · PWA', ML, 85, { width: W });
-doc.font('Helvetica').fontSize(9).fillColor('#94a3b8')
+doc.font(FONT_REG).fontSize(9).fillColor('#94a3b8')
    .text('Дата: 03 травня 2026', ML, 105, { width: W });
 
 doc.y = 158;
@@ -257,9 +259,9 @@ let sx = ML;
 stats.forEach(([label, val, color]) => {
   const bw = 82;
   doc.roundedRect(sx, doc.y, bw, 52, 6).fill(C.light);
-  doc.font('Helvetica-Bold').fontSize(22).fillColor(color)
+  doc.font(FONT_BOLD).fontSize(22).fillColor(color)
      .text(val, sx + 4, doc.y + 6, { width: bw - 8, align: 'center', lineBreak: false });
-  doc.font('Helvetica').fontSize(8).fillColor(C.gray)
+  doc.font(FONT_REG).fontSize(8).fillColor(C.gray)
      .text(label, sx + 4, doc.y + 32, { width: bw - 8, align: 'center', lineBreak: false });
   sx += bw + 6;
 });
@@ -361,11 +363,11 @@ configs.forEach(([cfg, max, note], i) => {
   const ry = doc.y;
   const bg = i % 2 === 0 ? C.light : C.white;
   doc.rect(ML, ry, W, 18).fill(bg);
-  doc.font('Helvetica').fontSize(9).fillColor(C.black)
+  doc.font(FONT_REG).fontSize(9).fillColor(C.black)
      .text(cfg, ML + 6, ry + 4, { width: 200, lineBreak: false });
-  doc.font('Helvetica-Bold').fontSize(9).fillColor(C.blue)
+  doc.font(FONT_BOLD).fontSize(9).fillColor(C.blue)
      .text(max, ML + 208, ry + 4, { width: 60, lineBreak: false });
-  doc.font('Helvetica').fontSize(9).fillColor(C.gray)
+  doc.font(FONT_REG).fontSize(9).fillColor(C.gray)
      .text(note, ML + 275, ry + 4, { width: W - 280, lineBreak: false });
   doc.rect(ML, ry, W, 18).lineWidth(0.3).strokeColor(C.border).stroke();
   doc.y = ry + 18;
@@ -376,11 +378,11 @@ heading2('2.4 Зміна поведінки пульсу (v4.1)');
 doc.roundedRect(ML, doc.y, W, 38, 5).fill('#fefce8');
 doc.rect(ML, doc.y, 4, 38).fill(C.amber);
 const noteY = doc.y;
-doc.font('Helvetica-Bold').fontSize(10).fillColor(C.amber)
+doc.font(FONT_BOLD).fontSize(10).fillColor(C.amber)
    .text('Breaking change:', ML + 12, noteY + 6, { lineBreak: false });
-doc.font('Helvetica').fontSize(10).fillColor(C.black)
+doc.font(FONT_REG).fontSize(10).fillColor(C.black)
    .text(' scorePulse(null) тепер повертає 0 замість null.', ML + 112, noteY + 6, { lineBreak: false });
-doc.font('Helvetica').fontSize(9).fillColor(C.gray)
+doc.font(FONT_REG).fontSize(9).fillColor(C.gray)
    .text('Пульс завжди входить до знаменника (max завжди ≥ 80). UI-прапорець pulseExcluded = (avgPulse === null) залишається — поле показує "—" при відсутніх даних.', ML + 12, noteY + 22, { width: W - 20 });
 doc.y = noteY + 46;
 doc.moveDown(0.6);
@@ -419,9 +421,9 @@ heading1('4. Результати фінального прогону Vitest');
 
 // Big summary bar
 doc.roundedRect(ML, doc.y, W, 48, 8).fill(C.green);
-doc.font('Helvetica-Bold').fontSize(22).fillColor(C.white)
+doc.font(FONT_BOLD).fontSize(22).fillColor(C.white)
    .text('228 / 228 тестів пройшли  ✓', ML + 16, doc.y + 8, { width: W - 32 });
-doc.font('Helvetica').fontSize(11).fillColor('#dcfce7')
+doc.font(FONT_REG).fontSize(11).fillColor('#dcfce7')
    .text('9 тестових файлів · 0 збоїв · Час виконання: ~2.4 с', ML + 16, doc.y + 5, { width: W - 32 });
 doc.y += 22;
 doc.moveDown(0.8);
@@ -456,10 +458,10 @@ cats.forEach(([label, count, color]) => {
   const pct = Math.round(count / totalTests * 100);
   const barW = Math.round((W - 200) * count / totalTests);
   const ry = doc.y;
-  doc.font('Helvetica').fontSize(9).fillColor(C.black)
+  doc.font(FONT_REG).fontSize(9).fillColor(C.black)
      .text(label, ML, ry + 2, { width: 170, lineBreak: false });
   doc.roundedRect(ML + 175, ry, barW, 14, 3).fill(color);
-  doc.font('Helvetica-Bold').fontSize(9).fillColor(C.black)
+  doc.font(FONT_BOLD).fontSize(9).fillColor(C.black)
      .text(`${count} (${pct}%)`, ML + 175 + barW + 6, ry + 2, { lineBreak: false });
   doc.y = ry + 20;
 });
@@ -477,9 +479,9 @@ tools.forEach(([tool, desc], i) => {
   const ry = doc.y;
   const bg = i % 2 === 0 ? C.light : C.white;
   doc.rect(ML, ry, W, 16).fill(bg);
-  doc.font('Helvetica-Bold').fontSize(9).fillColor(C.navy)
+  doc.font(FONT_BOLD).fontSize(9).fillColor(C.navy)
      .text(tool, ML + 6, ry + 3, { width: 110, lineBreak: false });
-  doc.font('Helvetica').fontSize(9).fillColor(C.gray)
+  doc.font(FONT_REG).fontSize(9).fillColor(C.gray)
      .text(desc, ML + 120, ry + 3, { width: W - 126, lineBreak: false });
   doc.rect(ML, ry, W, 16).lineWidth(0.3).strokeColor(C.border).stroke();
   doc.y = ry + 16;
@@ -490,7 +492,7 @@ rule(C.navy, 1);
 doc.moveDown(0.4);
 
 // Footer
-doc.font('Helvetica').fontSize(9).fillColor(C.gray)
+doc.font(FONT_REG).fontSize(9).fillColor(C.gray)
    .text(
      'HealthPro v4.0 · PWA · Звіт згенеровано автоматично · 03.05.2026 · Усі 228 тестів пройдено без збоїв',
      ML, doc.y, { width: W, align: 'center' }

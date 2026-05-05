@@ -23,6 +23,7 @@
   "homepage": "https://github.com/chironkh-dev/HealthPro-Moie-Zdorovia#readme",
   "devDependencies": {
     "@capacitor/android": "^8.3.1",
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.3.1",
     "@capacitor/core": "^8.3.1"
   },
