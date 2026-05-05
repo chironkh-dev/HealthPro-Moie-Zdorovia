@@ -64,11 +64,10 @@ public class StepCounterService extends Service implements SensorEventListener {
     private int  initialSteps   = 0;      // steps from DB before service started
     private int  currentSteps   = 0;      // total daily steps (initial + session)
     private int  dailyGoal      = 10000;
-    private String notifTitle   = "HealthPro \uD83E\uDDB6";
+    private String notifTitle   = "HealthPro";
     private String notifText    = "\u0420\u0430\u0445\u0443\u044e \u043a\u0440\u043e\u043a\u0438...";
     private boolean sensorAvailable = false;
 
-    private static final int NOTIF_THROTTLE_STEPS = 10;
 
     private final IBinder binder = new LocalBinder();
 
@@ -135,8 +134,8 @@ public class StepCounterService extends Service implements SensorEventListener {
 
         currentSteps = (rawSteps - baselineSteps) + initialSteps;
 
-        if (currentSteps % NOTIF_THROTTLE_STEPS == 0) {
-            updateNotification(currentSteps, dailyGoal);
+        updateNotification(currentSteps, dailyGoal);
+        if (currentSteps % 20 == 0) {
             saveStepState(currentSteps);
         }
 
@@ -263,7 +262,7 @@ public class StepCounterService extends Service implements SensorEventListener {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle(notifTitle)
                 .setContentText(progressText)
-                .setSmallIcon(R.drawable.ic_stat_notification)
+                .setSmallIcon(R.drawable.ic_stat_steps)
                 .setContentIntent(pi)
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)

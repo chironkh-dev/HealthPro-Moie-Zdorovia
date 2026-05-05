@@ -1,28 +1,22 @@
 // Pill & blood-pressure reminders.
 //
-// Round 4 #2 — true background delivery.
-// We pre-schedule recurring notifications via @capacitor/local-notifications
-// (`schedule.on = { hour, minute }` + `allowWhileIdle: true`). The Android
-// AlarmManager fires them daily even when the app process is killed. Each
-// notification routes through the HIGH-importance "reminders" channel
-// (created in platform.ensureNotificationChannel) so heads-up + sound +
-// vibration work in background.
-//
-// Re-schedule triggers (called from app.js / settings):
-//   • toggleNotifications(on)
-//   • toggleMeasureReminder
-//   • saveReminderTimes
+// Round 5 — спрощена логіка тоглу пігулок (без ExactAlarm перевірки).
+// Нагадування плануються через @capacitor/local-notifications з dailyAt
+// (AlarmManager, щоденно). Тригери перепланування:
+//   • toggleNotifications()
+//   • toggleMeasureReminder()
+//   • saveReminderTimes()
 //   • on('pills:changed')
 
 import { state, saveData, showToast } from '../../core/state.js';
 import { on } from '../../core/state.js';
-import { t } from '../../i18n/index.js';
+import { t, tt } from '../../i18n/index.js';
+import { isPillDueToday } from '../meds/index.js';
 import {
   requestNotificationPermission,
   notify,
   cancelAllNotifications,
   ensureNotificationChannel,
-  ensureExactAlarmPermission,
   openAppSettings,
   addNotificationReceivedListener
 } from '../../core/platform.js';
@@ -30,55 +24,17 @@ import {
 // Stable ID space — never collide with random IDs from one-shot notify().
 const ID_BP_MORNING = 90001;
 const ID_BP_EVENING = 90002;
-// Pill IDs: 91000–99999 (deterministic hash від pill.id)
-const PILL_ID_BASE = 91000;
+const PILL_ID_BASE  = 91000;
 
 function parseHM(s) {
   const [h, m] = String(s || '08:00').split(':').map((x) => parseInt(x, 10) || 0);
   return { hour: h, minute: m };
 }
 
-// djb2-variant: pill.id (string) → стабільний int у діапазоні [0, 8999]
-function pillIdHash(id) {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) {
-    h = (Math.imul(31, h) + id.charCodeAt(i)) | 0;
-  }
-  return Math.abs(h) % 9000;
-}
-
-// Дні тижня: 0=нед, 1=пн … 6=сб
-const DAY_MAP = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
-
-// Повертає дату наступного спрацювання для днів-тижня розкладу.
-// days = 'mon' | 'tue,fri' | 'weekdays' | тощо.
-// Перевіряє сьогодні + наступні 7 днів, щоб знайти перший відповідний момент у майбутньому.
-function nextWeekdayOccurrence(days, hour, minute) {
-  let allowed;
-  if (days === 'weekdays') {
-    allowed = [1, 2, 3, 4, 5];
-  } else {
-    allowed = String(days).split(',')
-      .map((k) => DAY_MAP[k.trim()])
-      .filter((n) => n != null);
-  }
-  if (!allowed.length) return null;
-  const now = new Date();
-  for (let offset = 0; offset <= 7; offset++) {
-    const candidate = new Date(now);
-    candidate.setDate(now.getDate() + offset);
-    candidate.setHours(hour, minute, 0, 0);
-    if (candidate <= now) continue;
-    if (allowed.includes(candidate.getDay())) return candidate;
-  }
-  return null;
-}
-
-// ─── Toggles ──────────────────────────────────────────────────
+// ─── Тогл 1: Нагадування про ліки ─────────────────────────────
 export async function toggleNotifications() {
   const next = !state.settings.pillReminder;
 
-  // ── Вимкнення ─────────────────────────────────────────────
   if (!next) {
     state.settings.pillReminder = false;
     document.getElementById('notifToggle')?.classList.remove('on');
@@ -88,8 +44,6 @@ export async function toggleNotifications() {
     return;
   }
 
-  // ── Вмикання ──────────────────────────────────────────────
-  // Крок 1: дозвіл на сповіщення
   const granted = await requestNotificationPermission();
   if (!granted) {
     showToast(t('notif-denied'));
@@ -99,23 +53,15 @@ export async function toggleNotifications() {
     return;
   }
 
-  await ensureNotificationChannel();
-
-  // Крок 2: Android 12+ — SCHEDULE_EXACT_ALARM
-  const exactOk = await ensureExactAlarmPermission();
-  if (!exactOk) {
-    // Система відкрила налаштування; користувач має надати дозвіл і натиснути тогл ще раз.
-    showToast(t('notif-exact-alarm-needed'), 6000);
-    return;
-  }
-
   state.settings.pillReminder = true;
   document.getElementById('notifToggle')?.classList.add('on');
   saveData();
   showToast(t('notif-pill-on'));
+  await ensureNotificationChannel();
   await scheduleAllReminders();
 }
 
+// ─── Тогл 2: Нагадування про вимір тиску ──────────────────────
 export async function toggleMeasureReminder() {
   const next = !state.settings.measureReminder;
   if (!next) {
@@ -149,7 +95,6 @@ export async function toggleMeasureReminder() {
   showToast(t('notif-measure-on'));
   await ensureNotificationChannel();
   await scheduleAllReminders();
-
 }
 
 export async function saveReminderTimes() {
@@ -167,7 +112,7 @@ export async function scheduleAllReminders() {
 
   const items = [];
 
-  // ── BP: ранок + вечір (тільки якщо measureReminder увімкнено) ─
+  // ── BP: ранок + вечір ─────────────────────────────────────
   if (state.settings.measureReminder) {
     const m = parseHM(state.settings.morningTime || '08:00');
     const e = parseHM(state.settings.eveningTime || '20:00');
@@ -187,40 +132,21 @@ export async function scheduleAllReminders() {
     });
   }
 
-  // ── Пігулки (тільки якщо pillReminder увімкнено) ──────────
+  // ── Пігулки — лише ті, що заплановані на сьогодні ────────
   if (state.settings.pillReminder) {
-    const pills = Array.isArray(state.pills) ? state.pills : [];
-    const todayStr = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
-    for (const p of pills) {
-      if (!p || !p.time) continue;
+    (state.pills || []).forEach((p) => {
+      if (!isPillDueToday(p)) return;
       const { hour, minute } = parseHM(p.time);
-      const id    = PILL_ID_BASE + pillIdHash(String(p.id));
-      const title = t('notif-pill-title').replace('{{name}}', p.name || '');
-      const body  = t('notif-pill-body');
-      const extra = { type: 'pill', pillId: p.id, pillDays: p.days };
-
-      if (p.days === 'daily') {
-        // Щодня — повторюваний будильник
-        items.push({ id, title, dailyAt: { hour, minute }, body, extra });
-
-      } else if (p.days === 'date') {
-        // Конкретна дата — одноразовий будильник
-        if (!p.date || p.date < todayStr) continue; // минула дата — пропускаємо
-        const at = new Date(`${p.date}T${p.time}:00`);
-        if (at <= new Date()) continue; // час вже минув сьогодні
-        items.push({ id, title, at, body, extra });
-
-      } else {
-        // Дні тижня: 'mon', 'tue,fri', 'weekdays' тощо
-        // Одноразово на НАСТУПНЕ входження; після спрацювання — перепланування.
-        const at = nextWeekdayOccurrence(p.days, hour, minute);
-        if (!at) continue;
-        items.push({ id, title, at, body, extra });
-      }
-    }
+      items.push({
+        id: PILL_ID_BASE + (Math.abs(p.id || 0) % 30000),
+        title: tt('notif-pill-title', { name: p.name || '' }),
+        dailyAt: { hour, minute },
+        body: p.dose ? p.dose : t('notif-pill-body'),
+        extra: { type: 'pill', pillId: p.id },
+      });
+    });
   }
 
-  // Плануємо послідовно — краще відстежувати помилки по кожному елементу.
   for (const it of items) {
     try { await notify(it.title, it); } catch { /* noop */ }
   }
@@ -235,25 +161,13 @@ export async function scheduleNotifications() {
   if (state.settings.measureReminder) await scheduleAllReminders();
 }
 
-// Re-schedule whenever pill list changes (kept for compatibility hooks).
+// Перепланувати при зміні списку ліків.
 on('pills:changed', () => { scheduleAllReminders(); });
 
-// Після спрацювання сповіщення — перепланувати:
-//   bp    → повний перепланувальник (dailyAt зазвичай справляється сам,
-//           але залишаємо для сумісності з попередньою логікою)
-//   pill (date / weekdays) → одноразові будильники потребують нового планування
+// Після спрацювання BP-нагадування — перепланувати (dailyAt сам по собі
+// повторюється, але shim залишений для сумісності).
 addNotificationReceivedListener((notification) => {
-  const type = notification.extra?.type;
-  if (type === 'bp') {
+  if (notification.extra?.type === 'bp') {
     scheduleAllReminders();
-    return;
-  }
-  if (type === 'pill' && state.settings.pillReminder) {
-    const days = notification.extra?.pillDays;
-    // 'daily' — dailyAt повторюється сам; 'date' — більше не потрібен.
-    // Тільки тижневі розклади потребують перепланування на наступне входження.
-    if (days && days !== 'daily' && days !== 'date') {
-      scheduleAllReminders();
-    }
   }
 });

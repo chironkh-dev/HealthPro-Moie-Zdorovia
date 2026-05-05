@@ -135,6 +135,13 @@ android/app/src/main/AndroidManifest.xml
 | `foreground` | `StepCounterService.java` (Android Foreground Service, TYPE_STEP_COUNTER) | Тільки при явній зупинці |
 | `active-only` | DeviceMotion listener у JS | При закритті вкладки |
 
+### Оновлення нотифікації (Round 5)
+
+- `updateNotification()` викликається на **кожен крок** (throttle прибрано) → шторка = додаток в реальному часі.
+- `saveStepState()` — кожні 20 кроків (збереження на диск, не перевантажує I/O).
+- Назва сповіщення: `"HealthPro"` (без емодзі 🦶).
+- Іконка кроків: `ic_stat_steps` (walking person); іконка тиску: `ic_stat_notification` (серце).
+
 ### Пріоритет даних (Баг #4 fix — травень 2026)
 
 **Сервіс завжди має пріоритет над локальною БД:**
@@ -243,3 +250,4 @@ toggleStepCounter()
 | Фаза 3 (травень 2026) | ІЗ: динамічний знаменник, ВЕТО-коефіцієнти, 228 тестів, i18n повний |
 | Сесія травень 2026 #2 | Баг #4 крокоміра (пріоритет сервісу), іконка сповіщення, видалення PWA, 475 тестів |
 | Сесія травень 2026 #3 | Тогл 1 "Нагадування про ліки": pillReminder, SCHEDULE_EXACT_ALARM, розклад по типу (daily/date/weekdays), 475 тестів |
+| Round 5 (05.05.2026) | Шторка=Додаток: throttle прибрано (кожен крок), збереження кожні 20; EmojI прибрано з notifTitle; іконки розділені (серце=BP, людина=кроки); тогл ліків спрощено — без ExactAlarm, dailyAt+isPillDueToday для всіх пігулок |
