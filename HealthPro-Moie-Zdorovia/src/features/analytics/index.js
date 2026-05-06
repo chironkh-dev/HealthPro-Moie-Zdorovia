@@ -8,6 +8,9 @@ import { calcHealthScore, getDetailedScores, toggleHealthTooltip } from './healt
 import { renderBMI } from './bmi.js';
 import { renderRecommendations } from './recommendations.js';
 import { renderIZChart } from './iz-chart.js';
+import { renderScatterChart, disposeScatterChart } from './scatter.js';
+import { renderBPZonesChart, disposeBPZonesChart } from './bp-zones.js';
+import { renderTipsBlock } from '../tips/index.js';
 
 const avg = (arr) => (arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null);
 
@@ -175,8 +178,14 @@ export function renderAnalytics() {
   renderBMI();
   renderRecommendations();
   renderIZChart();
+
+  // v5.1 — async charts + tips (fire-and-forget)
+  renderScatterChart('scatterChart').catch(() => {});
+  renderBPZonesChart('bpZonesChart').catch(() => {});
+  renderTipsBlock().catch(() => {});
 }
 
+export { disposeScatterChart, disposeBPZonesChart };
 export { calcHealthScore, getDetailedScores, toggleHealthTooltip } from './health-score.js';
 export { calcBMI, getBMICategory, renderBMI } from './bmi.js';
 export { RECO_SVG, generateAdvice, renderRecommendations, toggleReco } from './recommendations.js';

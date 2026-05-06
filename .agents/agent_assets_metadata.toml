@@ -120,3 +120,9 @@ id = "p5FTWStH_jEgAL4p7p5By"
 uri = "file://HealthPro-Moie-Zdorovia/HealthPro_Session_May2026_SQLite_ECharts.pdf"
 type = "pdf"
 title = "HealthPro · Звіт сесії — SQLite v2 · ECharts"
+
+[[outputs]]
+id = "v_vEqsJnjiuI7HDWGs1oU"
+uri = "file://HealthPro-Moie-Zdorovia/HealthPro_Session_v5.1_Report.pdf"
+type = "pdf"
+title = "HealthPro v5.1 — Звіт сесії розробки"

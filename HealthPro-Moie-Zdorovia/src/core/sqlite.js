@@ -19,6 +19,24 @@ import { isNative } from './platform.js';
 const DB_NAME    = 'HealthProDB';
 const DB_VERSION = 2;
 
+// ── SQLCipher: генерація/отримання ключа через Preferences (v5.1) ─────────────
+// На Android — Keystore під капотом. На вебі — no-op (isNative() = false).
+async function getOrCreateKey() {
+  try {
+    const { Preferences } = await import('@capacitor/preferences');
+    const { value } = await Preferences.get({ key: 'db_enc_key' });
+    if (value) return value;
+    const key = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+      .map(b => b.toString(16).padStart(2, '0')).join('');
+    await Preferences.set({ key: 'db_enc_key', value: key });
+    console.log('[HealthProDB/SQLite] Encryption key created');
+    return key;
+  } catch (e) {
+    console.warn('[HealthProDB/SQLite] getOrCreateKey failed, using fallback:', e?.message);
+    return 'hp_fallback_enc_key_v1';
+  }
+}
+
 let pluginPromise = null;
 let dbHandle      = null;
 let initialized   = false;
@@ -106,6 +124,12 @@ export async function init() {
     if (!conn) throw initError || new Error('SQLite connection module unavailable');
     const { sqliteConnection } = conn;
 
+    // v5.1 — SQLCipher: отримуємо ключ і встановлюємо перед з'єднанням
+    const encKey = await getOrCreateKey();
+    try {
+      await sqliteConnection.setEncryptionSecret(encKey);
+    } catch { /* плагін може не підтримувати setEncryptionSecret на вебі */ }
+
     let isConn = false;
     try {
       const r = await sqliteConnection.isConnection(DB_NAME, false);
@@ -113,10 +137,10 @@ export async function init() {
     } catch { isConn = false; }
 
     if (isConn) {
-      dbHandle = await sqliteConnection.retrieveConnection(DB_NAME, false);
+      dbHandle = await sqliteConnection.retrieveConnection(DB_NAME, true);
     } else {
       dbHandle = await sqliteConnection.createConnection(
-        DB_NAME, false, 'no-encryption', DB_VERSION, false,
+        DB_NAME, true, 'secret', DB_VERSION, false,
       );
     }
 

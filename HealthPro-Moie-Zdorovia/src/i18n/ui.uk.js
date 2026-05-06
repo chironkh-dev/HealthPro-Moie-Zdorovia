@@ -319,6 +319,21 @@ export const T_UK ={
   'hs-veto-ht2':'⚠️ Гіпертонія 2 ст. — штраф ×0.60',
   'hs-veto-hypo':'⬇️ Гіпотонія — штраф ×0.55',
   'hs-veto-default':'⚠️ Вето застосовано',
+
+  // ─── v5.1: scatter / bp-zones / tips / journal ───
+  't-scatter-title':'Кроки ↔ Тиск — кореляція',
+  't-scatter-empty':'Потрібно 10+ парних вимірювань кроків та тиску',
+  't-scatter-x':'Кроки',
+  't-scatter-y':'Сист. тиск (мм рт.ст.)',
+  't-bp-zones-title':'Розподіл по зонах ВООЗ',
+  'tips-title':'Поради ВООЗ / МОЗ',
+  'tips-empty':'Додайте 3+ виміри для персональних рекомендацій',
+  'tips-disclaimer':'Інформаційний характер. Зверніться до лікаря.',
+  'j-filter-all':'Всі',
+  'j-filter-pressure':'Тиск',
+  'j-date-from':'З дати',
+  'j-date-to':'По дату',
+  'j-no-data':'Немає записів за вибраний період',
   'hs-norm-personal':'👤 Особиста норма',
   'hs-norm-standard':'📋 Стандартна норма',
 };

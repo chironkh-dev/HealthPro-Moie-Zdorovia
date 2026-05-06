@@ -41,11 +41,16 @@ import {
   // analytics
   renderAnalytics, renderRecommendations, renderBMI,
   toggleHealthTooltip, toggleReco, openTrendModal, closeTrendModal,
+  disposeScatterChart, disposeBPZonesChart,
 } from './features/analytics/index.js';
 import {
   // history
   renderHistory, setHistoryPeriod, deleteMeasurement, clearHistory,
 } from './features/history/index.js';
+import {
+  // journal (v5.1) — date-range picker + note display
+  renderJournal, setJournalFrom, setJournalTo, setJournalType,
+} from './features/journal/index.js';
 import {
   // export
   openExportModal, closeExportModal, selectExportPeriod, updateExportCount,
@@ -90,10 +95,15 @@ export function showPage(name) {
   document.querySelectorAll('.nav-tab').forEach((t) => t.classList.remove('active'));
   document.getElementById('page-' + name)?.classList.add('active');
   document.getElementById('tab-' + name)?.classList.add('active');
-  if (name === 'history') renderHistory();
+  if (name === 'history') renderJournal();
   if (name === 'pressure') { renderChart(); renderChart(); }
   if (name === 'pills') renderPills();
   if (name === 'analytics') renderAnalytics();
+  // Dispose analytics ECharts when leaving analytics tab
+  if (name !== 'analytics') {
+    try { disposeScatterChart('scatterChart'); } catch { /* noop */ }
+    try { disposeBPZonesChart('bpZonesChart'); } catch { /* noop */ }
+  }
 }
 
 // PDF report needs to switch to the pressure page to capture the chart.
@@ -255,6 +265,10 @@ const ACTIONS = {
   togglePulseChart: () => togglePulseChart(),
   setHistoryPeriod: (el) => setHistoryPeriod(el.dataset.period, el),
   clearHistory: () => clearHistory(),
+  // journal v5.1
+  setJournalType: (el) => setJournalType(el.dataset.jtype),
+  onJournalFromChange: (el) => setJournalFrom(el.value),
+  onJournalToChange: (el) => setJournalTo(el.value),
   // pills
   addPill: () => addPill(),
   togglePill: (el) => togglePill(parseInt(el.dataset.id, 10)),

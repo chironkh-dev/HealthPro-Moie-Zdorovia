@@ -221,3 +221,22 @@ stepMode: 'active-only',   // 'foreground' | 'active-only'
 | Фаза 2 | квітень 2026 | BugFix: 9 виправлень, 424/424 тести |
 | Фаза 3а | травень 2026 | BMI 65+; Android Foreground Step Service (перший варіант) |
 | Фаза 3б | травень 2026 | Рефакторинг крокоміра: 3 критичні баги виправлено, 475/475 тестів |
+| **v5.1** | **2026-05-06** | **SQLCipher, ScatterChart, BarChart BP-Zones, Офлайн поради, Журнал з date-range, i18n +15 ключів** |
+
+---
+
+## Поточна версія: v5.1.0
+
+### ✅ v5.1 — ВИКОНАНО (2026-05-06)
+- SQLCipher: `getOrCreateKey()` + `createConnection(encrypted=true, 'secret')` → `sqlite.js`
+- ScatterChart Кроки↔Тиск → `analytics/scatter.js` (CanvasRenderer, disposeScatterChart)
+- BarChart розподіл зон ВООЗ → `analytics/bp-zones.js` (SVGRenderer, 6 категорій)
+- Офлайн поради ВООЗ → `features/tips/index.js` + `assets/tips/tips_uk.json` / `tips_ru.json`
+- Журнал date-range picker → `features/journal/index.js` (setJournalFrom/To/Type)
+- i18n uk/ru +15 нових ключів; tips.css; app.css; index.html; app.js dispose логіка
+
+### 🟡 v5.2 — НАСТУПНИЙ СПРИНТ
+- Нотатки до вимірювань (textarea при збереженні)
+- Adherence-трекер ліків (`analytics/adherence.js`)
+- Повторення розкладу ліків (UI для поля `days`)
+- PDF-звіт для лікаря (ECharts SVG → reportlab)
