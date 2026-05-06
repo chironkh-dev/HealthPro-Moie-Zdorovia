@@ -235,6 +235,11 @@ stepMode: 'active-only',   // 'foreground' | 'active-only'
 - Журнал date-range picker → `features/journal/index.js` (setJournalFrom/To/Type)
 - i18n uk/ru +15 нових ключів; tips.css; app.css; index.html; app.js dispose логіка
 
+### ✅ v5.1.1 — BUGFIX (2026-05-06)
+- **Зникнення графіків після перемикання вкладок** — корінь: `el.innerHTML=''` без `disposeChart()` → WeakMap повертав мертвий ECharts-інстанс
+- Виправлено в `iz-chart.js`, `scatter.js`, `bp-zones.js`: `disposeChart(el)` на початку кожного render
+- `app.js`: додано `disposeIZChart()` при виході з вкладки «Аналіз» + імпорт
+
 ### 🟡 v5.2 — НАСТУПНИЙ СПРИНТ
 - Нотатки до вимірювань (textarea при збереженні)
 - Adherence-трекер ліків (`analytics/adherence.js`)

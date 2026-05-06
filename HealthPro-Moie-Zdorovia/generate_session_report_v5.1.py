@@ -265,6 +265,36 @@ arch = [
 story.append(card_table(arch))
 story.append(sp(8))
 
+# ── 3б. BUGFIX v5.1.1 ────────────────────────────────────────────────────────
+story += [
+    p('3б. Bugfix v5.1.1 — зникнення графіків після перемикання вкладок', S_H2),
+    p('<b>Симптом:</b> графік «Тренд ІЗ» (і scatter/bp-zones) зникав після будь-якого '
+      'переходу між вкладками і повернення на «Аналіз».', S_BODY),
+    sp(3),
+    p('<b>Причина (root cause):</b>', S_H3),
+    p('Кожна функція render робила <b>el.innerHTML = \'\'</b> для очищення контейнера, '
+      'але не викликала disposeChart() перед цим. '
+      'WeakMap у charts.js зберігав посилання на старий ECharts-інстанс. '
+      'При повторному виклику createChart() — WeakMap повертав мертвий інстанс '
+      'замість створення нового. ECharts не міг нічого намалювати у очищеному DOM.', S_BODY),
+    sp(4),
+]
+bug = [
+    ['Файл', 'Проблема', 'Виправлення'],
+    ['iz-chart.js', 'innerHTML=\'\' без disposeChart', 'disposeChart(el) перед render'],
+    ['scatter.js',  'innerHTML=\'\' без disposeChart', 'disposeChart(el) перед render'],
+    ['bp-zones.js', 'innerHTML=\'\' без disposeChart', 'disposeChart(el) перед render'],
+    ['app.js',      'disposeIZChart не викликався при виході', 'disposeIZChart() + імпорт'],
+]
+story.append(card_table(bug, [COL*0.22, COL*0.40, COL*0.38]))
+story.append(sp(4))
+story += [
+    p('<b>Правило (внесено до Gotchas):</b> будь-який render що робить el.innerHTML=\'\' '
+      'або el.style.height=... ЗОБОВ\'ЯЗАНИЙ викликати disposeChart(el) перед цим. '
+      'WeakMap не знає про DOM-мутації.', S_BODY),
+    sp(8),
+]
+
 # ── 4. ФАЙЛОВА СТРУКТУРА ─────────────────────────────────────────────────────
 story += [p('4. Нові та змінені файли', S_H2)]
 files = [
@@ -285,6 +315,10 @@ files = [
     ['index.html',                          'ОНОВЛЕНО', '3 секції аналітики + journal'],
     ['package.json',                        'ОНОВЛЕНО', 'version 5.1.0'],
     ['src/core/version.gen.js',             'АВТО',     'v5.1.0 \u00b7 2026-05-06'],
+    ['iz-chart.js (bugfix)',                'ОНОВЛЕНО', 'disposeChart(el) перед render'],
+    ['scatter.js (bugfix)',                 'ОНОВЛЕНО', 'disposeChart(el) перед render'],
+    ['bp-zones.js (bugfix)',                'ОНОВЛЕНО', 'disposeChart(el) перед render'],
+    ['app.js (bugfix)',                     'ОНОВЛЕНО', 'disposeIZChart() + імпорт'],
 ]
 story.append(card_table(files, [COL*0.42, COL*0.14, COL*0.44]))
 story.append(sp(8))
@@ -303,6 +337,7 @@ story.append(sp(8))
 
 # ── 6. БЕКЛО v5.2 ────────────────────────────────────────────────────────────
 story += [p('6. Бекло — наступний спринт v5.2', S_H2)]
+
 backlog = [
     ['Пріоритет', 'Завдання', 'Стан'],
     ['ВАЖЛИВО',   'Нотатки до вимірювань (textarea при введенні)', 'В роботу'],
@@ -323,16 +358,17 @@ story += [
     done('6/6 завдань v5.1 успішно виконано'),
     done('SQLCipher: getOrCreateKey() + createConnection(encrypted=true, secret)'),
     done('ScatterChart + BarChart BP-Zones: ECharts, WeakMap, dispose при виходах'),
-    done('Офлайн поради: 2 мови × 6 категорій × 3 поради = 18 WHO-верифікованих'),
+    done('Офлайн поради: 2 мови \u00d7 6 категорій \u00d7 3 поради = 18 WHO-верифікованих'),
     done('Журнал: date-range picker, тип-фільтр, нотатки, data-change архітектура'),
     done('i18n uk/ru: +15 нових ключів, жодного хардкоду UI-тексту'),
     done('replit.md оновлено, version.gen.js \u2192 v5.1.0 \u00b7 2026-05-06'),
+    done('Bugfix v5.1.1: disposeChart(el) перед render у всіх 3 графіках аналітики'),
     sp(6),
     p('Принцип пріоритизації дотримано:', S_DIM),
     p('БЕЗПЕКА  \u2192  CORE DATA  \u2192  АНАЛІТИКА  \u2192  UX  \u2192  КОСМЕТИКА', S_PRI),
     sp(14),
     hr(),
-    p(f'HealthPro v5.1.0  \u00b7  Звіт сесії  \u00b7  {now}', S_FOOT),
+    p(f'HealthPro v5.1.0 + Bugfix v5.1.1  \u00b7  Звіт сесії  \u00b7  {now}', S_FOOT),
 ]
 
 # ── ЗБЕРЕЖЕННЯ ───────────────────────────────────────────────────────────────
