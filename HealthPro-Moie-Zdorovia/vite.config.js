@@ -22,8 +22,17 @@ export default defineConfig({
     allowedHosts: true,
   },
   build: {
-    outDir: '../dist',   // dist відносно root → в корені репо
+    outDir: '../dist',
     emptyOutDir: true,
     target: 'es2020',
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/echarts') || id.includes('node_modules/zrender')) {
+            return 'echarts';
+          }
+        },
+      },
+    },
   },
 });

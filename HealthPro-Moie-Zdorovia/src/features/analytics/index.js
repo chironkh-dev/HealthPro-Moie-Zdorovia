@@ -7,6 +7,7 @@ import { t, tt } from '../../i18n/index.js';
 import { calcHealthScore, getDetailedScores, toggleHealthTooltip } from './health-score.js';
 import { renderBMI } from './bmi.js';
 import { renderRecommendations } from './recommendations.js';
+import { renderIZChart } from './iz-chart.js';
 
 const avg = (arr) => (arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null);
 
@@ -173,9 +174,11 @@ export function renderAnalytics() {
 
   renderBMI();
   renderRecommendations();
+  renderIZChart();
 }
 
 export { calcHealthScore, getDetailedScores, toggleHealthTooltip } from './health-score.js';
 export { calcBMI, getBMICategory, renderBMI } from './bmi.js';
 export { RECO_SVG, generateAdvice, renderRecommendations, toggleReco } from './recommendations.js';
 export { openTrendModal, closeTrendModal } from './trend-modal.js';
+export { renderIZChart, disposeIZChart } from './iz-chart.js';
