@@ -1,14 +1,90 @@
 /* welcome.css — splash screen, welcome overlay, disclaimer modal, history */
 
-/* ════════════ SPLASH SCREEN ════════════ */
-#splashScreen{position:fixed;inset:0;z-index:10001;background:linear-gradient(160deg,#080d1a 0%,#0d1630 50%,#162050 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;animation:splashFadeOut .45s ease 1.35s forwards}
-#splashScreen.hidden{display:none}
-@keyframes splashFadeOut{from{opacity:1;pointer-events:all}to{opacity:0;pointer-events:none}}
-.splash-logo{width:100px;height:100px;border-radius:28px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;box-shadow:0 16px 48px rgba(59,130,246,.45),inset 0 1px 0 rgba(255,255,255,.2);animation:splashPulse 1.4s ease-in-out infinite}
-.splash-logo svg{width:56px;height:56px;color:#fff;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.splash-title{font-size:28px;font-weight:900;letter-spacing:-.5px;background:linear-gradient(135deg,#fff,#bfdbfe);-webkit-background-clip:text;background-clip:text;color:transparent}
-.splash-sub{font-size:13px;color:#64748b;font-style:italic}
-@keyframes splashPulse{0%,100%{box-shadow:0 16px 48px rgba(59,130,246,.45),inset 0 1px 0 rgba(255,255,255,.2)}50%{box-shadow:0 20px 60px rgba(59,130,246,.7),inset 0 1px 0 rgba(255,255,255,.25)}}
+/* ════════════ SPLASH SCREEN — Android Material 3 Style ════════════ */
+#splashScreen{
+  position:fixed;inset:0;z-index:10001;
+  background:#0d1630;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:0;
+  opacity:1;pointer-events:all;
+  transition:opacity .38s cubic-bezier(.4,0,1,1);
+}
+#splashScreen.hidden{opacity:0;pointer-events:none}
+
+/* Обгортка іконки — Android launcher icon shape */
+.splash-icon-wrap{
+  position:relative;
+  width:120px;height:120px;
+  border-radius:32px;
+  background:linear-gradient(145deg,#1e3a6e 0%,#1a2d5a 50%,#0f1e40 100%);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.07),
+    0 8px 32px rgba(0,0,0,.55),
+    0 2px 8px rgba(0,0,0,.4);
+  animation:splashIconIn .42s cubic-bezier(.34,1.56,.64,1) both;
+  animation-delay:.08s;
+}
+
+/* Внутрішнє світіння іконки */
+.splash-icon-wrap::before{
+  content:'';
+  position:absolute;inset:0;
+  border-radius:32px;
+  background:radial-gradient(ellipse at 40% 30%,rgba(99,153,255,.18) 0%,transparent 65%);
+  pointer-events:none;
+}
+
+.splash-icon-wrap svg{
+  width:68px;height:68px;
+  color:#fff;fill:none;stroke:currentColor;
+  stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
+  filter:drop-shadow(0 0 14px rgba(99,153,255,.55));
+}
+
+/* Нижня частина сплешу */
+.splash-brand{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  margin-top:36px;
+  animation:splashBrandIn .36s ease both;
+  animation-delay:.28s;
+}
+.splash-title{
+  font-size:26px;font-weight:800;letter-spacing:-.3px;
+  color:#e8eeff;
+}
+.splash-sub{
+  font-size:13px;color:#4a6080;
+  font-style:italic;letter-spacing:.2px;
+}
+
+/* Точки завантаження (Android-style indeterminate indicator) */
+.splash-dots{
+  display:flex;gap:7px;margin-top:48px;
+  animation:splashBrandIn .3s ease both;
+  animation-delay:.4s;
+}
+.splash-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:#2a4070;
+  animation:splashDotPulse 1.2s ease-in-out infinite;
+}
+.splash-dot:nth-child(1){animation-delay:0s}
+.splash-dot:nth-child(2){animation-delay:.18s}
+.splash-dot:nth-child(3){animation-delay:.36s}
+
+@keyframes splashIconIn{
+  from{opacity:0;transform:scale(.72)}
+  to{opacity:1;transform:scale(1)}
+}
+@keyframes splashBrandIn{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@keyframes splashDotPulse{
+  0%,100%{background:#2a4070;transform:scale(1)}
+  45%{background:#4a7abf;transform:scale(1.35)}
+}
 
 /* ════════════ WELCOME / DISCLAIMER SCREEN ════════════ */
 .welcome-overlay{position:fixed;inset:0;z-index:9999;background:linear-gradient(160deg,#080d1a 0%,#0d1630 45%,#162050 100%);display:flex;align-items:center;justify-content:center;padding:24px;overflow-y:auto;animation:welcomeFade .4s ease}

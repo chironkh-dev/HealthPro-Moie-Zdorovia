@@ -1,6 +1,6 @@
 {
   "name": "healthpro",
-  "version": "4.0.0",
+  "version": "5.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "version": "node scripts/gen-version.js",
+    "prebuild": "node scripts/gen-version.js"
   },
   "dependencies": {
     "@capacitor-community/sqlite": "8.1.0",

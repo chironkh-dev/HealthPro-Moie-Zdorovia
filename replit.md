@@ -1,67 +1,90 @@
 # HealthPro · Моє Здоров'я
 
-HealthPro is a personal health diary for monitoring blood pressure, pulse, medication intake, steps, and overall health analytics, functioning completely offline without a server or cloud.
+HealthPro — персональний щоденник здоров'я для моніторингу артеріального тиску, пульсу, прийому ліків, кроків та аналітики. Повністю офлайн, без сервера та хмари.
 
 ## Run & Operate
 
 ```bash
-npm run dev      # Starts Vite dev-server on port 5000
-npm run build    # Creates production build in dist/
-npm run test     # Runs tests
+npm run dev      # Vite dev-сервер на порту 5000 (з папки HealthPro-Moie-Zdorovia/)
+npm run build    # Продакшн збірка у dist/
+npm run test     # Vitest
+npm run version  # Генерація src/core/version.gen.js (автоматично перед build)
 ```
+
+Необхідні змінні середовища: немає (офлайн-додаток).
 
 ## Stack
 
-- **Framework:** Vanilla JS (ES-modules)
-- **Runtime:** Vite 5
-- **Native Wrapper:** Capacitor 8 (Android)
-- **Data Storage:** IndexedDB (`HealthProDB`), localStorage, SQLite (`@capacitor-community/sqlite`) for native
-- **PDF/Image Generation:** `jspdf`, `html2canvas`
-- **Testing:** Vitest 4.1.5
+- **Фреймворк:** Vanilla JS (ES-modules)
+- **Бандлер:** Vite 5
+- **Мобільна обгортка:** Capacitor 8 (Android)
+- **Зберігання даних:** IndexedDB (`HealthProDB`), localStorage, SQLite (`@capacitor-community/sqlite`) для нативу
+- **PDF / Зображення:** `jspdf`, `html2canvas`
+- **PDF звіти сесій:** Python `reportlab` (DejaVu Sans — кирилиця)
+- **Тести:** Vitest 4.1.5
 
 ## Where things live
 
-- `index.html`: Main HTML entry point.
-- `src/main.js`: Application bootstrap.
-- `src/app.js`: Central dispatcher and initialization.
-- `src/core/storage.js`: Handles 3-level data persistence and default settings.
-- `src/core/state.js`: Manages shared application state, toasts, and event bus.
-- `src/core/platform.js`: Capacitor plugin wrappers for notifications, steps, and files.
-- `src/i18n/`: Internationalization files (e.g., `ui.uk.js`, `pdf.js`).
-- `src/features/pressure/`: Blood pressure and pulse monitoring logic.
-- `src/features/analytics/`: Health Index (ІЗ), BMI calculation, recommendations.
-- `src/features/steps/`: Pedometer logic and modes.
-- `android/app/src/main/java/ua/healthpro/app/`: Android native code, including `StepCounterService.java` for foreground step counting.
-- `android/app/src/main/AndroidManifest.xml`: Android application manifest with permissions.
+- `HealthPro-Moie-Zdorovia/index.html` — головний HTML
+- `HealthPro-Moie-Zdorovia/src/main.js` — бутстрап
+- `HealthPro-Moie-Zdorovia/src/app.js` — диспетчер та ініціалізація
+- `HealthPro-Moie-Zdorovia/src/core/constants.js` — константи (версія, ключі, пороги)
+- `HealthPro-Moie-Zdorovia/src/core/version.gen.js` — **автогенерований** файл версії (не редагувати)
+- `HealthPro-Moie-Zdorovia/scripts/gen-version.js` — скрипт генерації версії
+- `HealthPro-Moie-Zdorovia/src/core/storage.js` — 3-рівнева персистентність
+- `HealthPro-Moie-Zdorovia/src/core/state.js` — стан, toast, event bus
+- `HealthPro-Moie-Zdorovia/src/core/platform.js` — Capacitor-обгортки
+- `HealthPro-Moie-Zdorovia/src/i18n/` — локалізація (ui.uk.js, ui.ru.js, pdf.js)
+- `HealthPro-Moie-Zdorovia/src/features/pressure/` — тиск та пульс
+- `HealthPro-Moie-Zdorovia/src/features/analytics/` — ІЗ, ІМТ, рекомендації
+- `HealthPro-Moie-Zdorovia/src/features/steps/` — крокомір
+- `HealthPro-Moie-Zdorovia/assets/ic_running.png` — іконка бігуна (крокомір)
+- `android/app/src/main/java/ua/healthpro/app/` — Android Java (StepCounterService, BootReceiver тощо)
+- `android/app/src/main/res/drawable/` — векторні ресурси (ic_stat_running.xml, logo_splash.xml)
 
 ## Architecture decisions
 
-- **No `window.X`:** All modules and dictionaries are imported via ES-imports.
-- **No inline handlers:** `data-action` / `data-change` attributes with a single delegated listener in `app.js`.
-- **Event Bus:** `emit('event:name')` / `on('event:name', cb)` for inter-module communication, reducing direct dependencies.
-- **In-place State Mutation:** State is mutated directly (e.g., `state.X = ...`), followed by `saveData()`.
-- **i18n Enforcement:** All user-facing strings are localized via `t()` / `tt()` functions.
-- **Offline-First:** All data is stored locally on the device; no backend or cloud integration.
+- **No `window.X`:** всі модулі через ES-imports.
+- **No inline handlers:** атрибути `data-action` / `data-change` з єдиним делегованим listener у `app.js`.
+- **Event Bus:** `emit('event:name')` / `on('event:name', cb)` для міжмодульної комунікації.
+- **In-place State Mutation:** `state.X = ...` → `saveData()`.
+- **i18n Enforcement:** всі рядки через `t()` / `tt()`. Немає хардкоду UI-текстів.
+- **Offline-First:** всі дані локально; немає бекенду чи хмари.
+- **Версія — єдине джерело:** `package.json` → `npm run version` → `version.gen.js` → `constants.js`.
 
 ## Product
 
-- **Health Monitoring:** Track blood pressure, pulse, medication, and steps.
-- **Health Analytics:** Calculate Health Index (ІЗ), BMI, and receive personalized recommendations.
-- **PDF Reports:** Generate and share health reports.
-- **Medication Reminders:** Schedule and receive notifications for medication intake.
-- **Pedometer:** Monitor steps with foreground and active-only modes.
-- **Personalized Norms:** Customize blood pressure and pulse thresholds.
+- **Моніторинг здоров'я:** тиск, пульс, ліки, кроки.
+- **Аналітика:** Індекс Здоров'я (ІЗ), ІМТ, персоналізовані рекомендації.
+- **PDF-звіти:** генерація та шерінг звітів для лікаря.
+- **Нагадування про ліки:** push-повідомлення за розкладом.
+- **Крокомір:** фоновий режим (Android Foreground Service) та активний режим (DeviceMotion).
+- **Персоналізовані норми:** налаштування порогів тиску і пульсу.
 
 ## User preferences
 
-- Спілкування виключно українською! Готовий прийняти поради, та рішення розвитку проекта
+- **Спілкування виключно українською мовою!**
+- **Вся документація українською.**
+- **Після кожного великого етапу — PDF-звіт та оновлення replit.md.**
+- Готовий приймати поради та рішення з розвитку проекту.
 
 ## Gotchas
 
-- **PDF Font:** Only Arial font is supported for Cyrillic characters in PDF reports. Do not use Roboto or Helvetica.
-- **Step Counter Data Priority:** The Foreground Step Service data always takes precedence over locally stored database data.
-- **JSON Import for Steps:** Importing data will reset `stepsEnabled` to `false` if the step counter was not active before import, to prevent crashes.
+- **PDF шрифти:** лише DejaVu Sans (Arial/Arial-Bold/Arial-Italic через TTFont) для кириличних PDF-звітів. Не використовувати Roboto або Helvetica.
+- **Пріоритет даних крокоміра:** дані Foreground Service завжди мають пріоритет над локальною БД.
+- **JSON Import для кроків:** імпорт скидає `stepsEnabled = false` якщо крокомір не був активний.
+- **version.gen.js — не редагувати вручну.** Генерується командою `npm run version`.
+- **ic_stat_running.xml** замість ic_stat_steps.xml використовується в Android-сповіщенні крокоміра.
+- **Сплеш-скрін:** реалізований через HTML/CSS (не Capacitor). Клас `.hidden` вмикає CSS transition opacity → 0.
+
+## Поточні пропозиції розвитку
+
+Детальний список — у PDF-звіті `HealthPro_Session_June2026_SplashStepsVersion.pdf`.
+Ключові: тренд ІЗ, кореляція кроків/тиску, повторення розкладу ліків, нотатки до вимірювань,
+фільтр журналу, вкладки «Вага» та «Сон», звіт для лікаря, блокування PIN/біометрія.
 
 ## Pointers
 
-- _Populate as you build_
+- PDF звіти сесій: `HealthPro-Moie-Zdorovia/generate_session_report_*.py` (Python + reportlab)
+- Android сервіс: `android/app/src/main/java/ua/healthpro/app/StepCounterService.java`
+- Версія: `HealthPro-Moie-Zdorovia/scripts/gen-version.js` → `src/core/version.gen.js`

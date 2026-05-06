@@ -256,18 +256,28 @@ public class StepCounterService extends Service implements SensorEventListener {
                 : PendingIntent.FLAG_UPDATE_CURRENT;
         PendingIntent pi = PendingIntent.getActivity(this, 0, launchIntent, piFlags);
 
-        String progressText = steps + " / " + goal + " \u043a\u0440\u043e\u043a\u0456\u0432";
         int pct = (goal > 0) ? Math.min(100, steps * 100 / goal) : 0;
+
+        // Формат: "4 235 / 10 000 кроків (42%)"
+        String stepsFormatted = String.format(new java.util.Locale("uk"), "%,d", steps)
+                .replace(',', '\u00a0');  // пробіл як роздільник тисяч
+        String goalFormatted  = String.format(new java.util.Locale("uk"), "%,d", goal)
+                .replace(',', '\u00a0');
+        String progressText   = stepsFormatted + " / " + goalFormatted
+                + " \u043a\u0440\u043e\u043a\u0456\u0432 (" + pct + "%)";
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle(notifTitle)
                 .setContentText(progressText)
-                .setSmallIcon(R.drawable.ic_stat_steps)
+                // Використовуємо іконку бігуна замість ноги
+                .setSmallIcon(R.drawable.ic_stat_running)
                 .setContentIntent(pi)
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
                 .setSilent(true)
-                .setProgress(100, pct, false)
+                // Полоска прибрана — використовуємо розгорнутий текст
+                .setStyle(new NotificationCompat.BigTextStyle()
+                        .bigText(progressText))
                 .setPriority(NotificationCompat.PRIORITY_LOW);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

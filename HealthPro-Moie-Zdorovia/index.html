@@ -26,13 +26,20 @@
 </head>
 <body>
 
-<!-- ════════════ SPLASH SCREEN ════════════ -->
+<!-- ════════════ SPLASH SCREEN — Android Material 3 ════════════ -->
 <div id="splashScreen">
-  <div class="splash-logo">
+  <div class="splash-icon-wrap">
     <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
   </div>
-  <div class="splash-title">HealthPro</div>
-  <div class="splash-sub">Моє Здоров'я</div>
+  <div class="splash-brand">
+    <div class="splash-title">HealthPro</div>
+    <div class="splash-sub">Моє Здоров'я</div>
+  </div>
+  <div class="splash-dots">
+    <div class="splash-dot"></div>
+    <div class="splash-dot"></div>
+    <div class="splash-dot"></div>
+  </div>
 </div>
 
 <!-- ════════════ WELCOME / DISCLAIMER SCREEN ════════════ -->
@@ -380,15 +387,33 @@
       <div class="b-sub" id="t-of-total">від загальних</div>
       <div class="b-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
     </div>
-    <!-- Step Counter bento (#1 fix) — same row as pctNormal, hidden until enabled -->
-    <div class="bento-card bc-cyan" id="stepCard" style="display:none">
+    <!-- Step Counter bento — кругова шкала прогресу -->
+    <div class="bento-card bc-cyan step-bento" id="stepCard" style="display:none">
       <div class="b-lbl" id="t-steps-title">Активність</div>
-      <div class="b-val" id="stepCount">0</div>
-      <div class="b-sub">
-        <span id="t-steps">кроків</span> · <span id="stepPct">0%</span>
+      <div class="step-ring-layout">
+        <!-- Кругова шкала -->
+        <div class="step-ring-wrap">
+          <svg class="step-ring-svg" viewBox="0 0 100 100">
+            <circle class="step-ring-bg"   cx="50" cy="50" r="42" fill="none" stroke-width="7"/>
+            <circle class="step-ring-prog" cx="50" cy="50" r="42" fill="none" stroke-width="7"
+              id="stepCircleProg"
+              stroke-dasharray="263.9"
+              stroke-dashoffset="263.9"
+              stroke-linecap="round"
+              transform="rotate(-90 50 50)"/>
+          </svg>
+          <div class="step-ring-center">
+            <img src="/assets/ic_running.png" class="step-run-img" alt="">
+          </div>
+        </div>
+        <!-- Лічильник та ціль -->
+        <div class="step-ring-info">
+          <div class="step-big-count" id="stepCount">0</div>
+          <div class="step-count-sub"><span id="t-steps">кроків</span></div>
+          <div class="step-pct-badge" id="stepPct">0%</div>
+          <div class="step-goal-row" id="t-step-goal"></div>
+        </div>
       </div>
-      <div class="b-icon"><svg viewBox="0 0 24 24"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg></div>
-      <div style="margin-top:6px;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden"><div id="stepBar" style="height:100%;border-radius:2px;background:var(--cyan);width:0%;transition:width .4s"></div></div>
     </div>
   </div>
 

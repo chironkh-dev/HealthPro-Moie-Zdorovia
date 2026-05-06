@@ -453,17 +453,26 @@ function _handleMotion(e) {
 // ── UI ─────────────────────────────────────────────────────────────────────
 
 export function updateStepUI() {
-  const stepCountEl = document.getElementById('stepCount');
-  const stepPctEl   = document.getElementById('stepPct');
-  const stepBarEl   = document.getElementById('stepBar');
-  const stepGoalEl  = document.getElementById('t-step-goal');
-  if (!stepCountEl || !stepPctEl || !stepBarEl) return;
+  const stepCountEl  = document.getElementById('stepCount');
+  const stepPctEl    = document.getElementById('stepPct');
+  const stepGoalEl   = document.getElementById('t-step-goal');
+  const stepCircle   = document.getElementById('stepCircleProg');
 
-  stepCountEl.textContent = stepCount.toLocaleString();
+  if (!stepCountEl || !stepPctEl) return;
+
   const goal = state.settings.stepGoal || DEFAULT_STEP_GOAL;
   const pct  = Math.min(100, Math.round(stepCount / goal * 100));
+
+  stepCountEl.textContent = stepCount.toLocaleString();
   stepPctEl.textContent   = pct + '%';
-  stepBarEl.style.width   = pct + '%';
+
+  // Кругова шкала: circumference = 2π×42 ≈ 263.9
+  if (stepCircle) {
+    const CIRC = 263.9;
+    const offset = CIRC - (pct / 100) * CIRC;
+    stepCircle.style.strokeDashoffset = offset.toFixed(1);
+  }
+
   if (stepGoalEl) stepGoalEl.textContent = `${t('st-goal-pref')} ${goal.toLocaleString()}`;
 }
 

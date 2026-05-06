@@ -65,6 +65,59 @@
 .pharmacy-btn{flex:1;min-width:80px;padding:8px 6px;border:1px solid var(--border2);border-radius:9px;background:transparent;color:var(--blue2);font-family:'Inter',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;text-align:center}
 .pharmacy-btn:active{background:var(--blue-dim)}
 
+/* ════════ STEP COUNTER — КРУГОВА ШКАЛА ════════ */
+.step-bento{padding:13px}
+.step-ring-layout{display:flex;align-items:center;gap:12px;margin-top:6px}
+
+.step-ring-wrap{
+  position:relative;
+  flex-shrink:0;
+  width:80px;height:80px;
+}
+.step-ring-svg{width:80px;height:80px}
+.step-ring-bg{stroke:rgba(6,182,212,.15)}
+.step-ring-prog{
+  stroke:var(--cyan,#06b6d4);
+  transition:stroke-dashoffset .55s cubic-bezier(.4,0,.2,1);
+}
+.step-ring-center{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.step-run-img{
+  width:34px;height:34px;
+  object-fit:contain;
+  filter:drop-shadow(0 0 6px rgba(6,182,212,.45));
+}
+
+.step-ring-info{
+  flex:1;
+  display:flex;flex-direction:column;gap:2px;
+  min-width:0;
+}
+.step-big-count{
+  font-size:24px;font-weight:900;
+  color:var(--cyan,#06b6d4);
+  line-height:1.05;letter-spacing:-.5px;
+}
+.step-count-sub{
+  font-size:10px;color:var(--text3);
+  font-weight:600;text-transform:uppercase;letter-spacing:.4px;
+  margin-bottom:3px;
+}
+.step-pct-badge{
+  display:inline-block;
+  padding:2px 8px;border-radius:6px;
+  background:rgba(6,182,212,.15);
+  color:var(--cyan,#06b6d4);
+  font-size:11px;font-weight:700;
+  width:fit-content;margin-bottom:4px;
+}
+.step-goal-row{
+  font-size:10px;color:var(--text3);
+  font-weight:500;line-height:1.3;
+}
+
 /* HISTORY */
 .history-item{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border)}
 .history-item:last-child{border-bottom:none}
