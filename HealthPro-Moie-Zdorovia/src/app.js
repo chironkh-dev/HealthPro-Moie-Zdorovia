@@ -41,7 +41,7 @@ import {
   // analytics
   renderAnalytics, renderRecommendations, renderBMI,
   toggleHealthTooltip, toggleReco, openTrendModal, closeTrendModal,
-  disposeScatterChart, disposeBPZonesChart,
+  disposeScatterChart, disposeBPZonesChart, disposeIZChart,
 } from './features/analytics/index.js';
 import {
   // history
@@ -103,6 +103,7 @@ export function showPage(name) {
   if (name !== 'analytics') {
     try { disposeScatterChart('scatterChart'); } catch { /* noop */ }
     try { disposeBPZonesChart('bpZonesChart'); } catch { /* noop */ }
+    try { disposeIZChart(); } catch { /* noop */ }
   }
 }
 

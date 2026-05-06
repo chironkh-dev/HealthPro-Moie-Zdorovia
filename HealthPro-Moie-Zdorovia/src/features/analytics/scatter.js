@@ -10,6 +10,9 @@ export async function renderScatterChart(containerId) {
   const el = document.getElementById(containerId);
   if (!el) return;
 
+  // Dispose перед повторним render — WeakMap інакше повертає мертвий інстанс
+  disposeChart(el);
+
   const data = await db.queryStepPressureCorrelation();
 
   if (data.length < 10) {

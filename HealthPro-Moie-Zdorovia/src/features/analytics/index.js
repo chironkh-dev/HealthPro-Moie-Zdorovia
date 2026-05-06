@@ -191,3 +191,5 @@ export { calcBMI, getBMICategory, renderBMI } from './bmi.js';
 export { RECO_SVG, generateAdvice, renderRecommendations, toggleReco } from './recommendations.js';
 export { openTrendModal, closeTrendModal } from './trend-modal.js';
 export { renderIZChart, disposeIZChart } from './iz-chart.js';
+export { renderScatterChart } from './scatter.js';
+export { renderBPZonesChart } from './bp-zones.js';

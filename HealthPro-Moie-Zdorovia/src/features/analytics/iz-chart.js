@@ -49,6 +49,10 @@ let _chartEl = null;
 export async function renderIZChart() {
   const el = document.getElementById('izTrendChart');
   if (!el) return;
+
+  // Завжди dispose перед повторним render — без цього WeakMap повертає
+  // мертвий інстанс після el.innerHTML='' і графік не малюється.
+  disposeChart(el);
   _chartEl = el;
 
   const trend = await calcHealthIndexTrend(30);

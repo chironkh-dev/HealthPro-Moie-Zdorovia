@@ -36,6 +36,9 @@ export async function renderBPZonesChart(containerId) {
   const el = document.getElementById(containerId);
   if (!el) return;
 
+  // Dispose перед повторним render — WeakMap інакше повертає мертвий інстанс
+  disposeChart(el);
+
   const data = await db.countByBPCategory();
   const total = WHO_ORDER.reduce((s, k) => s + (data[k] || 0), 0);
 
