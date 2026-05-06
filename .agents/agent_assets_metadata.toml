@@ -114,3 +114,9 @@ id = "Ow5EWArrKbmkUmKCG-zpn"
 uri = "file://HealthPro-Moie-Zdorovia/HealthPro_Session_June2026_SplashStepsVersion.pdf"
 type = "pdf"
 title = "HealthPro — Звіт сесії: Splash Screen · Крокомір · Версія (Травень 2026)"
+
+[[outputs]]
+id = "p5FTWStH_jEgAL4p7p5By"
+uri = "file://HealthPro-Moie-Zdorovia/HealthPro_Session_May2026_SQLite_ECharts.pdf"
+type = "pdf"
+title = "HealthPro · Звіт сесії — SQLite v2 · ECharts"
