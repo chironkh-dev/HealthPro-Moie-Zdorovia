@@ -10,6 +10,7 @@ import { state, setToast, on } from './core/state.js';
 import { t } from './i18n/index.js';
 import { getLocale } from './core/utils.js';
 import { APP_BUILD_LABEL, APP_BUILD_FULL } from './core/constants.js';
+import { _setStateRef } from './core/db.js';
 import {
   onBackButton,
   minimizeApp,
@@ -172,6 +173,9 @@ function init() {
   // Версія додатку в налаштуваннях
   const versionEl = document.getElementById('hp-version-label');
   if (versionEl) versionEl.textContent = APP_BUILD_FULL || APP_BUILD_LABEL;
+
+  // Реєструємо посилання на state у db.js (уникаємо циклічних залежностей)
+  _setStateRef(state);
 
   attachPressureListeners();
   updateLastReading();

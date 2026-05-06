@@ -230,8 +230,9 @@ export const DB = {
 
 export async function bootstrapStorage() {
   await requestPersistence();
-  await sql.init();                  // no-op on web; opens HealthProDB.db on native
+  await sql.init();                  // no-op on web; відкриває HealthProDB.db на нативі
   await migrateFromLocalStorage();   // legacy LS → primary (one-time)
-  await migrateIdbToSqlite();        // IDB → SQLite (one-time, native only)
+  await migrateIdbToSqlite();        // IDB → SQLite KV (one-time, native only)
+  await sql.migrateV1toV2();         // KV JSON-масиви → реляційні таблиці (one-time)
   await rehydrateMirrorFromPrimary();
 }

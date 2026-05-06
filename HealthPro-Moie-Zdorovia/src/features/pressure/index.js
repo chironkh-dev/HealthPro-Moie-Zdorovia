@@ -3,6 +3,7 @@ import { formatTime } from '../../core/utils.js';
 import { t } from '../../i18n/index.js';
 import { getBPStatus } from './norm.js';
 import { checkCritical } from './critical.js';
+import { insertMeasurement as dbInsert } from '../../core/db.js';
 
 export function saveMeasurement() {
   const sysEl   = document.getElementById('sys');
@@ -20,15 +21,16 @@ export function saveMeasurement() {
   if (d < 40 || d > 200) { showToast(t('pr-toast-bad-dia')); return; }
   if (p && (p < 30 || p > 250)) { showToast(t('pr-toast-bad-pulse')); return; }
 
-  state.measurements.unshift({
-    sys: s,
-    dia: d,
-    pulse: p || null,
-    note: note || null,
-    time: new Date().toISOString(),
-  });
+  const newMeasurement = {
+    sys: s, dia: d, pulse: p || null,
+    note: note || null, time: new Date().toISOString(),
+  };
+  state.measurements.unshift(newMeasurement);
   if (state.measurements.length > 500) state.measurements.pop();
   saveData();
+
+  // Write-through: записуємо в реляційну таблицю SQLite (no-op на вебі)
+  dbInsert(newMeasurement).catch(() => {});
 
   ['sys', 'dia', 'pulse', 'note'].forEach((id) => {
     const el = document.getElementById(id);

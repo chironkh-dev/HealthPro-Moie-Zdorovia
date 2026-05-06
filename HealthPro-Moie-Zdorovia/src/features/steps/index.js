@@ -18,6 +18,7 @@
 //   declineStepFg() → enableSteps('active-only')
 
 import { state, saveData, showToast, today, DB } from '../../core/state.js';
+import { saveStepLog as dbSaveStep } from '../../core/db.js';
 import {
   DEFAULT_STEP_GOAL,
   STEP_ACCEL_THRESHOLD,
@@ -41,6 +42,14 @@ const LINEAR_THRESH    = STEP_LINEAR_THRESHOLD;
 const GRAVITY_THRESH   = STEP_ACCEL_THRESHOLD;
 const LP_ALPHA         = STEP_GRAVITY_FILTER_ALPHA;
 const MIN_PEAK_SAMPLES = STEP_MIN_PEAK_SAMPLES;
+
+// ── Хелпер збереження кроків: LS дзеркало + SQLite steps_log ───────────────
+function _persistSteps(count) {
+  const d    = today();
+  const goal = state.settings?.stepGoal || DEFAULT_STEP_GOAL;
+  DB.set('stepCount-' + d, count);                           // localStorage mirror
+  dbSaveStep({ date: d, steps: count, goal }).catch(() => {}); // SQLite steps_log
+}
 
 // ── Module-level state ──────────────────────────────────────────────────────
 let stepCount     = 0;
@@ -183,12 +192,12 @@ export async function enableSteps(mode) {
       // Сервіс вже активний — беремо кроки З СЕРВІСУ, оновлюємо БД.
       // НЕ перезапускаємо сервіс, щоб не скинути нараховані кроки.
       stepCount = existingStatus.steps;
-      DB.set('stepCount-' + today(), stepCount);
+      _persistSteps(stepCount);
 
       if (!fgUnsubscribe) {
         fgUnsubscribe = addStepUpdateListener((steps, _goal) => {
           stepCount = steps;
-          DB.set('stepCount-' + today(), stepCount);
+          _persistSteps(stepCount);
           updateStepUI();
         });
       }
@@ -210,7 +219,7 @@ export async function enableSteps(mode) {
         if (!fgUnsubscribe) {
           fgUnsubscribe = addStepUpdateListener((steps, _goal) => {
             stepCount = steps;
-            DB.set('stepCount-' + today(), stepCount);
+            _persistSteps(stepCount);
             updateStepUI();
           });
         }
@@ -219,7 +228,7 @@ export async function enableSteps(mode) {
         const status = await getServiceStatus();
         if (status && status.running && status.steps > stepCount) {
           stepCount = status.steps;
-          DB.set('stepCount-' + today(), stepCount);
+          _persistSteps(stepCount);
         }
 
         showToast(t('st-mode-fg'));
@@ -309,7 +318,7 @@ function _setupResumeHealthCheck() {
       if (ok && !fgUnsubscribe) {
         fgUnsubscribe = addStepUpdateListener((steps) => {
           stepCount = steps;
-          DB.set('stepCount-' + today(), stepCount);
+          _persistSteps(stepCount);
           updateStepUI();
         });
         showToast(t('st-service-restored'));
@@ -319,14 +328,14 @@ function _setupResumeHealthCheck() {
       // Синхронізуємо кроки
       if (status.steps !== stepCount) {
         stepCount = status.steps;
-        DB.set('stepCount-' + today(), stepCount);
+        _persistSteps(stepCount);
         updateStepUI();
       }
       // Якщо listener не підключено — підключаємо (JS не знав що сервіс живий)
       if (!fgUnsubscribe) {
         fgUnsubscribe = addStepUpdateListener((steps) => {
           stepCount = steps;
-          DB.set('stepCount-' + today(), stepCount);
+          _persistSteps(stepCount);
           updateStepUI();
         });
       }
@@ -409,7 +418,7 @@ function _handleMotion(e) {
       if (now - lastStepTs >= MIN_INTERVAL_MS) {
         stepCount++;
         lastStepTs = now;
-        DB.set('stepCount-' + today(), stepCount);
+        _persistSteps(stepCount);
         updateStepUI();
       }
     }
@@ -444,7 +453,7 @@ function _handleMotion(e) {
     if (now - lastStepTs >= MIN_INTERVAL_MS) {
       stepCount++;
       lastStepTs = now;
-      DB.set('stepCount-' + today(), stepCount);
+      _persistSteps(stepCount);
       updateStepUI();
     }
   }
@@ -487,14 +496,14 @@ export async function restoreSteps() {
       if (status.running) {
         // Сервіс живий — його дані мають пріоритет над БД.
         stepCount = status.steps;
-        DB.set('stepCount-' + today(), stepCount);
+        _persistSteps(stepCount);
         stepEnabled = true;
         state.settings.stepsEnabled = true;
 
         if (!fgUnsubscribe) {
           fgUnsubscribe = addStepUpdateListener((steps) => {
             stepCount = steps;
-            DB.set('stepCount-' + today(), stepCount);
+            _persistSteps(stepCount);
             updateStepUI();
           });
         }
@@ -515,7 +524,7 @@ export async function restoreSteps() {
           if (!fgUnsubscribe) {
             fgUnsubscribe = addStepUpdateListener((steps) => {
               stepCount = steps;
-              DB.set('stepCount-' + today(), stepCount);
+              _persistSteps(stepCount);
               updateStepUI();
             });
           }

@@ -4,6 +4,11 @@
 import { state, saveData, showToast, today, emit } from '../../core/state.js';
 import { t, tt } from '../../i18n/index.js';
 import { DRUG_DB } from './drug-db.js';
+import {
+  saveMedication as dbSaveMed,
+  removeMedication as dbRemoveMed,
+  saveMedTaken as dbSaveTaken,
+} from '../../core/db.js';
 
 export { DRUG_DB };
 
@@ -96,8 +101,11 @@ export function addPill() {
     if (!confirm(`${validation.msg}\n\n${t('m-confirm-continue')}`)) return;
   }
 
-  state.pills.push({ id: Date.now(), name, dose, time, days, date: days === 'date' ? date : '' });
+  const newPill = { id: Date.now(), name, dose, time, days, date: days === 'date' ? date : '' };
+  state.pills.push(newPill);
   saveData();
+  // Write-through до SQLite
+  dbSaveMed(newPill).catch(() => {});
   ['pillName', 'pillDose'].forEach((id) => { document.getElementById(id).value = ''; });
   document.getElementById('pillTime').value = '08:00';
   document.getElementById('pillDays').value = 'daily';
@@ -189,6 +197,8 @@ export function togglePill(id) {
   const td = today(); if (!state.pillsTaken[td]) state.pillsTaken[td] = {};
   state.pillsTaken[td][id] = !state.pillsTaken[td][id];
   saveData();
+  // Write-through: записуємо статус прийому в med_taken
+  dbSaveTaken(id, td, !!state.pillsTaken[td][id]).catch(() => {});
   renderPills();
   const p = state.pills.find((p) => p.id === id);
   if (p && state.pillsTaken[td][id]) showToast(tt('m-toast-taken', { name: p.name }));
@@ -199,6 +209,8 @@ export function deletePill(id) {
   const i = state.pills.findIndex((p) => p.id === id);
   if (i >= 0) state.pills.splice(i, 1);
   saveData();
+  // Write-through: видаляємо з medications + med_taken
+  dbRemoveMed(id).catch(() => {});
   renderPills();
   showToast(t('m-toast-deleted'));
   emit('pills:changed');

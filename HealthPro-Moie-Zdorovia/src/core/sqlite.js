@@ -1,34 +1,28 @@
-// SQLite key/value adapter for native Capacitor builds.
+// SQLite adapter for native Capacitor builds.
+//
 // On web (PWA / Replit preview / vitest) this module is a no-op:
-// its `available()` returns false and feature code falls back to IndexedDB.
+// isReady() returns false → feature code falls back to IndexedDB + in-memory arrays.
 //
-// Schema (single KV table for now — minimally invasive migration from IDB):
-//   CREATE TABLE kv_state (
-//     k          TEXT PRIMARY KEY,
-//     v          TEXT NOT NULL,         -- JSON-stringified value
-//     updated_at INTEGER NOT NULL       -- ms since epoch
-//   );
+// ── Schema v2 (DB_VERSION = 2) ───────────────────────────────────────────────
 //
-// Why a KV table instead of relational tables?
-// 1. Zero schema churn for feature modules (they keep working with arrays/objects).
-// 2. Migration from IndexedDB is a 1:1 copy of (key, JSON.stringify(value)).
-// 3. Future relational migration (e.g. measurements as rows) can be a v2 upgrade.
+//   measurements  — кожен вимір тиску/пульсу окремим рядком
+//   medications   — картки ліків
+//   med_taken     — журнал прийому ліків (med_id × date)
+//   steps_log     — денні підсумки кроків
+//   kv_state      — settings / theme / lang (JSON-blobs)
 //
-// Persistence guarantees on Android (vs IndexedDB inside WebView):
-// - Stored as a real file under the app's private storage
-//   (/data/data/<pkg>/databases/HealthProDB.db).
-// - Survives WebView cache eviction, "Clear cache", and OS storage pressure.
-// - Lost only on "Clear data" / app uninstall — same level as native apps.
+// Schema v1→v2 migration: JSON-масиви з kv_state розкладаються по таблицях.
+// ─────────────────────────────────────────────────────────────────────────────
 
 import { isNative } from './platform.js';
 
-const DB_NAME = 'HealthProDB';
-const TABLE = 'kv_state';
+const DB_NAME    = 'HealthProDB';
+const DB_VERSION = 2;
 
 let pluginPromise = null;
-let dbHandle = null;
-let initialized = false;
-let initError = null;
+let dbHandle      = null;
+let initialized   = false;
+let initError     = null;
 
 function getPlugin() {
   if (!isNative()) return null;
@@ -38,17 +32,12 @@ function getPlugin() {
   } catch { return null; }
 }
 
-// Lazily import the JS connection wrapper. The wrapper module is bundled
-// even on web (the import below is static-resolvable), but we only call its
-// methods when running natively.
 async function getConnection() {
   if (!isNative()) return null;
   if (pluginPromise) return pluginPromise;
   pluginPromise = (async () => {
     try {
       const mod = await import('@capacitor-community/sqlite');
-      // SQLiteConnection wraps the underlying Capacitor plugin and provides
-      // createConnection / retrieveConnection helpers used below.
       const sqliteConnection = new mod.SQLiteConnection(mod.CapacitorSQLite);
       return { mod, sqliteConnection };
     } catch (e) {
@@ -59,9 +48,54 @@ async function getConnection() {
   return pluginPromise;
 }
 
-export function available() {
-  return !!getPlugin();
-}
+export function available() { return !!getPlugin(); }
+export function isReady()   { return !!dbHandle; }
+
+// ── Схема ────────────────────────────────────────────────────────────────────
+
+const DDL = `
+  CREATE TABLE IF NOT EXISTS kv_state (
+    k          TEXT    PRIMARY KEY,
+    v          TEXT    NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS measurements (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    sys        INTEGER NOT NULL,
+    dia        INTEGER NOT NULL,
+    pulse      INTEGER,
+    note       TEXT    DEFAULT '',
+    ts         INTEGER NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS medications (
+    id         TEXT    PRIMARY KEY,
+    name       TEXT    NOT NULL,
+    dose       TEXT    DEFAULT '',
+    time       TEXT    DEFAULT '08:00',
+    days       TEXT    DEFAULT 'daily',
+    date       TEXT    DEFAULT '',
+    created_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS med_taken (
+    med_id     TEXT    NOT NULL,
+    date       TEXT    NOT NULL,
+    taken      INTEGER DEFAULT 0,
+    PRIMARY KEY (med_id, date)
+  );
+
+  CREATE TABLE IF NOT EXISTS steps_log (
+    date       TEXT    PRIMARY KEY,
+    steps      INTEGER DEFAULT 0,
+    goal       INTEGER DEFAULT 10000,
+    updated_at INTEGER NOT NULL
+  );
+`;
+
+// ── Ініціалізація ─────────────────────────────────────────────────────────────
 
 export async function init() {
   if (initialized) return !!dbHandle;
@@ -72,7 +106,6 @@ export async function init() {
     if (!conn) throw initError || new Error('SQLite connection module unavailable');
     const { sqliteConnection } = conn;
 
-    // Re-use an existing connection if one was opened earlier in this session.
     let isConn = false;
     try {
       const r = await sqliteConnection.isConnection(DB_NAME, false);
@@ -83,39 +116,39 @@ export async function init() {
       dbHandle = await sqliteConnection.retrieveConnection(DB_NAME, false);
     } else {
       dbHandle = await sqliteConnection.createConnection(
-        DB_NAME, false, 'no-encryption', 1, false,
+        DB_NAME, false, 'no-encryption', DB_VERSION, false,
       );
     }
 
     await dbHandle.open();
-    await dbHandle.execute(`
-      CREATE TABLE IF NOT EXISTS ${TABLE} (
-        k          TEXT PRIMARY KEY,
-        v          TEXT NOT NULL,
-        updated_at INTEGER NOT NULL
-      );
-    `);
+    // Виконуємо DDL по одному (деякі драйвери не підтримують multiple statements)
+    for (const stmt of DDL.split(';').map(s => s.trim()).filter(Boolean)) {
+      await dbHandle.execute(stmt + ';');
+    }
 
     initialized = true;
+    console.log('[HealthProDB/SQLite] v2 schema ready');
     return true;
   } catch (e) {
     initError = e;
     initialized = true;
     dbHandle = null;
-    console.warn('[HealthProDB/SQLite] init failed, falling back to IDB:', e?.message || e);
+    console.warn('[HealthProDB/SQLite] init failed, fallback to IDB:', e?.message || e);
     return false;
   }
 }
 
+// ── KV operations (settings / theme / lang) ──────────────────────────────────
+
 export async function get(key) {
   if (!dbHandle) return undefined;
   try {
-    const r = await dbHandle.query(`SELECT v FROM ${TABLE} WHERE k = ? LIMIT 1;`, [key]);
-    const row = r && r.values && r.values[0];
+    const r = await dbHandle.query('SELECT v FROM kv_state WHERE k = ? LIMIT 1;', [key]);
+    const row = r?.values?.[0];
     if (!row) return undefined;
     try { return JSON.parse(row.v); } catch { return undefined; }
   } catch (e) {
-    console.warn('[HealthProDB/SQLite] get failed:', key, e?.message || e);
+    console.warn('[SQLite] get failed:', key, e?.message || e);
     return undefined;
   }
 }
@@ -123,16 +156,15 @@ export async function get(key) {
 export async function set(key, value) {
   if (!dbHandle) return false;
   try {
-    const json = JSON.stringify(value);
     const now = Date.now();
     await dbHandle.run(
-      `INSERT INTO ${TABLE} (k, v, updated_at) VALUES (?, ?, ?)
+      `INSERT INTO kv_state (k, v, updated_at) VALUES (?, ?, ?)
        ON CONFLICT(k) DO UPDATE SET v = excluded.v, updated_at = excluded.updated_at;`,
-      [key, json, now],
+      [key, JSON.stringify(value), now],
     );
     return true;
   } catch (e) {
-    console.warn('[HealthProDB/SQLite] set failed:', key, e?.message || e);
+    console.warn('[SQLite] set failed:', key, e?.message || e);
     return false;
   }
 }
@@ -147,4 +179,230 @@ export async function getAll(keys) {
   return out;
 }
 
-export function isReady() { return !!dbHandle; }
+// ── measurements ─────────────────────────────────────────────────────────────
+
+export async function insertMeasurement({ sys, dia, pulse = null, note = '', time }) {
+  if (!dbHandle) return null;
+  const ts = time ? new Date(time).getTime() : Date.now();
+  const now = Date.now();
+  try {
+    const r = await dbHandle.run(
+      `INSERT INTO measurements (sys, dia, pulse, note, ts, created_at)
+       VALUES (?, ?, ?, ?, ?, ?);`,
+      [sys, dia, pulse ?? null, note ?? '', ts, now],
+    );
+    return r?.changes?.lastId ?? null;
+  } catch (e) {
+    console.warn('[SQLite] insertMeasurement failed:', e?.message || e);
+    return null;
+  }
+}
+
+export async function queryMeasurements({ from = 0, to = Date.now(), limit = 500, order = 'DESC' } = {}) {
+  if (!dbHandle) return [];
+  try {
+    const r = await dbHandle.query(
+      `SELECT id, sys, dia, pulse, note, ts FROM measurements
+       WHERE ts BETWEEN ? AND ? ORDER BY ts ${order} LIMIT ?;`,
+      [from, to, limit],
+    );
+    return (r?.values || []).map(row => ({
+      _sqlId: row.id,
+      sys:    row.sys,
+      dia:    row.dia,
+      pulse:  row.pulse ?? null,
+      note:   row.note ?? '',
+      time:   new Date(row.ts).toISOString(),
+    }));
+  } catch (e) {
+    console.warn('[SQLite] queryMeasurements failed:', e?.message || e);
+    return [];
+  }
+}
+
+export async function deleteMeasurement(sqlId) {
+  if (!dbHandle) return false;
+  try {
+    await dbHandle.run('DELETE FROM measurements WHERE id = ?;', [sqlId]);
+    return true;
+  } catch (e) {
+    console.warn('[SQLite] deleteMeasurement failed:', e?.message || e);
+    return false;
+  }
+}
+
+export async function countMeasurements() {
+  if (!dbHandle) return 0;
+  try {
+    const r = await dbHandle.query('SELECT COUNT(*) as cnt FROM measurements;');
+    return r?.values?.[0]?.cnt ?? 0;
+  } catch { return 0; }
+}
+
+// ── medications ──────────────────────────────────────────────────────────────
+
+export async function upsertMedication({ id, name, dose = '', time = '08:00', days = 'daily', date = '' }) {
+  if (!dbHandle) return false;
+  const now = Date.now();
+  try {
+    await dbHandle.run(
+      `INSERT INTO medications (id, name, dose, time, days, date, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         name=excluded.name, dose=excluded.dose, time=excluded.time,
+         days=excluded.days, date=excluded.date;`,
+      [String(id), name, dose, time, days, date ?? '', now],
+    );
+    return true;
+  } catch (e) {
+    console.warn('[SQLite] upsertMedication failed:', e?.message || e);
+    return false;
+  }
+}
+
+export async function deleteMedication(id) {
+  if (!dbHandle) return false;
+  try {
+    await dbHandle.run('DELETE FROM medications WHERE id = ?;', [String(id)]);
+    await dbHandle.run('DELETE FROM med_taken WHERE med_id = ?;', [String(id)]);
+    return true;
+  } catch (e) {
+    console.warn('[SQLite] deleteMedication failed:', e?.message || e);
+    return false;
+  }
+}
+
+export async function queryMedications() {
+  if (!dbHandle) return [];
+  try {
+    const r = await dbHandle.query('SELECT * FROM medications ORDER BY created_at ASC;');
+    return r?.values || [];
+  } catch (e) {
+    console.warn('[SQLite] queryMedications failed:', e?.message || e);
+    return [];
+  }
+}
+
+// ── med_taken ────────────────────────────────────────────────────────────────
+
+export async function setMedTaken(medId, date, taken) {
+  if (!dbHandle) return false;
+  try {
+    await dbHandle.run(
+      `INSERT INTO med_taken (med_id, date, taken) VALUES (?, ?, ?)
+       ON CONFLICT(med_id, date) DO UPDATE SET taken = excluded.taken;`,
+      [String(medId), date, taken ? 1 : 0],
+    );
+    return true;
+  } catch (e) {
+    console.warn('[SQLite] setMedTaken failed:', e?.message || e);
+    return false;
+  }
+}
+
+export async function queryMedTaken({ from = '', to = '' } = {}) {
+  if (!dbHandle) return [];
+  try {
+    let sql = 'SELECT med_id, date, taken FROM med_taken';
+    const params = [];
+    if (from && to) {
+      sql += ' WHERE date BETWEEN ? AND ?';
+      params.push(from, to);
+    }
+    sql += ' ORDER BY date DESC;';
+    const r = await dbHandle.query(sql, params);
+    return r?.values || [];
+  } catch (e) {
+    console.warn('[SQLite] queryMedTaken failed:', e?.message || e);
+    return [];
+  }
+}
+
+// ── steps_log ────────────────────────────────────────────────────────────────
+
+export async function upsertStepLog({ date, steps, goal = 10000 }) {
+  if (!dbHandle) return false;
+  const now = Date.now();
+  try {
+    await dbHandle.run(
+      `INSERT INTO steps_log (date, steps, goal, updated_at) VALUES (?, ?, ?, ?)
+       ON CONFLICT(date) DO UPDATE SET steps=excluded.steps, goal=excluded.goal, updated_at=excluded.updated_at;`,
+      [date, steps, goal, now],
+    );
+    return true;
+  } catch (e) {
+    console.warn('[SQLite] upsertStepLog failed:', e?.message || e);
+    return false;
+  }
+}
+
+export async function queryStepLog({ from = '', to = '', limit = 90 } = {}) {
+  if (!dbHandle) return [];
+  try {
+    let sql = 'SELECT date, steps, goal FROM steps_log';
+    const params = [];
+    if (from && to) {
+      sql += ' WHERE date BETWEEN ? AND ?';
+      params.push(from, to);
+    }
+    sql += ` ORDER BY date DESC LIMIT ${limit};`;
+    const r = await dbHandle.query(sql, params);
+    return r?.values || [];
+  } catch (e) {
+    console.warn('[SQLite] queryStepLog failed:', e?.message || e);
+    return [];
+  }
+}
+
+// ── Міграція v1 → v2: JSON-масиви з kv_state → реляційні таблиці ─────────────
+
+export async function migrateV1toV2() {
+  if (!dbHandle) return;
+  try {
+    // Перевіряємо чи вже мігровано (є рядки в measurements або kv_state порожній)
+    const cnt = await countMeasurements();
+    if (cnt > 0) return; // вже є дані в реляційних таблицях
+
+    // Тягнемо JSON-масиви з kv_state
+    const measJson = await get('hp_measurements');
+    const pillsJson = await get('hp_pills');
+    const takenJson = await get('hp_pills_taken');
+
+    // Переносимо виміри
+    if (Array.isArray(measJson) && measJson.length > 0) {
+      // Вставляємо від найстарішого до найновішого
+      const sorted = [...measJson].reverse();
+      for (const m of sorted) {
+        await insertMeasurement({
+          sys: m.sys, dia: m.dia, pulse: m.pulse ?? null,
+          note: m.note ?? '', time: m.time,
+        });
+      }
+      console.log(`[SQLite] v1→v2: migrated ${sorted.length} measurements`);
+    }
+
+    // Переносимо картки ліків
+    if (Array.isArray(pillsJson) && pillsJson.length > 0) {
+      for (const p of pillsJson) {
+        await upsertMedication({
+          id: String(p.id), name: p.name, dose: p.dose ?? '',
+          time: p.time ?? '08:00', days: p.days ?? 'daily', date: p.date ?? '',
+        });
+      }
+      console.log(`[SQLite] v1→v2: migrated ${pillsJson.length} medications`);
+    }
+
+    // Переносимо журнал прийому ліків
+    if (takenJson && typeof takenJson === 'object') {
+      for (const [dateKey, medMap] of Object.entries(takenJson)) {
+        if (typeof medMap !== 'object') continue;
+        for (const [medId, taken] of Object.entries(medMap)) {
+          await setMedTaken(medId, dateKey, !!taken);
+        }
+      }
+      console.log('[SQLite] v1→v2: migrated med_taken records');
+    }
+  } catch (e) {
+    console.warn('[SQLite] v1→v2 migration error:', e?.message || e);
+  }
+}
