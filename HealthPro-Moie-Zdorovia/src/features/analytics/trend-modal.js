@@ -9,6 +9,14 @@ import { createChart, disposeChart, COLORS } from '../../core/charts.js';
 
 const avg = (arr) => (arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null);
 
+// Той самий алгоритм що і в analytics/index.js calcTrendData (уніфікація)
+function calcLocalTrend(all) {
+  if (!all || all.length < 5) return null;
+  const recent = avg(all.slice(0, 5).map((m) => m.sys));
+  const old    = avg(all.slice(Math.max(0, all.length - 5)).map((m) => m.sys));
+  return { diff: recent - old };
+}
+
 let _modalChartEl = null;
 
 export function openTrendModal() {
@@ -29,6 +37,13 @@ export function openTrendModal() {
   const aD = avg(last14.map((m) => m.dia));
 
   if (statsEl) {
+    const td = calcLocalTrend(all);
+    const trendLabel = td
+      ? (Math.abs(td.diff) < 3 ? '→ Стабільний' : td.diff < -3 ? '↓ Знижується' : '↑ Зростає')
+      : '—';
+    const trendColor = td
+      ? (Math.abs(td.diff) < 3 ? 'bc-green' : td.diff < -3 ? 'bc-cyan' : 'bc-red')
+      : 'bc-violet';
     statsEl.innerHTML = `
       <div class="bento" style="margin-bottom:0">
         <div class="bento-card bc-blue">
@@ -38,6 +53,10 @@ export function openTrendModal() {
         <div class="bento-card bc-${aS && aS < 140 ? 'green' : 'red'}">
           <div class="b-lbl">${t('a-trend-status')}</div>
           <div class="b-val sm">${aS && aD ? getBPStatus(aS, aD).label.replace(/[🚨▲⚠✓⬇️]/g, '').trim() : '—'}</div>
+        </div>
+        <div class="bento-card ${trendColor} wide">
+          <div class="b-lbl">Тенденція (5 вимірів)</div>
+          <div class="b-val sm">${trendLabel}</div>
         </div>
       </div>`;
   }

@@ -28,8 +28,8 @@ export async function analyzeTrends() {
 export async function getTips(category) {
   const lang = document.documentElement.lang || 'uk';
   const file = lang === 'ru'
-    ? 'assets/tips/tips_ru.json'
-    : 'assets/tips/tips_uk.json';
+    ? '/assets/tips/tips_ru.json'
+    : '/assets/tips/tips_uk.json';
   try {
     const res = await fetch(file);
     if (!res.ok) throw new Error('fetch failed');
@@ -52,8 +52,8 @@ export function renderTips(tips) {
       <div class="tip-title">${tip.title}</div>
       <div class="tip-body">${tip.body}</div>
       ${tip.source_url
-        ? `<a class="tip-source" href="${tip.source_url}" target="_blank" rel="noopener noreferrer">📎 ${tip.source}</a>`
-        : `<span class="tip-source">📎 ${tip.source}</span>`
+        ? `<a class="tip-source" href="${tip.source_url}" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg> ${tip.source}</a>`
+        : `<span class="tip-source"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg> ${tip.source}</span>`
       }
       <div class="tip-disclaimer">${t('tips-disclaimer')}</div>
     </div>

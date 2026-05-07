@@ -49,18 +49,25 @@ async function renderJournalList() {
     return;
   }
 
-  listEl.innerHTML = filtered.map(m => `
-    <div class="history-item">
-      <div class="history-dot ${getBPDotClass(m.sys)}"></div>
+  listEl.innerHTML = filtered.map(m => {
+    const dotCls = getBPDotClass(m.sys);
+    const st = getBPStatus(m.sys, m.dia);
+    const borderCls = dotCls === 'd-crit' ? 'hi-crit' : dotCls === 'd-bad' ? 'hi-bad' : dotCls === 'd-hypo' ? 'hi-hypo' : '';
+    return `
+    <div class="history-item ${borderCls}">
+      <div class="history-dot ${dotCls}"></div>
       <div class="history-data">
         <div class="history-main">${m.sys}/${m.dia} ${t('pr-mmhg')}</div>
-        <div class="history-sub">${getBPStatus(m.sys, m.dia).label.replace(/[🚨▲⚠✓⬇️]/g, '').trim()}</div>
+        <div class="history-sub">${st.label.replace(/[🚨▲⚠✓⬇️]/g, '').trim()}</div>
         ${m.pulse ? `<span class="badge ${getPulseStatus(m.pulse).cls}" style="font-size:11px;margin-top:3px;display:inline-block">${m.pulse} ${t('pr-bpm-short')} — ${getPulseStatus(m.pulse).label}</span>` : ''}
-        ${m.note ? `<div class="history-note">📝 ${m.note}</div>` : ''}
+        ${m.note ? `<div class="history-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> ${m.note}</div>` : ''}
       </div>
-      <div class="history-time">${formatDate(m.time)}<br>${formatTime(m.time)}</div>
-    </div>
-  `).join('');
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+        <div class="history-time">${formatDate(m.time)}<br>${formatTime(m.time)}</div>
+        <button class="h-del-btn" data-action="deleteMeasurement" data-time="${m.time}" title="${t('j-delete')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ── Синхронізація дат з input-полями ─────────────────────────────────────────

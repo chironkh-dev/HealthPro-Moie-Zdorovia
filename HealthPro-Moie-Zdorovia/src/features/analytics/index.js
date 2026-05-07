@@ -14,6 +14,15 @@ import { renderTipsBlock } from '../tips/index.js';
 
 const avg = (arr) => (arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null);
 
+// ── Спільна функція розрахунку тренду (використовується і блоком і модалкою) ──
+export function calcTrendData(measurements) {
+  if (!measurements || measurements.length < 5) return null;
+  const recent = avg(measurements.slice(0, 5).map((m) => m.sys));
+  const old    = avg(measurements.slice(Math.max(0, measurements.length - 5)).map((m) => m.sys));
+  const diff   = recent - old;
+  return { diff, recent, old };
+}
+
 export function renderAnalytics() {
   const all = state.measurements;
   const pills = state.pills;
@@ -95,14 +104,13 @@ export function renderAnalytics() {
     }
   }
 
-  // Trend
+  // Trend (уніфікований calcTrendData)
   const trendVal = document.getElementById('trendVal');
   const trendSub = document.getElementById('trendSub');
   if (trendVal && trendSub) {
-    if (all.length >= 5) {
-      const r = avg(all.slice(0, 5).map((m) => m.sys));
-      const o = avg(all.slice(Math.max(0, all.length - 5)).map((m) => m.sys));
-      const diff = r - o;
+    const td = calcTrendData(all);
+    if (td) {
+      const diff = td.diff;
       trendVal.textContent = Math.abs(diff) < 3 ? t('a-trend-stable') : diff < -3 ? t('a-trend-down') : t('a-trend-up');
       trendSub.textContent = Math.abs(diff) < 3
         ? t('a-trend-stable-sub')
@@ -177,11 +185,8 @@ export function renderAnalytics() {
 
   renderBMI();
   renderRecommendations();
-  renderIZChart();
 
-  // v5.1 — async charts + tips (fire-and-forget)
-  renderScatterChart('scatterChart').catch(() => {});
-  renderBPZonesChart('bpZonesChart').catch(() => {});
+  // Поради — fire-and-forget (inline на сторінці)
   renderTipsBlock().catch(() => {});
 }
 

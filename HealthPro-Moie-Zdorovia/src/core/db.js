@@ -129,14 +129,14 @@ export async function calcHealthIndexTrend(days = 30) {
 /** Розподіл вимірювань по категоріях ВООЗ */
 export async function countByBPCategory({ days = 30 } = {}) {
   const rows = await queryMeasurements({ days, limit: 2000 });
-  const counts = { optimal: 0, normal: 0, high_normal: 0, grade1: 0, grade2: 0, grade3: 0 };
+  const counts = { pressure_optimal: 0, pressure_normal: 0, pressure_high_1: 0, pressure_grade1: 0, pressure_grade2: 0, pressure_grade3: 0 };
   for (const r of rows) {
-    if      (r.sys < 120 && r.dia < 80)  counts.optimal++;
-    else if (r.sys < 130 && r.dia < 85)  counts.normal++;
-    else if (r.sys < 140 && r.dia < 90)  counts.high_normal++;
-    else if (r.sys < 160 && r.dia < 100) counts.grade1++;
-    else if (r.sys < 180 && r.dia < 110) counts.grade2++;
-    else                                  counts.grade3++;
+    if      (r.sys < 120 && r.dia < 80)  counts.pressure_optimal++;
+    else if (r.sys < 130 && r.dia < 85)  counts.pressure_normal++;
+    else if (r.sys < 140 && r.dia < 90)  counts.pressure_high_1++;
+    else if (r.sys < 160 && r.dia < 100) counts.pressure_grade1++;
+    else if (r.sys < 180 && r.dia < 110) counts.pressure_grade2++;
+    else                                  counts.pressure_grade3++;
   }
   return counts;
 }

@@ -33,10 +33,12 @@ export function getBPStatus(s, d) {
 }
 
 export function getBPDotClass(s) {
-  if (s < 90)  return 'd-warn';
-  if (s < 140) return 'd-ok';
+  if (s < 90)  return 'd-hypo';
+  if (s < 130) return 'd-ok';
+  if (s < 140) return 'd-warn';
   if (s < 160) return 'd-warn';
-  return 'd-bad';
+  if (s < 180) return 'd-bad';
+  return 'd-crit';
 }
 
 export function getPulseStatus(p) {

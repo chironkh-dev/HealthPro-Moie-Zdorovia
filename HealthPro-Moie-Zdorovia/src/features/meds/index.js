@@ -12,6 +12,9 @@ import {
 
 export { DRUG_DB };
 
+// Зберігає поточне попередження для відкриття модалки
+let _drugWarnInfo = null;
+
 // ─── Day helpers ───
 export function fmtPillDate(iso) {
   if (!iso) return '';
@@ -59,13 +62,28 @@ export function onPillDaysChange() {
 export function checkDrugName() {
   const name = document.getElementById('pillName').value.toLowerCase().trim();
   const warnEl = document.getElementById('pillNameWarn');
-  if (!name || name.length < 3) { warnEl.style.display = 'none'; return; }
+  if (!name || name.length < 3) { warnEl.style.display = 'none'; _drugWarnInfo = null; return; }
   const found = Object.keys(DRUG_DB).find((k) => name.includes(k));
   if (found) {
     const info = DRUG_DB[found];
-    warnEl.innerHTML = `<div class="drug-warn">⚠️ <strong>${found.charAt(0).toUpperCase() + found.slice(1)}</strong>: ${tt('m-warn-max', { max: info.max, unit: info.unit, warn: info.warn })} <a href="https://tabletki.ua/search/?q=${encodeURIComponent(found)}" target="_blank" class="pill-link">${t('m-warn-ref')} →</a></div>`;
+    _drugWarnInfo = { found, info };
+    const cap = found.charAt(0).toUpperCase() + found.slice(1);
+    warnEl.innerHTML = `<div class="drug-warn" style="display:flex;align-items:center;gap:8px;cursor:pointer" data-action="openDrugWarnModal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14" style="flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span><strong>${cap}</strong> — можливе перевищення дози <span style="color:var(--blue2)">→ деталі</span></span></div>`;
     warnEl.style.display = 'block';
-  } else warnEl.style.display = 'none';
+  } else { warnEl.style.display = 'none'; _drugWarnInfo = null; }
+}
+
+export function openDrugWarnModal() {
+  const el = document.getElementById('drugWarnContent');
+  const modal = document.getElementById('drugWarnModal');
+  if (!el || !modal || !_drugWarnInfo) return;
+  const { found, info } = _drugWarnInfo;
+  const cap = found.charAt(0).toUpperCase() + found.slice(1);
+  el.innerHTML = `<p style="font-size:15px;font-weight:800;margin-bottom:8px">${cap}</p>
+    <p style="font-size:13px;color:var(--text2);line-height:1.7">${tt('m-warn-max', { max: info.max, unit: info.unit, warn: info.warn })}</p>
+    <a href="https://tabletki.ua/search/?q=${encodeURIComponent(found)}" target="_blank" class="pill-link" style="margin-top:10px;font-size:12px">${t('m-warn-ref')} →</a>
+    <div class="disclaimer" style="margin-top:12px">Самолікування небезпечне. Завжди консультуйтеся з лікарем.</div>`;
+  modal.classList.add('show');
 }
 
 export function validateDosageAmount(dose, drug) {

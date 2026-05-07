@@ -143,5 +143,5 @@ export function setupChartTooltip() {
   canvas.addEventListener('mouseleave', hideTooltip);
   canvas.addEventListener('touchstart', handleInteraction, { passive: false });
   canvas.addEventListener('touchmove',  handleInteraction, { passive: false });
-  canvas.addEventListener('touchend',   () => setTimeout(hideTooltip, 1200));
+  canvas.addEventListener('touchend',   () => setTimeout(hideTooltip, 2500));
 }

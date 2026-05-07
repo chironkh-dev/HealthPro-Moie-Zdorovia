@@ -25,7 +25,7 @@ import {
 import {
   // meds
   addPill, togglePill, deletePill, searchPharmacy,
-  renderPills, onPillDaysChange, checkDrugName,
+  renderPills, onPillDaysChange, checkDrugName, openDrugWarnModal,
 } from './features/meds/index.js';
 import {
   // steps
@@ -42,6 +42,7 @@ import {
   renderAnalytics, renderRecommendations, renderBMI,
   toggleHealthTooltip, toggleReco, openTrendModal, closeTrendModal,
   disposeScatterChart, disposeBPZonesChart, disposeIZChart,
+  renderIZChart, renderScatterChart, renderBPZonesChart,
 } from './features/analytics/index.js';
 import {
   // history
@@ -99,8 +100,11 @@ export function showPage(name) {
   if (name === 'pressure') { renderChart(); renderChart(); }
   if (name === 'pills') renderPills();
   if (name === 'analytics') renderAnalytics();
-  // Dispose analytics ECharts when leaving analytics tab
+  // Закриваємо аналітичні модалки та dispose ECharts при переході з аналітики
   if (name !== 'analytics') {
+    document.getElementById('izTrendModal')?.classList.remove('show');
+    document.getElementById('bpZonesModal')?.classList.remove('show');
+    document.getElementById('scatterModal')?.classList.remove('show');
     try { disposeScatterChart('scatterChart'); } catch { /* noop */ }
     try { disposeBPZonesChart('bpZonesChart'); } catch { /* noop */ }
     try { disposeIZChart(); } catch { /* noop */ }
@@ -283,6 +287,16 @@ const ACTIONS = {
   closeWhoBtn: () => document.getElementById('whoModal').classList.remove('show'),
   toggleHealthTooltip: () => toggleHealthTooltip(),
   toggleReco: (el) => toggleReco(parseInt(el.dataset.idx, 10)),
+  // аналітика — допоміжні модалки (IZ тренд, зони, кроки↔тиск)
+  openIZTrendModal: () => { renderIZChart().catch(() => {}); document.getElementById('izTrendModal')?.classList.add('show'); },
+  closeIZTrendModal: () => { disposeIZChart(); document.getElementById('izTrendModal')?.classList.remove('show'); },
+  openBPZonesModal: () => { renderBPZonesChart('bpZonesChart').catch(() => {}); document.getElementById('bpZonesModal')?.classList.add('show'); },
+  closeBPZonesModal: () => { disposeBPZonesChart('bpZonesChart'); document.getElementById('bpZonesModal')?.classList.remove('show'); },
+  openScatterModal: () => { renderScatterChart('scatterChart').catch(() => {}); document.getElementById('scatterModal')?.classList.add('show'); },
+  closeScatterModal: () => { disposeScatterChart('scatterChart'); document.getElementById('scatterModal')?.classList.remove('show'); },
+  // ліки — попередження про дозу
+  openDrugWarnModal: () => openDrugWarnModal(),
+  closeDrugWarnModal: () => document.getElementById('drugWarnModal')?.classList.remove('show'),
   // profile / settings
   saveProfile: () => saveProfile(),
   toggleNotifications: () => toggleNotifications(),

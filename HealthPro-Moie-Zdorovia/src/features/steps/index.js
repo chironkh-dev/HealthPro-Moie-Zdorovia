@@ -18,7 +18,7 @@
 //   declineStepFg() → enableSteps('active-only')
 
 import { state, saveData, showToast, today, DB } from '../../core/state.js';
-import { saveStepLog as dbSaveStep } from '../../core/db.js';
+import { saveStepLog as dbSaveStep, queryStepLog } from '../../core/db.js';
 import {
   DEFAULT_STEP_GOAL,
   STEP_ACCEL_THRESHOLD,
@@ -533,7 +533,14 @@ export async function restoreSteps() {
       }
     }
   } else {
-    stepCount = DB.get('stepCount-' + today(), 0);
+    // Відновлюємо з SQLite (пріоритет) або localStorage
+    try {
+      const rows = await queryStepLog({ days: 1 });
+      const todayRow = rows.find(r => r.date === today());
+      stepCount = todayRow ? todayRow.steps : DB.get('stepCount-' + today(), 0);
+    } catch {
+      stepCount = DB.get('stepCount-' + today(), 0);
+    }
   }
 }
 
