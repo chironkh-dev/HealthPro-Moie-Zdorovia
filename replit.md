@@ -78,6 +78,16 @@ HealthPro-Moie-Zdorovia/
 - Після кожного великого етапу — PDF-звіт сесії (`reportlab`, DejaVu Sans) та оновлення replit.md.
 - Готовий приймати поради та архітектурні рішення.
 
+## Changelog
+
+### v5.2.0 (2026-05-07) — Сесія Part 2
+- **AHA 2017 підтримка:** `norm.js` — `getBPDotClass()` та `getBPStatus()` враховують `state.settings.bpStandard` (ESC2024 / AHA2017), нові i18n ключі `n-bp-aha-elevated`, `n-bp-aha-ht1`, `n-bp-aha-ht2`.
+- **db.js `countByBPCategory()`** — standard-aware: AHA 2017 категорії маппуються до 5 ESC-слотів.
+- **bp-zones.js** — динамічні мітки ESC/AHA, стандарт-підпис на графіку, фільтрація grade3 для AHA.
+- **izTrendModal + scatterModal** — обидва графіки тепер у bottom-sheet модалках; аналітичні картки стали tap-тригерами (`openIZTrendModal`, `openScatterModal`).
+- **38 unit-тестів** `tests/bp-dot-class.test.js` — покрите `getBPDotClass()` (ESC/AHA/граничні) та `getBPStatus()` (5+6 кейсів). Загальний набір: 513/513 ✅.
+- **npm run version** → `version.gen.js` оновлено до v5.2.0 (d16bb5f).
+
 ## Gotchas
 
 - **PDF шрифти:** Використовувати тільки `DejaVu Sans` через TTFont.

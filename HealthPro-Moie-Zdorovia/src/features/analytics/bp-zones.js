@@ -1,8 +1,9 @@
-// analytics/bp-zones.js — BarChart «Розподіл по зонах ВООЗ» (ECharts)
-// Використовує db.countByBPCategory() — 6 категорій ВООЗ.
+// analytics/bp-zones.js — BarChart «Розподіл по зонах» (ECharts)
+// Підтримує ESC 2024 та AHA 2017 через state.settings.bpStandard.
 
 import { createChart, disposeChart } from '../../core/charts.js';
 import * as db from '../../core/db.js';
+import { state } from '../../core/state.js';
 import { t } from '../../i18n/index.js';
 
 const WHO_ORDER = [
@@ -23,7 +24,8 @@ const WHO_COLORS = {
   pressure_grade3:  '#A32D2D',
 };
 
-const WHO_LABELS = {
+// ESC 2024 (6 категорій)
+const WHO_LABELS_ESC = {
   pressure_optimal: 'Оптимальний',
   pressure_normal:  'Нормальний',
   pressure_high_1:  'Підвищений',
@@ -32,15 +34,33 @@ const WHO_LABELS = {
   pressure_grade3:  'Ступінь 3',
 };
 
+// AHA 2017 (5 категорій — pressure_grade3 порожній)
+const WHO_LABELS_AHA = {
+  pressure_optimal: 'Норма',
+  pressure_normal:  'Підвищений',
+  pressure_high_1:  'HTN Ст. 1',
+  pressure_grade1:  'HTN Ст. 2',
+  pressure_grade2:  'Криз',
+  pressure_grade3:  '',
+};
+
 export async function renderBPZonesChart(containerId) {
   const el = document.getElementById(containerId);
   if (!el) return;
 
-  // Dispose перед повторним render — WeakMap інакше повертає мертвий інстанс
   disposeChart(el);
 
+  const std = state.settings?.bpStandard || 'ESC2024';
+  const WHO_LABELS = std === 'AHA2017' ? WHO_LABELS_AHA : WHO_LABELS_ESC;
+
   const data = await db.countByBPCategory();
-  const total = WHO_ORDER.reduce((s, k) => s + (data[k] || 0), 0);
+
+  // Для AHA виключаємо порожній grade3 зі списку
+  const order = std === 'AHA2017'
+    ? WHO_ORDER.filter(k => k !== 'pressure_grade3')
+    : WHO_ORDER;
+
+  const total = order.reduce((s, k) => s + (data[k] || 0), 0);
 
   if (!total) {
     el.style.height = '';
@@ -49,17 +69,26 @@ export async function renderBPZonesChart(containerId) {
   }
 
   el.innerHTML = '';
-  el.style.height = '260px';
+  el.style.height = order.length < 6 ? '220px' : '260px';
   const chart = createChart(el, 'svg');
   if (!chart) return;
 
-  const values = WHO_ORDER.map(k => data[k] || 0);
-  const labels = WHO_ORDER.map(k => WHO_LABELS[k]);
-  const colors = WHO_ORDER.map(k => WHO_COLORS[k]);
+  const values = order.map(k => data[k] || 0);
+  const labels = order.map(k => WHO_LABELS[k]);
+  const colors = order.map(k => WHO_COLORS[k]);
+
+  // Заголовок стандарту
+  const stdLabel = std === 'AHA2017' ? 'AHA 2017' : 'ESC 2024';
 
   chart.setOption({
     backgroundColor: 'transparent',
-    grid: { left: 88, right: 30, top: 10, bottom: 28 },
+    title: {
+      text: stdLabel,
+      right: 8,
+      top: 2,
+      textStyle: { color: '#64748b', fontSize: 10, fontWeight: 'normal' },
+    },
+    grid: { left: 88, right: 46, top: 24, bottom: 28 },
     xAxis: {
       type: 'value',
       minInterval: 1,

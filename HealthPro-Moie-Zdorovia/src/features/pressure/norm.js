@@ -24,6 +24,18 @@ export function getBPNorm() {
 export function getBPStatus(s, d) {
   if (s < 80 || d < 50) return { label: t('n-bp-very-low'), cls: 'badge-warn' };
   if (s < 90 || d < 60) return { label: t('n-bp-low'),      cls: 'badge-warn' };
+
+  const std = state.settings?.bpStandard || 'ESC2024';
+
+  if (std === 'AHA2017') {
+    if (s < 120 && d < 80)  return { label: t('n-bp-normal'),        cls: 'badge-ok'   };
+    if (s < 130 && d < 80)  return { label: t('n-bp-aha-elevated'),  cls: 'badge-warn' };
+    if (s < 140 && d < 90)  return { label: t('n-bp-aha-ht1'),       cls: 'badge-warn' };
+    if (s >= 180 || d >= 120) return { label: t('n-bp-crisis'),      cls: 'badge-crit' };
+    return                           { label: t('n-bp-aha-ht2'),      cls: 'badge-bad'  };
+  }
+
+  // ESC 2024 (default)
   const n = getBPNorm();
   if (s <= n.sysOk && d <= n.diaOk)   return { label: t('n-bp-normal'), cls: 'badge-ok'   };
   if (s < n.sysWarn && d < n.diaWarn) return { label: t('n-bp-high'),   cls: 'badge-warn' };
@@ -33,7 +45,18 @@ export function getBPStatus(s, d) {
 }
 
 export function getBPDotClass(s) {
-  if (s < 90)  return 'd-hypo';
+  const std = state.settings?.bpStandard || 'ESC2024';
+  if (s < 90) return 'd-hypo';
+
+  if (std === 'AHA2017') {
+    if (s < 120) return 'd-ok';
+    if (s < 130) return 'd-warn';    // AHA: Elevated
+    if (s < 140) return 'd-grade1';  // AHA: Stage 1 HTN
+    if (s < 180) return 'd-bad';     // AHA: Stage 2 HTN
+    return 'd-crit';                 // AHA: Hypertensive Crisis
+  }
+
+  // ESC 2024 (default)
   if (s < 130) return 'd-ok';
   if (s < 140) return 'd-warn';
   if (s < 160) return 'd-grade1';

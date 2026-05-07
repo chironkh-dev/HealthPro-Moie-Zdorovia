@@ -126,17 +126,30 @@ export async function calcHealthIndexTrend(days = 30) {
     });
 }
 
-/** Розподіл вимірювань по категоріях ВООЗ */
+/** Розподіл вимірювань по категоріях — враховує вибраний стандарт (ESC2024 / AHA2017) */
 export async function countByBPCategory({ days = 30 } = {}) {
   const rows = await queryMeasurements({ days, limit: 2000 });
+  const std = _state?.settings?.bpStandard || 'ESC2024';
   const counts = { pressure_optimal: 0, pressure_normal: 0, pressure_high_1: 0, pressure_grade1: 0, pressure_grade2: 0, pressure_grade3: 0 };
+
   for (const r of rows) {
-    if      (r.sys < 120 && r.dia < 80)  counts.pressure_optimal++;
-    else if (r.sys < 130 && r.dia < 85)  counts.pressure_normal++;
-    else if (r.sys < 140 && r.dia < 90)  counts.pressure_high_1++;
-    else if (r.sys < 160 && r.dia < 100) counts.pressure_grade1++;
-    else if (r.sys < 180 && r.dia < 110) counts.pressure_grade2++;
-    else                                  counts.pressure_grade3++;
+    if (std === 'AHA2017') {
+      // AHA 2017: Normal / Elevated / Stage 1 / Stage 2 / Crisis
+      // Mapped до 5 ESC-слотів (pressure_grade3 завжди 0 для AHA)
+      if      (r.sys < 120 && r.dia < 80)   counts.pressure_optimal++;  // Normal
+      else if (r.sys < 130 && r.dia < 80)   counts.pressure_normal++;   // Elevated
+      else if (r.sys < 140 && r.dia < 90)   counts.pressure_high_1++;   // Stage 1
+      else if (r.sys < 180 && r.dia < 120)  counts.pressure_grade1++;   // Stage 2
+      else                                   counts.pressure_grade2++;   // Crisis (≥180 або ≥120)
+    } else {
+      // ESC 2024 (за замовчуванням)
+      if      (r.sys < 120 && r.dia < 80)  counts.pressure_optimal++;
+      else if (r.sys < 130 && r.dia < 85)  counts.pressure_normal++;
+      else if (r.sys < 140 && r.dia < 90)  counts.pressure_high_1++;
+      else if (r.sys < 160 && r.dia < 100) counts.pressure_grade1++;
+      else if (r.sys < 180 && r.dia < 110) counts.pressure_grade2++;
+      else                                  counts.pressure_grade3++;
+    }
   }
   return counts;
 }

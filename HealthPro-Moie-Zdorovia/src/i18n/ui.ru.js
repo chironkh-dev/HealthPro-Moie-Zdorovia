@@ -159,6 +159,15 @@ export const T_RU ={
   'n-bp-ht1':'⚠ Гипертензия І',
   'n-bp-ht2':'▲ Гипертензия ІІ',
   'n-bp-crisis':'🚨 Криз!',
+  // AHA 2017 категорії
+  'n-bp-aha-elevated':'⚠ Повышенное (AHA)',
+  'n-bp-aha-ht1':'⚠ HTN Ст. 1 (AHA)',
+  'n-bp-aha-ht2':'▲ HTN Ст. 2 (AHA)',
+  // IZ modal / scatter modal
+  't-iz-trend-modal-title':'Тренд Индекса Здоровья',
+  't-scatter-modal-title':'Шаги ↔ Давление',
+  't-iz-tap':'▲ Нажми — детальный график',
+  't-scatter-tap':'▲ Нажми — корреляционный график',
   'n-pulse-brady':'Брадикардия',
   'n-pulse-low':'Пониженный',
   'n-pulse-normal':'Норма',
