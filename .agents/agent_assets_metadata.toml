@@ -126,3 +126,9 @@ id = "v_vEqsJnjiuI7HDWGs1oU"
 uri = "file://HealthPro-Moie-Zdorovia/HealthPro_Session_v5.1_Report.pdf"
 type = "pdf"
 title = "HealthPro v5.1 + Bugfix v5.1.1 — Оновлений звіт сесії"
+
+[[outputs]]
+id = "8dZtSFap5DmN4enXUoFBV"
+uri = "file://HealthPro-Moie-Zdorovia/session_report_v5.2.pdf"
+type = "pdf"
+title = "Звіт сесії HealthPro v5.2"
