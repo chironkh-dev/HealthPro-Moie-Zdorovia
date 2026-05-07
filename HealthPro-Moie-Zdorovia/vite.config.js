@@ -1,7 +1,8 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  root: '.',  // правильна папка з index.html
+  root: '.',
+  publicDir: '.',
   css: {
     devSourcemap: false,
   },

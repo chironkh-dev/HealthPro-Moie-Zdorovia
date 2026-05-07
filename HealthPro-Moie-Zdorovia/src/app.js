@@ -6,7 +6,7 @@
 //   • Bind cross-module events (measurement saved/deleted -> chart + analytics re-render).
 //   • Action dispatcher for data-action / data-change / data-input attributes.
 
-import { state, setToast, on } from './core/state.js';
+import { state, setToast, on, saveData } from './core/state.js';
 import { t } from './i18n/index.js';
 import { getLocale } from './core/utils.js';
 import { APP_BUILD_LABEL, APP_BUILD_FULL } from './core/constants.js';
@@ -290,13 +290,24 @@ const ACTIONS = {
   // аналітика — допоміжні модалки (IZ тренд, зони, кроки↔тиск)
   openIZTrendModal: () => { renderIZChart().catch(() => {}); document.getElementById('izTrendModal')?.classList.add('show'); },
   closeIZTrendModal: () => { disposeIZChart(); document.getElementById('izTrendModal')?.classList.remove('show'); },
-  openBPZonesModal: () => { renderBPZonesChart('bpZonesChart').catch(() => {}); document.getElementById('bpZonesModal')?.classList.add('show'); },
-  closeBPZonesModal: () => { disposeBPZonesChart('bpZonesChart'); document.getElementById('bpZonesModal')?.classList.remove('show'); },
+  openBPZonesModal: () => { renderBPZonesChart('bpZonesChartModal').catch(() => {}); document.getElementById('bpZonesModal')?.classList.add('show'); },
+  closeBPZonesModal: () => { disposeBPZonesChart('bpZonesChartModal'); document.getElementById('bpZonesModal')?.classList.remove('show'); },
   openScatterModal: () => { renderScatterChart('scatterChart').catch(() => {}); document.getElementById('scatterModal')?.classList.add('show'); },
   closeScatterModal: () => { disposeScatterChart('scatterChart'); document.getElementById('scatterModal')?.classList.remove('show'); },
   // ліки — попередження про дозу
   openDrugWarnModal: () => openDrugWarnModal(),
   closeDrugWarnModal: () => document.getElementById('drugWarnModal')?.classList.remove('show'),
+  // bp standard switcher
+  setBPStandard: (el) => {
+    const std = el.dataset.std;
+    if (!std) return;
+    state.settings.bpStandard = std;
+    saveData();
+    document.querySelectorAll('[data-action="setBPStandard"]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.std === std);
+    });
+    showToast(std === 'ESC2024' ? 'ESC 2024 ✓' : 'AHA 2017 ✓');
+  },
   // profile / settings
   saveProfile: () => saveProfile(),
   toggleNotifications: () => toggleNotifications(),

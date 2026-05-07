@@ -45,3 +45,32 @@ export const DEFAULT_THEME = THEMES.DARK;
 
 // ─── Misc UI ───
 export const TOAST_DEFAULT_MS = 2200;
+
+// ─── BP Standards ───
+// ESC 2024 (European Society of Cardiology, default)
+// AHA 2017 (American Heart Association)
+export const BP_STANDARDS = {
+  ESC2024: {
+    id: 'ESC2024',
+    label: 'ESC 2024',
+    // [min_sys, min_dia] inclusive lower bound for each category
+    optimal:     { sys: 0,   dia: 0,   maxSys: 119, maxDia: 79  },
+    normal:      { sys: 120, dia: 80,  maxSys: 129, maxDia: 84  },
+    high_normal: { sys: 130, dia: 85,  maxSys: 139, maxDia: 89  },
+    grade1:      { sys: 140, dia: 90,  maxSys: 159, maxDia: 99  },
+    grade2:      { sys: 160, dia: 100, maxSys: 179, maxDia: 109 },
+    grade3:      { sys: 180, dia: 110, maxSys: Infinity, maxDia: Infinity },
+    hypotension: { maxSys: 90, maxDia: 60 },
+  },
+  AHA2017: {
+    id: 'AHA2017',
+    label: 'AHA 2017',
+    normal:      { sys: 0,   dia: 0,   maxSys: 119, maxDia: 79  },
+    elevated:    { sys: 120, dia: 0,   maxSys: 129, maxDia: 79  },
+    ht1:         { sys: 130, dia: 80,  maxSys: 139, maxDia: 89  },
+    ht2:         { sys: 140, dia: 90,  maxSys: 179, maxDia: 119 },
+    crisis:      { sys: 180, dia: 120, maxSys: Infinity, maxDia: Infinity },
+    hypotension: { maxSys: 90, maxDia: 60 },
+  },
+};
+export const DEFAULT_BP_STANDARD = 'ESC2024';

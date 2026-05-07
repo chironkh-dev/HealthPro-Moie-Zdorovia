@@ -76,13 +76,19 @@ export function checkDrugName() {
 export function openDrugWarnModal() {
   const el = document.getElementById('drugWarnContent');
   const modal = document.getElementById('drugWarnModal');
-  if (!el || !modal || !_drugWarnInfo) return;
-  const { found, info } = _drugWarnInfo;
-  const cap = found.charAt(0).toUpperCase() + found.slice(1);
-  el.innerHTML = `<p style="font-size:15px;font-weight:800;margin-bottom:8px">${cap}</p>
-    <p style="font-size:13px;color:var(--text2);line-height:1.7">${tt('m-warn-max', { max: info.max, unit: info.unit, warn: info.warn })}</p>
-    <a href="https://tabletki.ua/search/?q=${encodeURIComponent(found)}" target="_blank" class="pill-link" style="margin-top:10px;font-size:12px">${t('m-warn-ref')} →</a>
-    <div class="disclaimer" style="margin-top:12px">Самолікування небезпечне. Завжди консультуйтеся з лікарем.</div>`;
+  if (!el || !modal) return;
+  if (_drugWarnInfo) {
+    const { found, info } = _drugWarnInfo;
+    const cap = found.charAt(0).toUpperCase() + found.slice(1);
+    el.innerHTML = `<p style="font-size:15px;font-weight:800;margin-bottom:8px">${cap}</p>
+      <p style="font-size:13px;color:var(--text2);line-height:1.7">${tt('m-warn-max', { max: info.max, unit: info.unit, warn: info.warn })}</p>
+      <a href="https://tabletki.ua/search/?q=${encodeURIComponent(found)}" target="_blank" class="pill-link" style="margin-top:10px;font-size:12px">${t('m-warn-ref')} →</a>
+      <div class="disclaimer" style="margin-top:12px">${t('m-warn-disclaimer')}</div>`;
+  } else {
+    el.innerHTML = `<p style="font-size:15px;font-weight:800;margin-bottom:10px">⚠️ ${t('m-discl-title')}</p>
+      <p style="font-size:13px;color:var(--text2);line-height:1.7">${t('m-discl-text')}</p>
+      <a href="https://tabletki.ua/" target="_blank" class="pill-link" style="margin-top:10px;font-size:12px">Tabletki.ua →</a>`;
+  }
   modal.classList.add('show');
 }
 
@@ -171,13 +177,11 @@ export function renderPills() {
       const taken = !!state.pillsTaken[td][p.id]; if (taken) tc++;
       const [h, m] = p.time.split(':').map(Number);
       const ov = !taken && (h * 60 + m) < nm - 30;
-      const foundDrug = Object.keys(DRUG_DB).find((k) => p.name.toLowerCase().includes(k) || k.includes(p.name.toLowerCase()));
-      const dInfo = foundDrug ? DRUG_DB[foundDrug] : null;
-      const warn = dInfo ? `<div class="drug-warn" style="margin-top:4px">⚠️ ${tt('m-pill-max', { max: dInfo.max, unit: dInfo.unit, warn: dInfo.warn })}</div>` : '';
+      if (taken) return '';
       const overdueChip = ov ? ` · <svg class="pill-meta-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${t('m-overdue')}` : '';
-      return `<div class="pill-item ${taken ? 'taken' : ov ? 'overdue' : ''}" id="pill-${p.id}">
+      return `<div class="pill-item ${ov ? 'overdue' : ''}" id="pill-${p.id}">
         <div class="pill-chk" data-action="togglePill" data-id="${p.id}"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-        <div class="pill-info"><div class="pill-name">${p.name}</div><div class="pill-dose">${p.dose}${overdueChip}</div><div class="pill-schedule-badge"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${getDayName(p)}</div>${warn}</div>
+        <div class="pill-info"><div class="pill-name">${p.name}</div><div class="pill-dose">${p.dose}${overdueChip}</div><div class="pill-schedule-badge"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${getDayName(p)}</div></div>
         <div style="display:flex;align-items:center;gap:5px;flex-shrink:0"><div class="pill-time">${p.time}</div><button class="pill-del" data-action="deletePill" data-id="${p.id}">×</button></div>
       </div>`;
     }).join('');

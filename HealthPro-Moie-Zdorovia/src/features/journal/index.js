@@ -52,7 +52,7 @@ async function renderJournalList() {
   listEl.innerHTML = filtered.map(m => {
     const dotCls = getBPDotClass(m.sys);
     const st = getBPStatus(m.sys, m.dia);
-    const borderCls = dotCls === 'd-crit' ? 'hi-crit' : dotCls === 'd-bad' ? 'hi-bad' : dotCls === 'd-hypo' ? 'hi-hypo' : '';
+    const borderCls = dotCls === 'd-crit' ? 'hi-crit' : dotCls === 'd-bad' ? 'hi-bad' : dotCls === 'd-grade1' ? 'hi-grade1' : dotCls === 'd-hypo' ? 'hi-hypo' : '';
     return `
     <div class="history-item ${borderCls}">
       <div class="history-dot ${dotCls}"></div>
@@ -60,7 +60,7 @@ async function renderJournalList() {
         <div class="history-main">${m.sys}/${m.dia} ${t('pr-mmhg')}</div>
         <div class="history-sub">${st.label.replace(/[🚨▲⚠✓⬇️]/g, '').trim()}</div>
         ${m.pulse ? `<span class="badge ${getPulseStatus(m.pulse).cls}" style="font-size:11px;margin-top:3px;display:inline-block">${m.pulse} ${t('pr-bpm-short')} — ${getPulseStatus(m.pulse).label}</span>` : ''}
-        ${m.note ? `<div class="history-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> ${m.note}</div>` : ''}
+        ${m.note ? `<div class="history-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> ${m.note.replace(/[\u{1F300}-\\u{1FFFF}\u{2600}-\\u{27BF}\u{2300}-\\u{23FF}\\u{FE00}-\\u{FEFF}]/gu, '').trim()}</div>` : ''}
       </div>
       <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
         <div class="history-time">${formatDate(m.time)}<br>${formatTime(m.time)}</div>
