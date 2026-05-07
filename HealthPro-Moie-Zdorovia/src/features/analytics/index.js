@@ -122,7 +122,12 @@ export function renderAnalytics() {
     }
   }
 
-  // WHO
+  // WHO / ESC / AHA category label
+  const whoLabelEl = document.getElementById('t-who-cat');
+  if (whoLabelEl) {
+    const std = state.settings?.bpStandard || 'ESC2024';
+    whoLabelEl.textContent = std === 'AHA2017' ? t('t-who-cat-aha') : t('t-who-cat');
+  }
   const whoEl = document.getElementById('whoCategory');
   const whoSubEl = document.getElementById('whoCategorySub');
   if (whoEl && whoSubEl && all.length) {

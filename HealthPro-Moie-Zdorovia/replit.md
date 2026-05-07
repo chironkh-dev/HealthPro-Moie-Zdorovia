@@ -1,78 +1,154 @@
-# HealthPro — Моє Здоров'я
+# HealthPro · Моє Здоров'я
 
-PWA-щоденник здоров'я (тиск, пульс, ліки, кроки), повністю фронтендовий, без бекенду.
+Офлайн-перший персональний щоденник здоров'я для пацієнтів 50+ з гіпертонією/хронічними захворюваннями, орієнтований на СНД-ринок.
 
-## Стек
-
-| Компонент | Версія / деталі |
-|---|---|
-| Vite | 5, порт 5000, host 0.0.0.0 |
-| JavaScript | Vanilla ES-модулі (без фреймворків) |
-| Capacitor | 8 — Android-білд |
-| Сховище | IndexedDB (`HealthProDB`) + `localStorage` дзеркало |
-| npm-залежності | `jspdf`, `html2canvas` (без CDN) |
-| Тести | Vitest 4, node-середовище (без jsdom) |
-
-## Скрипти
+## Run & Operate
 
 ```bash
-npm run dev    # Vite на порту 5000 (workflow «Start application»)
-npm run build  # продакшн збірка у dist/
-npm run test   # 475 тестів (vitest)
+npm run dev      # Vite dev-сервер, порт 5000
+npm run build    # Продакшн збірка → ../dist/
+npm run test     # Vitest (513 тестів / 16 файлів)
+npm run version  # Генерація src/core/version.gen.js (авто перед build через prebuild)
 ```
 
-## Структура проєкту
+Змінні середовища: відсутні.
+
+## Stack
+
+- **Фреймворк:** Vanilla JS (ES-modules), Vite 5
+- **Мобільна обгортка:** Capacitor 8 (Android)
+- **Зберігання:** SQLite (`@capacitor-community/sqlite`, схема v2), localStorage
+- **Графіки:** ECharts (tree-shaking, SVGRenderer/CanvasRenderer)
+- **PDF / Зображення:** `jspdf`, `html2canvas`
+- **PDF звіти:** Python `reportlab` (DejaVu Sans)
+- **Тести:** Vitest 4.1.5
+
+## Where things live
 
 ```
 HealthPro-Moie-Zdorovia/
-├── index.html                  # розмітка (без inline JS, без CDN)
-├── manifest.json               # PWA-маніфест
-├── service-worker.js           # SW
-├── vite.config.js
-└── src/
-    ├── main.js                 # entry: bootstrap storage + boot app
-    ├── app.js                  # ACTIONS-dispatch + вся ініціалізація
-    ├── core/
-    │   ├── storage.js          # IndexedDB + localStorage + defaultSettings
-    │   ├── state.js            # shared mutable state + toast/event-bus
-    │   ├── platform.js         # Capacitor-wrappers (notif, prefs, step service)
-    │   └── constants.js        # STEP_LINEAR_THRESHOLD=3.0, STEP_MIN_PEAK_SAMPLES=2
-    ├── i18n/
-    │   ├── index.js
-    │   ├── ui.uk.js            # T_UK (всі step-modal + battery-opt ключі)
-    │   ├── ui.ru.js            # T_RU
-    │   ├── welcome-disclaimer.js
-    │   └── pdf.js
-    └── features/
-        ├── meds/               # ліки
-        ├── steps/
-        │   └── index.js        # крокомір (повний опис нижче)
-        ├── analytics/          # BMI, рекомендації, тренди
-        ├── charts/
-        ├── history/
-        ├── export/
-        ├── settings/
-        └── pwa/
-
-android/app/src/main/java/ua/healthpro/app/
-├── StepCounterService.java     # Foreground Service (TYPE_STEP_COUNTER) — ПЕРЕЗАПИС
-├── ForegroundStepPlugin.java   # Capacitor Plugin bridge — ПЕРЕЗАПИС
-├── BootReceiver.java           # Відновлення після reboot/оновлення — НОВИЙ
-└── MainActivity.java           # реєструє ForegroundStepPlugin
-android/app/src/main/AndroidManifest.xml
+  index.html
+  vite.config.js              — конфігурація з manualChunks
+  package.json                — метадані проекту, скрипти
+  src/
+    app.js                    — dispatcher, ініціалізація
+    core/                     — ядро (константи, стан, БД, графіки, платформа)
+      constants.js            — версія, ключі, пороги ВООЗ
+      version.gen.js          — АВТОГЕНЕРОВАНИЙ файл версії
+      storage.js              — логіка сховища та міграцій
+      state.js                — глобальний стан, toast, event bus
+      db.js                   — уніфікований DB API (SQLite native / in-memory web)
+      sqlite.js               — схема v2: DDL, CRUD, SQLCipher
+      charts.js               — ECharts factory (WeakMap)
+      platform.js             — Capacitor-обгортки
+    i18n/                     — файли перекладів
+    features/                 — модулі функціоналу (тиск, ліки, кроки, аналітика, експорт)
+      pressure/
+        norm.js               — getBPDotClass(), getBPStatus() (ESC2024/AHA2017 standard-aware)
+        who.js                — getWHOCategory() (standard-aware)
+      analytics/
+        index.js              — renderAnalytics() з standard-aware WHO label
+        iz-chart.js           — ІЗ-трендовий графік (bottom-sheet модалка)
+        bp-zones.js           — BarChart розподіл зон, динамічні мітки ESC/AHA
+        scatter.js            — ScatterChart Кроки↔Тиск (bottom-sheet модалка)
+      tips/
+        index.js              — getBPCategory() + updateTipsTitle() standard-aware
+    styles/
+      components.css          — iz-action-btn стилі
+      tips.css                — tips-toggle, tips-body, chevron анімація
+  scripts/
+    gen-version.js            — скрипт генерації version.gen.js
+  android/app/src/main/java/ua/healthpro/app/ — Android-специфічний код
 ```
 
----
+**Джерело правди для DB schema:** `src/core/sqlite.js`
 
-## Крокомір — архітектура (сесія травень 2026 — рефакторинг)
+## Architecture decisions
 
-### Три баги що були знайдені під час реального тестування
+- **No `window.X` & No inline handlers:** Модулі через ES-imports, єдиний делегований `event listener` у `app.js`.
+- **Event Bus:** `emit('event:name')` / `on('event:name', cb)` для міжмодульної комунікації.
+- **i18n Enforcement:** Всі рядки через `t()` / `tt()`, хардкод UI-текстів заборонено.
+- **Offline-First:** Дані локальні, без бекенду чи хмари.
+- **Єдине джерело версії:** `package.json` → `npm run version` → `version.gen.js` → `constants.js`.
+- **SQLite реляційна схема v2:** 5 таблиць, `write-through` з feature-модулів, автоматична міграція v1→v2.
+- **SQLCipher (v5.1):** Шифрування БД на Android через `getOrCreateKey()` та Android Keystore.
+- **ECharts tree-shaking:** Використання `echarts/core` та лише необхідних компонентів. SVGRenderer для ліній, CanvasRenderer для scatter. WeakMap для управління інстансами.
+- **manualChunks:** `echarts+zrender` винесено в окремий chunk для кращого кешування.
+- **Офлайн поради:** Верифіковані поради ВООЗ з `assets/tips/tips_uk.json`, без зовнішніх запитів.
+- **Standard-aware (v5.2):** `getBPDotClass()`, `getBPStatus()`, `getWHOCategory()`, `getBPCategory()` перевіряють `state.settings.bpStandard` (ESC2024/AHA2017).
 
-| # | Симптом | Першопричина | Рішення |
-|---|---|---|---|
-| 1 | Сповіщення показує ≠ кількість в UI | Сервіс транслював delta сесії, JS додавав поверх денного підсумку | EXTRA_INITIAL_STEPS: сервіс = delta + initialSteps (повний добовий підсумок) |
-| 2 | Тапи по екрану рахуються як кроки | LINEAR_THRESHOLD=2.0 надто чутливий | Поріг 3.0 + STEP_MIN_PEAK_SAMPLES=2 (≥40 мс пік; тапи <20 мс) |
-| 3 | Сервіс гине після тестування надворі | Немає BootReceiver; stopWithTask=true; немає SharedPreferences | BootReceiver + stopWithTask=false + onResume health-check |
+## Product
+
+- **Цільова аудиторія:** Пацієнти 50+, гіпертонія/діабет, Україна/СНД, без Google-акаунту.
+- **Головна цінність:** Систематизовані дані для лікаря та офлайн-приватність.
+- **Відмінності:** Локалізація СНД, норми ВООЗ/МОЗ, офлайн, звіт для лікаря.
+- **Заморожені фічі до 10+ користувачів:** Telegram-бот, хмарний бекап, голосовий ввід, англомовний інтерфейс, будь-яка косметика UI.
+
+## User preferences
+
+- Спілкування виключно українською мовою!
+- Вся документація українською.
+- Після кожного великого етапу — PDF-звіт сесії (`reportlab`, DejaVu Sans) та оновлення replit.md.
+- Готовий приймати поради та архітектурні рішення.
+
+## Changelog
+
+### v5.2.0 (2026-05-07) — Сесія Part 2
+- **AHA 2017 підтримка:** `norm.js` — `getBPDotClass()` та `getBPStatus()` враховують `state.settings.bpStandard` (ESC2024 / AHA2017), нові i18n ключі `n-bp-aha-elevated`, `n-bp-aha-ht1`, `n-bp-aha-ht2`.
+- **db.js `countByBPCategory()`** — standard-aware: AHA 2017 категорії маппуються до 5 ESC-слотів.
+- **bp-zones.js** — динамічні мітки ESC/AHA, стандарт-підпис на графіку, фільтрація grade3 для AHA.
+- **izTrendModal + scatterModal** — обидва графіки тепер у bottom-sheet модалках; аналітичні картки стали tap-тригерами (`openIZTrendModal`, `openScatterModal`).
+- **38 unit-тестів** `tests/bp-dot-class.test.js` — покрите `getBPDotClass()` (ESC/AHA/граничні) та `getBPStatus()` (5+6 кейсів). Загальний набір: 513/513.
+- **Реструктурована вкладка «Аналіз»:**
+  - ІЗ-блок → кнопка `iz-action-btn` «Тренд 30 днів»
+  - WHO-картка (full-width) → кнопки «Класифікація» + «Розподіл по зонах»
+  - step-bento → wide + кнопка «Кроки↔Тиск»
+  - Tips → згорнутий блок з chevron-toggle (`toggleTipsBlock`)
+- **Standard-aware WHO/Tips:** `getWHOCategory()`, `getBPCategory()`, `updateTipsTitle()` враховують поточний стандарт.
+- **setBPStandard перерендер:** після зміни ESC/AHA → `renderAnalytics()`, `renderJournal()`, `renderHistory()`.
+- **i18n +8 нових ключів** (uk+ru): `tips-title-aha`, `t-btn-iz-trend`, `t-btn-who-class`, `t-btn-bp-zones`, `t-btn-scatter`, `t-who-cat-aha`, `n-bp-aha-elevated/ht1/ht2`.
+- **CSS:** `iz-action-btn` в `components.css`; `tips-toggle/tips-body/chevron` в `tips.css`; overdue pills червоний фон.
+- **npm run version** → `version.gen.js` оновлено до v5.2.0.
+
+### v5.1.1 (2026-05-06) — BugFix
+- Зникнення графіків після перемикання вкладок — `disposeChart(el)` перед `innerHTML` у `iz-chart.js`, `scatter.js`, `bp-zones.js`.
+- `app.js`: `disposeIZChart()` при виході з вкладки «Аналіз».
+
+### v5.1.0 (2026-05-06)
+- SQLCipher: `getOrCreateKey()` + Android Keystore.
+- ScatterChart Кроки↔Тиск → `analytics/scatter.js`.
+- BarChart розподіл зон ВООЗ → `analytics/bp-zones.js`.
+- Офлайн поради ВООЗ → `features/tips/index.js` + JSON файли.
+- Журнал date-range picker → `features/journal/index.js`.
+- i18n uk/ru +15 нових ключів.
+
+## Gotchas
+
+- **PDF шрифти:** Використовувати тільки `DejaVu Sans` через TTFont.
+- **`version.gen.js`:** Не редагувати вручну, генерується через `npm run version`.
+- **`ic_stat_running.xml`:** Це іконка сповіщення Android, не `ic_stat_steps`.
+- **Сплеш-скрін:** Реалізовано через HTML/CSS анімацію, не Capacitor plugin.
+- **Пріоритет кроків:** Android Foreground Service має пріоритет над локальною БД.
+- **ECharts empty state:** Графіки відображають повідомлення "Додайте X+ вимірів" при недостатній кількості даних.
+- **`disposeChart(el) ПЕРЕД innerHTML`:** Завжди викликати `disposeChart(el)` перед зміною `innerHTML` або висоти контейнера ECharts.
+- **`tips_cache` TTL:** Кеш порад зберігається 24 години.
+- **`migrateV1toV2`:** Ідемпотентна функція, не змінювати логіку.
+- **`_setStateRef(state)`:** Викликається з `app.js` після ініціалізації, до першого використання `db.js`.
+- **SQLCipher на вебі:** Не активний, тестувати лише на APK.
+- **WelcomeScreen в браузері:** localStorage чистий → завжди показується welcome при першому відкритті в dev. Це норма.
+- **`pctNormal` у analytics/index.js:** Рядок 185 — безпечно (null-check), елемент видалений з HTML в v5.2.
+
+## Тести
+
+| Параметр | Значення |
+|---|---|
+| Середовище | `vitest` / `node` (без jsdom) |
+| Файлів тестів | **16** |
+| Всього тестів | **513** |
+| Стан | ✅ всі зелені |
+| Час виконання | ~8.5 с |
+
+## Крокомір — архітектура
 
 ### Два режими
 
@@ -81,19 +157,7 @@ android/app/src/main/AndroidManifest.xml
 | `'foreground'` | `StepCounterService` (Android FG Service) | Перезапускається через AlarmManager; BootReceiver після reboot |
 | `'active-only'` | DeviceMotion listener у JS | Зупиняється при закритті вкладки |
 
-### Потік дозволів (UX)
-
-```
-toggleStepCounter()
-  └── showStepPermModal()    ← Modal A: пояснення навіщо кроки
-        └── acceptStepPerm() → requestActivityPermission() (system dialog)
-              ├── granted + Android → showStepFgModal()   ← Modal B: FG-consent
-              │     ├── acceptStepFg()  → enableSteps('foreground')
-              │     └── declineStepFg() → enableSteps('active-only')
-              └── denied → showToast(st-perm-denied)
-```
-
-### Алгоритм фільтрації кроків (steps/index.js)
+### Алгоритм фільтрації кроків
 
 ```
 DeviceMotion event (~50 Гц)
@@ -113,135 +177,19 @@ DeviceMotion event (~50 Гц)
 | Оновлення APK | `BootReceiver` (MY_PACKAGE_REPLACED) |
 | Samsung Max Power | одноразовий `requestBatteryOptExemption()` після першого старту |
 
-### Ключові Android-файли
+## Поточний спринт — v5.3 (наступне)
 
-- **StepCounterService**: `currentSteps = (rawSteps − baseline) + initialSteps`; `onTaskRemoved` + AlarmManager; SharedPreferences (`hp_step_prefs`): was_running, goal, step_date, saved_steps
-- **ForegroundStepPlugin**: `start(goal, title, text, initialSteps)`; `getSteps()` → `{ steps, running, sensorAvailable }`; `getBatteryOptStatus()`; `requestBatteryOpt()`
-- **BootReceiver**: читає SharedPreferences, відновлює сервіс з тими ж initialSteps (або 0 якщо новий день)
-- **Маніфест**: `stopWithTask="false"`, `<receiver .BootReceiver>`, `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`
-
-### platform.js — повний список хелперів
-
-```js
-checkActivityPermission()          // перевірка статусу дозволу
-requestActivityPermission()        // системний діалог (Android 10+)
-startStepService(goal, t, text, initialSteps) // запуск FG-сервісу
-stopStepService()                  // зупинка
-getServiceStatus()                 // { steps, running, sensorAvailable }
-getServiceStepCount()              // shim → getServiceStatus().steps
-addStepUpdateListener(handler)     // live-оновлення; повертає unsub()
-getBatteryOptStatus()              // чи виключено з оптимізації
-requestBatteryOptExemption()       // системний діалог оптимізації
-onResume(handler)                  // Capacitor App resume event
-```
-
----
-
-## BMI (травень 2026)
-
-- `getBMICategory(bmi, age)` — для 65+ застосовуються підвищені норми (22–27 нормальна зона)
-- `renderBMI()` — показує вікову позначку та ідеальний діапазон ваги з урахуванням віку
-
----
-
-## Тести
-
-| Параметр | Значення |
-|---|---|
-| Середовище | `vitest` / `node` (без jsdom) |
-| Всього тестів | **475** (15 файлів) |
-| Стан | ✅ всі зелені |
-| Час виконання | ~4 с |
-
-### DOM у тестах
-
-```js
-vi.spyOn(global, 'document', 'get').mockReturnValue({
-  getElementById: (id) => domStubs[id] || null,
-  body: { style: {} },
-});
-```
-
-### Важливе правило для debounce-тестів
-
-```js
-// В beforeEach — запобігає взаємному забрудненню lastStepTs між тестами
-vi.useFakeTimers({ now: new Date('2030-01-01').getTime() });
-```
-
-### Правило MIN_PEAK_SAMPLES у тестах
-
-З `STEP_MIN_PEAK_SAMPLES=2` потрібно **два** послідовних rise-events перед peak:
-
-```js
-// helper у step-fixes.test.js
-function fireRise(x, y, z, n = 2) {
-  for (let i = 0; i < n; i++) fireMotion(makeLinearEvent(x, y, z));
-}
-```
-
----
-
-## Архітектурні рішення
-
-- **Без `window.X`**: усі словники й сховище — ES-модулі.
-- **Без inline-обробників**: `data-action`/`data-change`. Один делегований listener у `app.js` (ACTIONS-карта).
-- **Бекенд видалено**: дані лише на пристрої (localStorage + IndexedDB).
-- **PDF/canvas через npm**: `jspdf` і `html2canvas`, без CDN.
-
----
-
-## Генерація PDF-звітів
-
-- **ШРИФТ: ТІЛЬКИ Arial.** Кирилиця: `registerFont('Arial', '/usr/share/fonts/truetype/msttcorefonts/Arial.ttf')`
-- Заборонено: DejaVu, Roboto, Helvetica (не підтримують кирилицю в reportlab/pdfkit)
-- Скрипт: `HealthPro-Moie-Zdorovia/generate_report.py`
-
----
-
-## Спільний стан
-
-`src/core/state.js` — єдиний об'єкт `state`. Правило: **мутувати на місці**, не переприсвоювати. `saveData()` → IndexedDB + localStorage.
-
-`defaultSettings` (`storage.js`) включає:
-
-```js
-stepGoal: 10000,
-stepsEnabled: false,
-stepMode: 'active-only',   // 'foreground' | 'active-only'
-```
-
----
-
-## Історія етапів
-
-| Фаза | Дата | Що зроблено |
-|---|---|---|
-| Фаза 1 | лютий–березень 2026 | Рефакторинг: модулі, `data-action`, видалення `window.X` |
-| Фаза 2 | квітень 2026 | BugFix: 9 виправлень, 424/424 тести |
-| Фаза 3а | травень 2026 | BMI 65+; Android Foreground Step Service (перший варіант) |
-| Фаза 3б | травень 2026 | Рефакторинг крокоміра: 3 критичні баги виправлено, 475/475 тестів |
-| **v5.1** | **2026-05-06** | **SQLCipher, ScatterChart, BarChart BP-Zones, Офлайн поради, Журнал з date-range, i18n +15 ключів** |
-
----
-
-## Поточна версія: v5.1.0
-
-### ✅ v5.1 — ВИКОНАНО (2026-05-06)
-- SQLCipher: `getOrCreateKey()` + `createConnection(encrypted=true, 'secret')` → `sqlite.js`
-- ScatterChart Кроки↔Тиск → `analytics/scatter.js` (CanvasRenderer, disposeScatterChart)
-- BarChart розподіл зон ВООЗ → `analytics/bp-zones.js` (SVGRenderer, 6 категорій)
-- Офлайн поради ВООЗ → `features/tips/index.js` + `assets/tips/tips_uk.json` / `tips_ru.json`
-- Журнал date-range picker → `features/journal/index.js` (setJournalFrom/To/Type)
-- i18n uk/ru +15 нових ключів; tips.css; app.css; index.html; app.js dispose логіка
-
-### ✅ v5.1.1 — BUGFIX (2026-05-06)
-- **Зникнення графіків після перемикання вкладок** — корінь: `el.innerHTML=''` без `disposeChart()` → WeakMap повертав мертвий ECharts-інстанс
-- Виправлено в `iz-chart.js`, `scatter.js`, `bp-zones.js`: `disposeChart(el)` на початку кожного render
-- `app.js`: додано `disposeIZChart()` при виході з вкладки «Аналіз» + імпорт
-
-### 🟡 v5.2 — НАСТУПНИЙ СПРИНТ
 - Нотатки до вимірювань (textarea при збереженні)
 - Adherence-трекер ліків (`analytics/adherence.js`)
 - Повторення розкладу ліків (UI для поля `days`)
 - PDF-звіт для лікаря (ECharts SVG → reportlab)
+
+## Pointers
+
+- **PDF звіти сесій:** `HealthPro-Moie-Zdorovia/generate_session_report_*.py`
+- **Android сервіс:** `android/app/src/main/java/ua/healthpro/app/StepCounterService.java`
+- **Версія:** `scripts/gen-version.js` → `src/core/version.gen.js`
+- **DB API:** `src/core/db.js`
+- **Charts API:** `src/core/charts.js`
+- **BP норми (standard-aware):** `src/features/pressure/norm.js`
+- **WHO категорії:** `src/features/pressure/who.js`

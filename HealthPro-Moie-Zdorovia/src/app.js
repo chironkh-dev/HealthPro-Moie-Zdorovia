@@ -297,6 +297,15 @@ const ACTIONS = {
   // ліки — попередження про дозу
   openDrugWarnModal: () => openDrugWarnModal(),
   closeDrugWarnModal: () => document.getElementById('drugWarnModal')?.classList.remove('show'),
+  // tips toggle
+  toggleTipsBlock: () => {
+    const body = document.getElementById('tipsBody');
+    const chevron = document.getElementById('tipsChevron');
+    if (!body) return;
+    const open = body.style.display !== 'none';
+    body.style.display = open ? 'none' : 'block';
+    if (chevron) chevron.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
+  },
   // bp standard switcher
   setBPStandard: (el) => {
     const std = el.dataset.std;
@@ -306,6 +315,13 @@ const ACTIONS = {
     document.querySelectorAll('[data-action="setBPStandard"]').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.std === std);
     });
+    // Оновлення мітки категорії тиску залежно від стандарту
+    const whoLabel = document.getElementById('t-who-cat');
+    if (whoLabel) whoLabel.textContent = std === 'AHA2017' ? t('t-who-cat-aha') : t('t-who-cat');
+    // Перерахувати аналітику та журнал
+    try { renderAnalytics(); } catch (e) { /* noop */ }
+    try { renderJournal(); } catch (e) { /* noop */ }
+    try { renderHistory(); } catch (e) { /* noop */ }
     showToast(std === 'ESC2024' ? 'ESC 2024 ✓' : 'AHA 2017 ✓');
   },
   // profile / settings

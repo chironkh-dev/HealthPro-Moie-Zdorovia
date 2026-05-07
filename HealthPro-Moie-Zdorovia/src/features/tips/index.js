@@ -4,9 +4,18 @@
 
 import * as db from '../../core/db.js';
 import { t } from '../../i18n/index.js';
+import { state } from '../../core/state.js';
 
-// ── Категорія по порогам ВООЗ (відповідає countByBPCategory) ─────────────────
+// ── Категорія по порогах ESC/AHA (відповідає countByBPCategory) ─────────────
 function getBPCategory(sys, dia) {
+  const std = state.settings?.bpStandard || 'ESC2024';
+  if (std === 'AHA2017') {
+    if (sys < 120 && dia < 80)  return 'pressure_optimal';
+    if (sys < 130 && dia < 80)  return 'pressure_high_1';
+    if (sys < 140 && dia < 90)  return 'pressure_grade1';
+    if (sys < 180 && dia < 110) return 'pressure_grade2';
+    return 'pressure_grade3';
+  }
   if (sys < 120 && dia < 80)  return 'pressure_optimal';
   if (sys < 130 && dia < 85)  return 'pressure_normal';
   if (sys < 140 && dia < 90)  return 'pressure_high_1';
@@ -60,8 +69,17 @@ export function renderTips(tips) {
   `).join('');
 }
 
+// Оновлює заголовок Tips блоку залежно від стандарту
+export function updateTipsTitle() {
+  const el = document.getElementById('tips-title-el');
+  if (!el) return;
+  const std = state.settings?.bpStandard || 'ESC2024';
+  el.textContent = std === 'AHA2017' ? t('tips-title-aha') : t('tips-title');
+}
+
 // Головна точка входу — аналіз + відображення
 export async function renderTipsBlock() {
+  updateTipsTitle();
   const el = document.getElementById('tipsList');
   const trend = await analyzeTrends();
   if (!trend) {

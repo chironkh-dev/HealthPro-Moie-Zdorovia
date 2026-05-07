@@ -3,6 +3,14 @@ import { t } from '../../i18n/index.js';
 import { WHO_INFO_T } from '../../i18n/who.i18n.js';
 
 export function getWHOCategory(s, d) {
+  const std = state.settings?.bpStandard || 'ESC2024';
+  if (std === 'AHA2017') {
+    if (s < 120 && d < 80)  return { label: t('w-cat-optimal'),     sub: '<120/80 мм рт.ст.',  c: 'var(--green)', key: 'optimal' };
+    if (s < 130 && d < 80)  return { label: t('n-bp-aha-elevated'), sub: '120–129/<80',         c: 'var(--amber)', key: 'high-normal' };
+    if (s < 140 && d < 90)  return { label: t('n-bp-aha-ht1'),      sub: '130–139/80–89',       c: 'var(--amber)', key: 'ht1' };
+    if (s < 180 && d < 110) return { label: t('n-bp-aha-ht2'),      sub: '140–179/90–109',      c: 'var(--red)',   key: 'ht2' };
+    return                         { label: t('w-cat-ht3'),          sub: '≥180/110',            c: 'var(--rose)',  key: 'ht3' };
+  }
   if (s < 120 && d < 80) return { label: t('w-cat-optimal'),     sub: '<120/80 мм рт.ст.', c: 'var(--green)', key: 'optimal' };
   if (s < 130 && d < 85) return { label: t('w-cat-normal'),      sub: '120–129/80–84',     c: 'var(--green)', key: 'normal' };
   if (s < 140 && d < 90) return { label: t('w-cat-high-normal'), sub: '130–139/85–89',     c: 'var(--amber)', key: 'high-normal' };
