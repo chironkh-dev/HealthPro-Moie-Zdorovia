@@ -6,6 +6,9 @@ export default defineConfig({
   css: {
     devSourcemap: false,
   },
+  define: {
+    __DEFINES__: {},
+  },
   server: {
     host: '0.0.0.0',
     port: 5000,
