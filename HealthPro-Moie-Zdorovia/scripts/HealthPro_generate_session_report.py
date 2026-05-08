@@ -10,9 +10,9 @@ HealthPro — Моє Здоров'я
 # ══════════════════════════════════════════════════════════════════════════════
 # НАЛАШТУВАННЯ ЗВІТУ — редагуй перед кожною сесією
 # ══════════════════════════════════════════════════════════════════════════════
-VERSION     = "5.2.0"          # версія застосунку
-DESCRIPTION = "SQLite_ECharts" # коротке уточнення теми сесії (без пробілів)
-PART        = None              # номер частини, якщо сесія розбита (1, 2, …) або None
+VERSION     = "5.2.0"                   # версія застосунку
+DESCRIPTION = "Biometric_PDF_DaysPicker" # коротке уточнення теми сесії (без пробілів)
+PART        = 3                          # номер частини, якщо сесія розбита (1, 2, …) або None
 # ══════════════════════════════════════════════════════════════════════════════
 
 import datetime, os
@@ -263,106 +263,193 @@ def build_story():
 
     s += [cover(), sp(12)]
 
-    # Статистичні плитки — редагуй значення
+    # Статистичні плитки — v5.2 Part 3
     s += [stats_row([
-        stat_cell("3",  "Модулі реалізовано",  "SQLite·db.js·ECharts"),
-        stat_cell("12", "Файлів оновлено",      "JS·HTML·config·i18n"),
-        stat_cell("v2", "Схема БД SQLite",      "5 реляційних таблиць"),
-        stat_cell("0",  "Помилок у консолі",    "build ✓ · dev ✓"),
+        stat_cell("7",  "Завдань реалізовано",   "Tasks 1–7 (Part 3)"),
+        stat_cell("18", "Файлів оновлено",        "JS·HTML·CSS·i18n·py"),
+        stat_cell("3",  "Нові файли",             "biometric·adherence·pdf-report"),
+        stat_cell("0",  "Помилок компіляції",     "Vite build ✓ · dev ✓"),
     ]), sp(14), hr()]
 
-    # ═══ 1. Секція ════════════════════════════════════════════════════════════
-    s.append(section_box("1", "Реляційна SQLite-схема v2 — перехід від JSON-blob"))
+    # ═══ 1. Task 1 — Tabletki.ua security ════════════════════════════════════
+    s.append(section_box("1", "Task 1 — Tabletki.ua · Безпека посилань"))
     s.append(sp(6))
     s.append(body(
-        "Ключова архітектурна зміна сесії: відмова від зберігання даних здоров'я у вигляді "
-        "JSON-масивів в одній KV-таблиці на користь нормалізованої реляційної схеми. "
-        "Це відкриває повноцінні SQL-запити, тренди по датах, кореляційний аналіз та "
-        "ефективну аналітику без завантаження всього масиву в пам'ять."
+        "searchPharmacy() тепер відкриває виключно tabletki.ua — видалено мультисайт. "
+        "У openDrugWarnModal(): іконка ⚠ (emoji) замінена на inline SVG; теги &lt;a href&gt; "
+        "замінені на &lt;button data-action='searchTabletki'&gt; з атрибутом data-drug. "
+        "URL ніколи не потрапляє в DOM — захист від XSS та Google Safe Browsing false-positives."
     ))
     s.append(sp(4))
-    s.append(h2("1.1  Схема таблиць SQLite v2"))
-    s.append(arch_table([
-        ("measurements",   "id, sys, dia, pulse, note, ts (мс), created_at"),
-        ("medications",    "id, name, dose, time, days, date, created_at"),
-        ("med_taken",      "med_id, date (YYYY-MM-DD), taken (0/1)"),
-        ("steps_log",      "date (PK), steps, goal, updated_at"),
-        ("kv_state",       "k, v, updated_at — settings, theme, lang та інші KV-пари"),
-    ]))
-    s.append(sp(6))
-
-    s.append(h2("1.2  Змінені файли"))
     s.append(file_table([
-        ("src/core/sqlite.js",            "ПЕРЕЗАПИС",
-         "Нова схема v2: DDL всіх 5 таблиць, CRUD-методи, migrateV1toV2()"),
-        ("src/core/db.js",                "НОВИЙ",
-         "Уніфікований query/write API. На Android: SQLite. На Web: in-memory fallback"),
-        ("src/core/storage.js",           "ОНОВЛЕНО",
-         "bootstrapStorage() викликає sql.migrateV1toV2() при старті"),
-        ("src/app.js",                    "ОНОВЛЕНО",
-         "Після init(): _setStateRef(state) → db.js отримує посилання на стан"),
-        ("src/features/pressure/index.js","ОНОВЛЕНО",
-         "Write-through: db.insertMeasurement(m) після кожного збереження"),
-        ("src/features/meds/index.js",    "ОНОВЛЕНО",
-         "Write-through: db.saveMedication, removeMedication, saveMedTaken"),
-        ("src/features/steps/index.js",   "ОНОВЛЕНО",
-         "Хелпер _persistSteps(count): localStorage mirror + dbSaveStep()"),
+        ("src/features/meds/index.js", "ОНОВЛЕНО",
+         "searchPharmacy() → тільки tabletki.ua; searchTabletki(drug) — новий helper; "
+         "openDrugWarnModal() → SVG замість emoji, button замість &lt;a href&gt;"),
+        ("src/app.js",                  "ОНОВЛЕНО", "ACTIONS: searchTabletki, selectPillDay"),
+        ("src/i18n/ui.uk.js",           "ОНОВЛЕНО", "m-search-source — підпис 'Пошук: Tabletki.ua'"),
+        ("src/i18n/ui.ru.js",           "ОНОВЛЕНО", "m-search-source (ru)"),
+        ("styles/features.css",         "ОНОВЛЕНО", ".pill-link-btn — стиль кнопки-посилання"),
     ]))
     s += [sp(8), hr()]
 
-    # ═══ 2. Секція ════════════════════════════════════════════════════════════
-    s.append(section_box("2", "ECharts Tree-Shaking · ІЗ-тренд · Модальний графік тиску"))
+    # ═══ 2. Task 2 — Biometric Auth ═══════════════════════════════════════════
+    s.append(section_box("2", "Task 2 — Biometric / PIN Lock Screen"))
     s.append(sp(6))
     s.append(body(
-        "Інтеграція ECharts з обов'язковим tree-shaking — підключаються лише необхідні "
-        "компоненти. SVGRenderer для лінійних графіків: чіткість на будь-якому DPI. "
-        "Vite manualChunks виносить ECharts в окремий chunk для незалежного кешування."
+        "Модуль src/core/biometric.js реалізує Capacitor BiometricAuth wrapper. "
+        "checkBiometric() та authenticate() — безпечні на вебі (завжди false). "
+        "На Android APK з плагіном @aparajita/capacitor-biometric-auth активується "
+        "fingerprint/PIN. Lock-screen overlay (#lockScreen) відображається при запуску якщо "
+        "biometricLock=true у settings. Toggle у вкладці 'Налаштування' → секція 'Безпека'."
     ))
     s.append(sp(4))
-    s.append(h2("2.1  Файли"))
     s.append(file_table([
-        ("src/core/charts.js",                "НОВИЙ",
-         "ECharts factory: createChart(el, renderer), disposeChart(el). WeakMap для інстансів"),
-        ("src/features/analytics/iz-chart.js","НОВИЙ",
-         "ІЗ-тренд за 30 днів: db.calcHealthIndexTrend(30) → SVGRenderer лінійний графік"),
-        ("src/features/analytics/trend-modal.js","ОНОВЛЕНО",
-         "Старий Canvas2D замінено на ECharts LineChart з tooltip та ВООЗ-категоріями"),
-        ("vite.config.js",                    "ОНОВЛЕНО",
-         "manualChunks: echarts+zrender → окремий chunk. publicDir: '.' для assets/tips"),
+        ("src/core/biometric.js",  "НОВИЙ",
+         "checkBiometric(), authenticate() — web-safe dynamic import Capacitor plugin"),
+        ("index.html",             "ОНОВЛЕНО",
+         "#lockScreen overlay + .lock-screen div; settings card 'Безпека' з toggle #biometricToggle"),
+        ("src/app.js",             "ОНОВЛЕНО",
+         "import checkBiometric/authenticate; init: lockCheck при старті; "
+         "ACTIONS: toggleBiometric, unlockApp"),
+        ("styles/base.css",        "ОНОВЛЕНО",
+         "#lockScreen, .lock-screen стилі"),
+        ("src/i18n/ui.uk.js",      "ОНОВЛЕНО", "s-biometric, t-lock-title/sub/btn"),
     ]))
     s += [sp(8), hr()]
 
-    # ═══ 3. Архітектурні рішення ══════════════════════════════════════════════
-    s.append(section_box("3", "Архітектурні рішення сесії"))
+    # ═══ 3. Task 3 — Adherence Chart Modal ════════════════════════════════════
+    s.append(section_box("3", "Task 3 — Adherence Chart (Графік прийому ліків)"))
+    s.append(sp(6))
+    s.append(body(
+        "Новий файл src/features/analytics/adherence.js. Обчислює добову adherence "
+        "з state.pillsTaken (без async). Рендерить ECharts LineChart з ВООЗ 80% markLine. "
+        "Кольор лінії: зелений ≥80%, червоний <80%. Карта 'Прийом ліків' у bento тепер "
+        "tap-тригер → bottom-sheet модалка #adherenceModal."
+    ))
+    s.append(sp(4))
+    s.append(file_table([
+        ("src/features/analytics/adherence.js", "НОВИЙ",
+         "renderAdherenceChart(containerId), disposeAdherenceChart(containerId)"),
+        ("src/features/analytics/index.js",     "ОНОВЛЕНО",
+         "re-export renderAdherenceChart, disposeAdherenceChart"),
+        ("index.html",                           "ОНОВЛЕНО",
+         "bento-card bc-amber: data-action='openAdherenceModal', tap-hint; #adherenceModal bottom-sheet"),
+        ("src/app.js",                           "ОНОВЛЕНО",
+         "ACTIONS: openAdherenceModal (render+show), closeAdherenceModal (dispose+hide)"),
+        ("src/i18n/ui.uk.js",                    "ОНОВЛЕНО", "t-adherence-title, t-adherence-empty, t-btn-adherence"),
+    ]))
+    s += [sp(8), hr()]
+
+    # ═══ 4. Task 4 — Notes ════════════════════════════════════════════════════
+    s.append(section_box("4", "Task 4 — Нотатки до вимірів (вже реалізовано в v5.1)"))
+    s.append(sp(6))
+    s.append(body(
+        "Поле #note є у формі вимірювань. saveMeasurement() зчитує його. "
+        "journal.js відображає нотатки з SVG-іконкою (.history-note). "
+        "Завдання повністю реалізоване в попередніх сесіях — перевірено та підтверджено."
+    ))
+    s += [sp(8), hr()]
+
+    # ═══ 5. Task 5 — PDF Doctor Report ════════════════════════════════════════
+    s.append(section_box("5", "Task 5 — PDF-звіт для лікаря (html2canvas + jsPDF)"))
+    s.append(sp(6))
+    s.append(body(
+        "Новий файл src/features/export/pdf-report.js. Варіант А: html2canvas → jsPDF. "
+        "Повністю офлайн, кирилиця через рендер браузера. Звіт включає: "
+        "інфо пацієнта, статистика тиску (середній, макс, мін), SVG-графік 30 днів "
+        "побудований inline, таблиця останніх 30 вимірів, ліки, графік adherence. "
+        "Дисклеймер. Кнопка 'Друк' у журналі та 'PDF' у налаштуваннях → generateDoctorReport()."
+    ))
+    s.append(sp(4))
+    s.append(file_table([
+        ("src/features/export/pdf-report.js", "НОВИЙ",
+         "generateDoctorReport(): buildReportHTML + html2canvas + jsPDF; buildBPChartSVG(); "
+         "buildAdherenceSVG(); computeDailyAdherence()"),
+        ("src/features/export/index.js",       "ОНОВЛЕНО",
+         "import + export generateDoctorReport"),
+        ("src/app.js",                          "ОНОВЛЕНО", "ACTIONS: generateDoctorReport"),
+        ("index.html",                           "ОНОВЛЕНО",
+         "Журнал 'Друк' → generateDoctorReport; Налаштування 'PDF' → generateDoctorReport"),
+        ("assets/fonts/DejaVuSans.ttf",          "СКОПІЙОВАНО", "De Ja Vu Sans для pdf-report (html2canvas рендерить шрифт браузера)"),
+        ("package.json",                          "ОНОВЛЕНО", "svg2pdf.js встановлено (для майбутніх SVG-exports)"),
+    ]))
+    s += [sp(8), hr()]
+
+    # ═══ 6. Task 6 — Days-Picker ══════════════════════════════════════════════
+    s.append(section_box("6", "Task 6 — Days-Picker (кнопки замість select)"))
+    s.append(sp(6))
+    s.append(body(
+        "select#pillDays замінено на .days-picker — горизонтальний ряд кнопок-chips. "
+        "Варіанти: Щодня / Пн/Ср/Пт / Вт/Чт/Сб/Нд / Будні / Дата. "
+        "selectPillDay(el) — нова функція в meds/index.js: toggle .active, "
+        "викликає onPillDaysChange(days). addPill() читає активну кнопку через "
+        "querySelector('#pillDays .days-btn.active')?.dataset.days. "
+        "Reset після додавання: querySelector('#pillDays .days-btn[data-days=daily]').active."
+    ))
+    s.append(sp(4))
+    s.append(file_table([
+        ("index.html",                  "ОНОВЛЕНО",
+         "&lt;div class='days-picker'&gt; з 5 кнопками .days-btn data-action='selectPillDay'"),
+        ("src/features/meds/index.js",  "ОНОВЛЕНО",
+         "onPillDaysChange(days?): backward-compat; selectPillDay(el); addPill: querySelector; reset"),
+        ("styles/features.css",         "ОНОВЛЕНО", ".days-picker, .days-btn, .days-btn.active"),
+        ("src/i18n/ui.uk.js",           "ОНОВЛЕНО", "m-day-mon-wed-fri, m-day-tue-thu-sat-sun"),
+    ]))
+    s += [sp(8), hr()]
+
+    # ═══ 7. Task 7 — gen-version.js ═══════════════════════════════════════════
+    s.append(section_box("7", "Task 7 — gen-version.js · Новий формат версії"))
+    s.append(sp(6))
+    s.append(body(
+        "scripts/gen-version.js оновлено: PATCH тепер padStart(3, '0') → '000'...'999'. "
+        "Додано окремий export APP_DATE (DD.MM.YYYY) та APP_VERSION (5.2.000). "
+        "APP_BUILD_FULL: 'v5.2.000 / 08.05.2026'. "
+        "src/core/constants.js: re-export APP_VERSION, APP_DATE (видалено const APP_VERSION = '5.0'). "
+        "npm run version → version.gen.js успішно оновлено: v5.2.000 / 08.05.2026."
+    ))
+    s.append(sp(4))
+    s.append(file_table([
+        ("scripts/gen-version.js",      "ОНОВЛЕНО",
+         "PATCH padStart(3,'0'); APP_DATE DD.MM.YYYY; APP_BUILD_FULL 'v5.2.000 / DD.MM.YYYY'"),
+        ("src/core/constants.js",       "ОНОВЛЕНО",
+         "re-export APP_VERSION, APP_DATE; видалено const APP_VERSION='5.0'"),
+        ("src/core/version.gen.js",     "РЕГЕНЕРОВАНО",
+         "npm run version → v5.2.000 / 08.05.2026 (3f2242b)"),
+    ]))
+    s += [sp(8), hr()]
+
+    # ═══ 8. Архітектурні рішення ══════════════════════════════════════════════
+    s.append(section_box("8", "Архітектурні рішення сесії"))
     s.append(sp(6))
     s.append(arch_table([
-        ("SQLite Write-through",
-         "Дані пишуться у БД одразу при збереженні. Читання при старті — з localStorage (швидко). "
-         "SQLite — для аналітики та звітів."),
-        ("db.js без циклічних залежностей",
-         "Модуль не імпортує state.js напряму — посилання передається через _setStateRef(state) "
-         "з app.js після ініціалізації."),
-        ("WeakMap для ECharts-інстансів",
-         "Не витікає при переходах між сторінками. disposeChart(el) перед кожною зміною innerHTML."),
-        ("manualChunks: echarts+zrender",
-         "Паралельне завантаження + незалежний кеш браузера = швидший повторний старт."),
+        ("No &lt;a href&gt; в модалках",
+         "Всі зовнішні посилання — через <button data-action='searchTabletki'> та JS window.open(). "
+         "URL не в DOM → захист від XSS та Safe Browsing false positive."),
+        ("Biometric: web-safe dynamic import",
+         "loadPlugin() динамічно завантажує Capacitor плагін. На вебі — завжди false. "
+         "Vite не падає, бо пакет @aparajita/capacitor-biometric-auth встановлено."),
+        ("Adherence: обчислення з state (без async)",
+         "computeDailyAdherence() ітерує state.pillsTaken синхронно. "
+         "Немає залежності від SQLite API → працює на вебі і native однаково."),
+        ("PDF: html2canvas Variant A",
+         "html2canvas рендерить скрите &lt;div&gt; з повним звітом → canvas → jsPDF images. "
+         "Кирилиця через рендер браузера — не потрібен DejaVu у jsPDF."),
+        ("Days-picker: state у DOM",
+         ".days-btn.active — єдине джерело правди. Немає змінних у модулі. "
+         "Reset: querySelectorAll + classList.toggle за data-days."),
     ]))
     s += [sp(8), hr()]
 
-    # ═══ 4. Роадмап / Пропозиції ══════════════════════════════════════════════
-    s.append(section_box("4", "Наступні кроки / Роадмап"))
+    # ═══ 9. Роадмап ═══════════════════════════════════════════════════════════
+    s.append(section_box("9", "Наступні кроки / Роадмап"))
     s.append(sp(6))
     s.append(proposal_table([
-        ("Аналіз",  "ScatterChart «Кроки ↔ Тиск» — кореляційний графік. "
-                    "db.queryStepPressureCorrelation() вже реалізовано",          "Високий"),
-        ("Аналіз",  "BarChart «Зони ВООЗ» — 6 категорій. "
-                    "db.countByBPCategory() вже реалізовано",                     "Високий"),
-        ("Журнал",  "Фільтр за датою/діапазоном. queryMeasurements({from,to}) є","Високий"),
-        ("Аналіз",  "Adherence-трекер: графік прийому ліків за 30 днів",          "Середній"),
-        ("Виміри",  "Нотатки до вимірювань — поле note є, потрібно UI",           "Середній"),
-        ("Ліки",    "Повторення розкладу: weekly/daily/custom days",              "Середній"),
-        ("Безпека", "PIN/біометрія при відкритті додатку",                        "Низький"),
-        ("Профіль", "Вкладки «Вага» та «Сон»",                                   "Низький"),
+        ("Ліки",    "Days-picker: weekdays/custom підтримка у isPillDueToday()",   "Високий"),
+        ("PDF",     "Варіант Б: ECharts SVG → svg2pdf.js → jsPDF (вища якість)",   "Середній"),
+        ("Безпека", "AppState listener Capacitor: блокувати при згортанні в фон",  "Середній"),
+        ("Профіль", "Вкладки «Вага» та «Сон»",                                     "Середній"),
+        ("Аналіз",  "Adherence weekly/monthly trend drill-down",                   "Низький"),
+        ("i18n",    "Стрінги days-picker у i18n (Будні ← id='t-day-weekdays')",    "Низький"),
     ]))
     s += [sp(8), hr()]
 

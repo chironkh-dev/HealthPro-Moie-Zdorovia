@@ -362,4 +362,33 @@ export const T_UK ={
   'm-warn-disclaimer':'Самолікування небезпечне. Завжди консультуйтеся з лікарем.',
   'm-discl-title':'Застереження щодо ліків',
   'm-discl-text':'Інформація про препарати носить виключно інформаційний характер. Не є медичною порадою. Перед застосуванням будь-якого препарату проконсультуйтеся з лікарем. Самолікування може бути небезпечним для вашого здоров\'я.',
+
+  // ─── v5.2 Part 2: нові ключі ───
+  // Tabletki.ua (Task 1)
+  'm-search-source':'Пошук: Tabletki.ua',
+
+  // Біометрія (Task 2)
+  's-biometric':'Блокування біометрією',
+  's-biometric-sub':'Відбиток пальця або PIN для входу',
+  's-biometric-reason':'Підтвердіть особу для доступу до HealthPro',
+  's-biometric-cancel':'Скасувати',
+  't-lock-title':'HealthPro заблоковано',
+  't-lock-sub':'Підтвердіть особу для доступу',
+  't-lock-btn':'Розблокувати',
+
+  // Adherence chart (Task 3)
+  't-adherence-title':'Прийом ліків — 30 днів',
+  't-adherence-empty':'Потрібно 3+ дні прийому ліків для графіка',
+  't-btn-adherence':'Графік прийому',
+
+  // PDF-звіт для лікаря (Task 5)
+  'export-doctor-report':'Звіт для лікаря (PDF)',
+  'export-doctor-report-sub':'Тиск, ліки, ІЗ — повний звіт',
+  'e-doctor-pdf-prep':'Генерація звіту для лікаря...',
+  'e-doctor-pdf-done':'Звіт готовий!',
+  'e-doctor-pdf-error':'Помилка генерації звіту',
+
+  // Дні прийому (Task 6)
+  'm-day-mon-wed-fri':'Пн/Ср/Пт',
+  'm-day-tue-thu-sat-sun':'Вт/Чт/Сб/Нд',
 };

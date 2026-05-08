@@ -93,6 +93,16 @@ HealthPro-Moie-Zdorovia/
 
 ## Changelog
 
+### v5.2.0 (2026-05-08) — Сесія Part 3
+
+- **Task 1 (Tabletki.ua):** `searchPharmacy()` → тільки tabletki.ua; `openDrugWarnModal()` — `<a href>` замінено на `<button data-action="searchTabletki">`, emoji ⚠️ → inline SVG; новий i18n ключ `m-search-source`.
+- **Task 2 (Biometric):** `src/core/biometric.js` — Capacitor BiometricAuth wrapper (web-safe). `#lockScreen` overlay + `.lock-screen` CSS. Toggle у налаштуваннях (секція «Безпека»). `app.js`: lockCheck при init, `toggleBiometric` / `unlockApp` actions. `@aparajita/capacitor-biometric-auth` встановлено.
+- **Task 3 (Adherence):** `src/features/analytics/adherence.js` — ECharts LineChart добової adherence з `state.pillsTaken`. Bento-карта «Прийом ліків» → tap → `#adherenceModal` (bottom-sheet). `renderAdherenceChart` / `disposeAdherenceChart` re-exported з analytics/index.
+- **Task 4 (Notes):** Підтверджено як реалізоване в v5.1 ✅.
+- **Task 5 (PDF Doctor):** `src/features/export/pdf-report.js` — `generateDoctorReport()` (html2canvas + jsPDF). Inline SVG BP chart + adherence bar chart + таблиця вимірів + ліки + дисклеймер. Журнал «Друк» та Налаштування «PDF» → `generateDoctorReport`. `svg2pdf.js` встановлено.
+- **Task 6 (Days-picker):** `select#pillDays` → `.days-picker` (chips-кнопки: Щодня / Пн/Ср/Пт / Вт/Чт/Сб/Нд / Будні / Дата). `selectPillDay(el)` у meds/index.js. CSS: `.days-btn`, `.days-btn.active`.
+- **Task 7 (gen-version):** `scripts/gen-version.js` — PATCH `padStart(3,'0')`, `APP_DATE` DD.MM.YYYY, `APP_BUILD_FULL` `v5.2.000 / 08.05.2026`. `constants.js` — re-export `APP_VERSION`, `APP_DATE`. `npm run version` → `version.gen.js` v5.2.000.
+
 ### v5.2.0 (2026-05-07) — Сесія Part 2
 - **AHA 2017 підтримка:** `norm.js` — `getBPDotClass()` та `getBPStatus()` враховують `state.settings.bpStandard` (ESC2024 / AHA2017), нові i18n ключі `n-bp-aha-elevated`, `n-bp-aha-ht1`, `n-bp-aha-ht2`.
 - **db.js `countByBPCategory()`** — standard-aware: AHA 2017 категорії маппуються до 5 ESC-слотів.
@@ -124,7 +134,10 @@ HealthPro-Moie-Zdorovia/
 
 ## Gotchas
 
-- **PDF шрифти:** Використовувати тільки `DejaVu Sans` через TTFont.
+- **PDF шрифти:** Використовувати тільки `DejaVu Sans` через TTFont. У `pdf-report.js` кирилиця рендериться через html2canvas (шрифт браузера) — DejaVu не потрібний у jsPDF.
+- **`days-picker` #pillDays:** Тепер `<div class="days-picker">` — не `<select>`. Значення — `document.querySelector('#pillDays .days-btn.active')?.dataset.days ?? 'daily'`.
+- **`biometric.js`:** Тільки на Android APK. На вебі завжди `false`. Пакет `@aparajita/capacitor-biometric-auth` встановлено для Vite-резолвінгу.
+- **Adherence chart:** `computeDailyAdherence()` — синхронна, без async. Потребує 3+ днів даних у `state.pillsTaken`.
 - **`version.gen.js`:** Не редагувати вручну, генерується через `npm run version`.
 - **`ic_stat_running.xml`:** Це іконка сповіщення Android, не `ic_stat_steps`.
 - **Сплеш-скрін:** Реалізовано через HTML/CSS анімацію, не Capacitor plugin.

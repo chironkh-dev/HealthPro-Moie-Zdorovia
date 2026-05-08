@@ -11,6 +11,7 @@ import { renderIZChart } from './iz-chart.js';
 import { renderScatterChart, disposeScatterChart } from './scatter.js';
 import { renderBPZonesChart, disposeBPZonesChart } from './bp-zones.js';
 import { renderTipsBlock } from '../tips/index.js';
+export { renderAdherenceChart, disposeAdherenceChart } from './adherence.js';
 
 const avg = (arr) => (arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null);
 

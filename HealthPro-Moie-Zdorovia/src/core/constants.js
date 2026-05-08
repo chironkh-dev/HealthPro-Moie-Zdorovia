@@ -7,8 +7,7 @@ export { STORAGE_KEYS } from './storage.js';
 
 // ─── App / disclaimer versioning ───
 // APP_BUILD_LABEL та APP_SEMVER — з автогенерованого файлу (npm run version)
-export { APP_BUILD_LABEL, APP_SEMVER, APP_BUILD_FULL, APP_BUILD_DATE } from './version.gen.js';
-export const APP_VERSION = '5.0';
+export { APP_BUILD_LABEL, APP_SEMVER, APP_BUILD_FULL, APP_BUILD_DATE, APP_VERSION, APP_DATE } from './version.gen.js';
 export const DISCLAIMER_VERSION = '1.0';
 export const DISCLAIMER_HISTORY_KEY = 'healthpro_disclaimer_history';
 export const LEGACY_DISCLAIMER_KEY_PREFIX = 'healthpro_disclaimer_v';

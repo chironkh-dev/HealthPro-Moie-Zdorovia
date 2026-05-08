@@ -40,3 +40,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .empty-state p{font-size:14px;font-weight:600}
 .section-lbl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin:14px 0 8px;display:flex;align-items:center;gap:7px}
 .section-lbl::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── Lock Screen (Task 2) ─── */
+#lockScreen{position:fixed;inset:0;z-index:9999;background:var(--bg,#fff);display:flex;align-items:center;justify-content:center}
+#lockScreen.hidden{display:none}
+.lock-screen{text-align:center;padding:32px 24px;max-width:320px;margin:0 auto}
+.lock-screen svg{color:var(--blue2,#2563eb);margin-bottom:20px;opacity:.85}
+.lock-screen p{font-size:15px;color:var(--text2);margin-bottom:6px;line-height:1.5}
+.lock-screen p:first-of-type{font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px}
+.lock-screen .btn{margin-top:20px;min-width:160px;padding:14px 28px;font-size:16px;font-weight:700}

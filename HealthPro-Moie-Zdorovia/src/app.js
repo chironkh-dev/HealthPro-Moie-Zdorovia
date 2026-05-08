@@ -24,7 +24,7 @@ import {
 } from './features/pressure/index.js';
 import {
   // meds
-  addPill, togglePill, deletePill, searchPharmacy,
+  addPill, togglePill, deletePill, searchPharmacy, searchTabletki, selectPillDay,
   renderPills, onPillDaysChange, checkDrugName, openDrugWarnModal,
 } from './features/meds/index.js';
 import {
@@ -56,8 +56,10 @@ import {
   // export
   openExportModal, closeExportModal, selectExportPeriod, updateExportCount,
   exportPDF, exportCSV, exportReportCSV, exportData, importData,
-  printReportPeriod, setPDFShowPage,
+  printReportPeriod, setPDFShowPage, generateDoctorReport,
 } from './features/export/index.js';
+import { renderAdherenceChart, disposeAdherenceChart } from './features/analytics/index.js';
+import { checkBiometric, authenticate } from './core/biometric.js';
 import {
   // settings
   applyTheme, toggleTheme,
@@ -220,6 +222,25 @@ function init() {
 
   onPillDaysChange();
 
+  // ── Biometric lock init (Task 2) ──
+  const _st = state.settings;
+  const biometricBtn = document.getElementById('biometricToggle');
+  if (biometricBtn) biometricBtn.classList.toggle('active', !!_st.biometricLock);
+  if (_st.biometricLock) {
+    checkBiometric().then((avail) => {
+      if (avail) {
+        document.getElementById('lockScreen')?.classList.remove('hidden');
+        authenticate().then((ok) => {
+          if (ok) document.getElementById('lockScreen')?.classList.add('hidden');
+        });
+      } else {
+        _st.biometricLock = false;
+        saveData();
+        if (biometricBtn) biometricBtn.classList.remove('active');
+      }
+    });
+  }
+
   // Round 4 #2 — schedule was previously polled every minute (only worked
   // while the app was open). Now we pre-schedule via Android AlarmManager
   // (see notifications.scheduleAllReminders) so reminders fire even when
@@ -279,6 +300,8 @@ const ACTIONS = {
   togglePill: (el) => togglePill(parseInt(el.dataset.id, 10)),
   deletePill: (el) => deletePill(parseInt(el.dataset.id, 10)),
   searchPharmacy: (el) => searchPharmacy(el.dataset.pharmacy),
+  searchTabletki: (el) => searchTabletki(el.dataset.drug || ''),
+  selectPillDay: (el) => selectPillDay(el),
   // analytics
   openTrendModal: () => openTrendModal(),
   closeTrendModal: (el, ev) => closeTrendModal(ev),
@@ -364,6 +387,42 @@ const ACTIONS = {
   declineStepFg: () => declineStepFg(),
   // pills form
   onPillDaysChange: () => onPillDaysChange(),
+  // adherence chart (Task 3)
+  openAdherenceModal: () => {
+    renderAdherenceChart('adherenceChartContainer');
+    document.getElementById('adherenceModal')?.classList.add('show');
+  },
+  closeAdherenceModal: () => {
+    disposeAdherenceChart('adherenceChartContainer');
+    document.getElementById('adherenceModal')?.classList.remove('show');
+  },
+  // doctor PDF report (Task 5)
+  generateDoctorReport: () => generateDoctorReport(),
+  // biometric lock (Task 2)
+  toggleBiometric: () => {
+    const st = state.settings;
+    const newVal = !st.biometricLock;
+    st.biometricLock = newVal;
+    saveData();
+    const btn = document.getElementById('biometricToggle');
+    if (btn) btn.classList.toggle('active', newVal);
+    if (newVal) {
+      checkBiometric().then((avail) => {
+        if (!avail) {
+          st.biometricLock = false;
+          saveData();
+          if (btn) btn.classList.remove('active');
+          showToast('Біометрія недоступна на цьому пристрої');
+        }
+      });
+    }
+  },
+  unlockApp: () => {
+    authenticate().then((ok) => {
+      if (ok) document.getElementById('lockScreen')?.classList.add('hidden');
+      else showToast('Автентифікацію скасовано');
+    });
+  },
   checkDrugName: () => checkDrugName(),
   // generic dismissals
   stop: (el, ev) => ev.stopPropagation(),

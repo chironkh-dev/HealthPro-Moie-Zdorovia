@@ -13,6 +13,7 @@
     "prebuild": "node scripts/gen-version.js"
   },
   "dependencies": {
+    "@aparajita/capacitor-biometric-auth": "10.0.0",
     "@capacitor-community/sqlite": "8.1.0",
     "@capacitor/app": "8.1.0",
     "@capacitor/filesystem": "8.1.2",
@@ -24,7 +25,8 @@
     "@capacitor/status-bar": "8.0.2",
     "echarts": "6.0.0",
     "html2canvas": "1.4.1",
-    "jspdf": "2.5.2"
+    "jspdf": "2.5.2",
+    "svg2pdf.js": "2.7.0"
   },
   "devDependencies": {
     "@capacitor/assets": "3.0.5",

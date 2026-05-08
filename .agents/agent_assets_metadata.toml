@@ -150,3 +150,9 @@ id = "cNeZkgJHQJSZxoI3iRca_"
 uri = "file://HealthPro-Moie-Zdorovia/report/HealthPro_Session_v5.2.0_SQLite_ECharts_Report.pdf"
 type = "pdf"
 title = "HealthPro_Session_v5.2.0_SQLite_ECharts_Report.pdf"
+
+[[outputs]]
+id = "-ENv_TdDf5rfDdAn28jzP"
+uri = "file://HealthPro-Moie-Zdorovia/report/HealthPro_Session_v5.2.0_Biometric_PDF_DaysPicker_Part3_Report.pdf"
+type = "pdf"
+title = "Звіт сесії v5.2.0 Part 3 — Biometric · PDF · DaysPicker"

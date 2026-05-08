@@ -368,4 +368,33 @@ export const T_RU ={
   'hs-veto-default':'⚠️ Вето применено',
   'hs-norm-personal':'👤 Личная норма',
   'hs-norm-standard':'📋 Стандартная норма',
+
+  // ─── v5.2 Part 2: нові ключі ───
+  // Tabletki.ua (Task 1)
+  'm-search-source':'Поиск: Tabletki.ua',
+
+  // Біометрія (Task 2)
+  's-biometric':'Блокировка биометрией',
+  's-biometric-sub':'Отпечаток пальца или PIN для входа',
+  's-biometric-reason':'Подтвердите личность для доступа к HealthPro',
+  's-biometric-cancel':'Отмена',
+  't-lock-title':'HealthPro заблокировано',
+  't-lock-sub':'Подтвердите личность для доступа',
+  't-lock-btn':'Разблокировать',
+
+  // Adherence chart (Task 3)
+  't-adherence-title':'Приём лекарств — 30 дней',
+  't-adherence-empty':'Нужно 3+ дня приёма лекарств для графика',
+  't-btn-adherence':'График приёма',
+
+  // PDF-звіт для лікаря (Task 5)
+  'export-doctor-report':'Отчёт для врача (PDF)',
+  'export-doctor-report-sub':'Давление, лекарства, ИЗ — полный отчёт',
+  'e-doctor-pdf-prep':'Генерация отчёта для врача...',
+  'e-doctor-pdf-done':'Отчёт готов!',
+  'e-doctor-pdf-error':'Ошибка генерации отчёта',
+
+  // Дні прийому (Task 6)
+  'm-day-mon-wed-fri':'Пн/Ср/Пт',
+  'm-day-tue-thu-sat-sun':'Вт/Чт/Сб/Вс',
 };

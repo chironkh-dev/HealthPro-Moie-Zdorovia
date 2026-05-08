@@ -139,6 +139,16 @@
 .hi-hypo{border-left:3px solid var(--cyan,#06b6d4);padding-left:7px}
 .h-del-btn{background:none;border:none;cursor:pointer;padding:5px;color:var(--text3);opacity:.4;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
 .h-del-btn:active{opacity:1;color:var(--red);background:rgba(239,68,68,.1)}
+
+/* ── Days-picker (Task 6) ─── */
+.days-picker{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}
+.days-btn{flex:0 1 auto;padding:6px 11px;border-radius:20px;border:1.5px solid var(--border2,#e2e8f0);background:transparent;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;transition:all .18s;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+.days-btn.active{background:var(--blue2,#2563eb);border-color:var(--blue2,#2563eb);color:#fff}
+.days-btn:active{transform:scale(.95)}
+
+/* ── Pill link button (Task 1) ─── */
+.pill-link-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;border:1.5px solid var(--blue2,#2563eb);background:transparent;color:var(--blue2,#2563eb);font-size:12px;font-weight:700;cursor:pointer;margin-top:8px;transition:all .18s}
+.pill-link-btn:active{background:var(--blue-dim,#eff6ff)}
 .history-data{flex:1}
 .history-main{font-size:17px;font-weight:800}
 .history-sub{font-size:11px;color:var(--text3);margin-top:1px}

@@ -12,6 +12,9 @@ import {
 
 export { DRUG_DB };
 
+// SVG-іконка попередження (замість emoji ⚠️)
+const _WARN_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14" style="flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`; // eslint-disable-line no-unused-vars
+
 // Зберігає поточне попередження для відкриття модалки
 let _drugWarnInfo = null;
 
@@ -44,11 +47,14 @@ export function getDayName(p) {
   return out === key ? p.days : out;
 }
 
-export function onPillDaysChange() {
-  const sel = document.getElementById('pillDays');
+export function onPillDaysChange(days) {
+  // Якщо days не передано — зчитуємо з активної кнопки days-picker
+  if (days === undefined) {
+    days = document.querySelector('#pillDays .days-btn.active')?.dataset.days ?? 'daily';
+  }
   const dt = document.getElementById('pillDate');
-  if (!sel || !dt) return;
-  if (sel.value === 'date') {
+  if (!dt) return;
+  if (days === 'date') {
     dt.disabled = false;
     dt.min = today();
     if (!dt.value) dt.value = today();
@@ -56,6 +62,12 @@ export function onPillDaysChange() {
     dt.disabled = true;
     dt.value = '';
   }
+}
+
+export function selectPillDay(el) {
+  document.querySelectorAll('#pillDays .days-btn').forEach((b) => b.classList.remove('active'));
+  el.classList.add('active');
+  onPillDaysChange(el.dataset.days);
 }
 
 // ─── Drug-name & dose validation ───
@@ -77,17 +89,20 @@ export function openDrugWarnModal() {
   const el = document.getElementById('drugWarnContent');
   const modal = document.getElementById('drugWarnModal');
   if (!el || !modal) return;
+  const warnSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="18" height="18" style="flex-shrink:0;color:var(--amber,#f59e0b)"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
   if (_drugWarnInfo) {
     const { found, info } = _drugWarnInfo;
     const cap = found.charAt(0).toUpperCase() + found.slice(1);
     el.innerHTML = `<p style="font-size:15px;font-weight:800;margin-bottom:8px">${cap}</p>
       <p style="font-size:13px;color:var(--text2);line-height:1.7">${tt('m-warn-max', { max: info.max, unit: info.unit, warn: info.warn })}</p>
-      <a href="https://tabletki.ua/search/?q=${encodeURIComponent(found)}" target="_blank" class="pill-link" style="margin-top:10px;font-size:12px">${t('m-warn-ref')} →</a>
+      <button class="pill-link-btn" data-action="searchTabletki" data-drug="${found}" style="margin-top:10px">${t('m-warn-ref')} →</button>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">${t('m-search-source')}</div>
       <div class="disclaimer" style="margin-top:12px">${t('m-warn-disclaimer')}</div>`;
   } else {
-    el.innerHTML = `<p style="font-size:15px;font-weight:800;margin-bottom:10px">⚠️ ${t('m-discl-title')}</p>
+    el.innerHTML = `<p style="font-size:15px;font-weight:800;margin-bottom:10px;display:flex;align-items:center;gap:8px">${warnSvg}${t('m-discl-title')}</p>
       <p style="font-size:13px;color:var(--text2);line-height:1.7">${t('m-discl-text')}</p>
-      <a href="https://tabletki.ua/" target="_blank" class="pill-link" style="margin-top:10px;font-size:12px">Tabletki.ua →</a>`;
+      <button class="pill-link-btn" data-action="searchTabletki" data-drug="" style="margin-top:10px">Tabletki.ua →</button>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">${t('m-search-source')}</div>`;
   }
   modal.classList.add('show');
 }
@@ -109,7 +124,7 @@ export function addPill() {
   const name = document.getElementById('pillName').value.trim();
   const dose = document.getElementById('pillDose').value.trim();
   const time = document.getElementById('pillTime').value;
-  const days = document.getElementById('pillDays').value;
+  const days = document.querySelector('#pillDays .days-btn.active')?.dataset.days ?? 'daily';
   const date = document.getElementById('pillDate').value;
 
   if (!name) { showToast(t('m-toast-need-name')); return; }
@@ -132,7 +147,7 @@ export function addPill() {
   dbSaveMed(newPill).catch(() => {});
   ['pillName', 'pillDose'].forEach((id) => { document.getElementById(id).value = ''; });
   document.getElementById('pillTime').value = '08:00';
-  document.getElementById('pillDays').value = 'daily';
+  document.querySelectorAll('#pillDays .days-btn').forEach((b) => b.classList.toggle('active', b.dataset.days === 'daily'));
   document.getElementById('pillDate').value = '';
   document.getElementById('pillDate').disabled = true;
   document.getElementById('pillNameWarn').style.display = 'none';
@@ -141,18 +156,18 @@ export function addPill() {
   emit('pills:changed');
 }
 
-export function searchPharmacy(site) {
+export function searchPharmacy() {
   const name = document.getElementById('pillName').value.trim() || '';
   if (!name) { showToast(t('m-toast-need-name-search')); return false; }
-  const q = encodeURIComponent(name);
-  const urls = {
-    apteka: `https://apteka.ua/search/?q=${q}`,
-    liki: `https://liki.ua/search/?q=${q}`,
-    tabletki: `https://tabletki.ua/search/?q=${q}`,
-    nine11: `https://911.ua/search?q=${q}`,
-  };
-  if (urls[site]) window.open(urls[site], '_blank');
+  window.open(`https://tabletki.ua/search/?q=${encodeURIComponent(name)}`, '_blank');
   return false;
+}
+
+// searchTabletki — відкриває tabletki.ua для конкретного препарату (з модалки)
+// URL не потрапляє у DOM — безпека Google Safe Browsing
+export function searchTabletki(drug) {
+  const q = drug || document.getElementById('pillName')?.value.trim() || '';
+  if (q) window.open(`https://tabletki.ua/search/?q=${encodeURIComponent(q)}`, '_blank');
 }
 
 export function renderPills() {
