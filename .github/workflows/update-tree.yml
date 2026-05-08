@@ -1,0 +1,48 @@
+name: Update Directory Tree
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  update-tree:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tree
+        run: sudo apt-get install -y tree
+
+      - name: Generate tree
+        run: |
+          tree -I 'node_modules|.git|dist|.gradle|build|.capacitor' \
+               --dirsfirst -a > /tmp/tree.txt
+
+      - name: Inject tree into README
+        run: |
+          python3 - <<'EOF'
+          import re, pathlib
+          tree = pathlib.Path('/tmp/tree.txt').read_text()
+          readme = pathlib.Path('README.md').read_text()
+          block = f"<!-- TREE_START -->\n```\n{tree}```\n<!-- TREE_END -->"
+          result = re.sub(
+            r'<!-- TREE_START -->.*?<!-- TREE_END -->',
+            block,
+            readme,
+            flags=re.DOTALL
+          )
+          pathlib.Path('README.md').write_text(result)
+          EOF
+
+      - name: Commit & push
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git diff --quiet && echo "No changes" && exit 0
+          git add README.md
+          git commit -m "chore: update directory tree"
+          git push
