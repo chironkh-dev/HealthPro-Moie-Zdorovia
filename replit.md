@@ -105,6 +105,7 @@ HealthPro-Moie-Zdorovia/
 ## Pointers
 
 - **PDF звіти сесій:** `HealthPro-Moie-Zdorovia/generate_session_report_*.py`
+- **Папка PDF звітів:** `HealthPro-Moie-Zdorovia/report/` — **усі** згенеровані PDF-файли (звіти сесій, лікарські звіти, тощо) зберігати виключно тут.
 - **Android сервіс:** `android/app/src/main/java/ua/healthpro/app/StepCounterService.java`
 - **Версія:** `scripts/gen-version.js` → `src/core/version.gen.js`
 - **DB API:** `src/core/db.js`
