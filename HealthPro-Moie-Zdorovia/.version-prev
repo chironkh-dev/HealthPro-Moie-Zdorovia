@@ -1,0 +1,17 @@
+// ── Скидаємо PATCH якщо змінився MINOR або MAJOR ──────────────────────────
+const prevPath = resolve(root, '.version-prev');
+let prevMajor = major;
+let prevMinor = minor;
+
+try {
+  const prev = readFileSync(prevPath, 'utf8').trim().split('.');
+  prevMajor  = Number(prev[0] || 0);
+  prevMinor  = Number(prev[1] || 0);
+} catch { /* файл ще не існує — перший запуск */ }
+
+if (major !== prevMajor || minor !== prevMinor) {
+  patchNum = 1; // скидаємо до 001
+}
+
+// Зберігаємо поточний MAJOR.MINOR для наступного запуску
+writeFileSync(prevPath, `${major}.${minor}`, 'utf8');
