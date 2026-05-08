@@ -104,7 +104,11 @@ HealthPro-Moie-Zdorovia/
 
 ## Pointers
 
-- **PDF звіти сесій:** `HealthPro-Moie-Zdorovia/generate_session_report_*.py`
+- **Скрипт звіту сесії:** `HealthPro-Moie-Zdorovia/scripts/HealthPro_generate_session_report.py`
+  - Єдиний шаблон для генерації PDF-звітів сесій. Всі старі скрипти видалено.
+  - Налаштування на початку файлу: `VERSION`, `DESCRIPTION`, `PART` (None або 1, 2, …)
+  - Запуск: `python3 scripts/HealthPro_generate_session_report.py`
+  - Вихідний файл: `report/HealthPro_Session_v{VERSION}_{DESCRIPTION}_{PartN}_Report.pdf`
 - **Папка звітів сесій:** `HealthPro-Moie-Zdorovia/report/` — лише PDF-звіти про виконану роботу агента (звіти сесій розробки). Лікарські PDF-звіти, які генерує сам застосунок, тут не зберігаються.
 - **Android сервіс:** `android/app/src/main/java/ua/healthpro/app/StepCounterService.java`
 - **Версія:** `scripts/gen-version.js` → `src/core/version.gen.js`
