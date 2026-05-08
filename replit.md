@@ -102,6 +102,14 @@ HealthPro-Moie-Zdorovia/
 - **`_setStateRef(state)`:** Викликається з `app.js` після ініціалізації, до першого використання `db.js`.
 - **SQLCipher на вебі:** Не активний, тестувати лише на APK.
 
+## Folders
+
+| Папка | Призначення |
+|---|---|
+| `HealthPro-Moie-Zdorovia/report/` | PDF-звіти сесій агента (генеруються скриптом) |
+| `HealthPro-Moie-Zdorovia/task_feedback/` | Завдання від користувача, фідбеки, скріншоти, референсні файли |
+| `attached_assets/` | Тільки CI/yml конфіги середовища Replit |
+
 ## Pointers
 
 - **Скрипт звіту сесії:** `HealthPro-Moie-Zdorovia/scripts/HealthPro_generate_session_report.py`
