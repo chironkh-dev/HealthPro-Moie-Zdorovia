@@ -35,6 +35,22 @@ let patchNum = Number(parts[2] || 0) + 1;
 if (patchNum > 999) { patchNum = 0; minor += 1; }
 if (minor > 99)     { minor = 0;    major += 1; }
 
+// ── Скидаємо PATCH якщо змінився MINOR або MAJOR ──────────────────────────
+const prevPath = resolve(root, '.version-prev');
+let prevMajor = major;
+let prevMinor = minor;
+try {
+  const prev = readFileSync(prevPath, 'utf8').trim().split('.');
+  prevMajor  = Number(prev[0] || 0);
+  prevMinor  = Number(prev[1] || 0);
+} catch { /* перший запуск */ }
+
+if (major !== prevMajor || minor !== prevMinor) {
+  patchNum = 1;
+}
+
+writeFileSync(prevPath, `${major}.${minor}`, 'utf8');
+
 pkg.version = `${major}.${minor}.${patchNum}`;
 writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
 
