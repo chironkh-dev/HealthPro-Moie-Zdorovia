@@ -19,8 +19,9 @@ jobs:
 
       - name: Generate tree
         run: |
-          tree -I 'node_modules|.git|dist|.gradle|build|.capacitor' \
-               --dirsfirst -a > /tmp/tree.txt
+          tree HealthPro-Moie-Zdorovia \
+               -I 'node_modules|.git|dist|.gradle|build|.capacitor|.agents|report|task_feedback|attached_assets|icons_old' \
+               --dirsfirst -a --noreport > /tmp/tree.txt
 
       - name: Inject tree into README
         run: |
