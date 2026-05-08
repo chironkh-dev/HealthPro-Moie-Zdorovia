@@ -132,3 +132,9 @@ id = "8dZtSFap5DmN4enXUoFBV"
 uri = "file://HealthPro-Moie-Zdorovia/session_report_v5.2.pdf"
 type = "pdf"
 title = "Звіт сесії HealthPro v5.2"
+
+[[outputs]]
+id = "YP8OS_8usOLS9WhoZBUwe"
+uri = "file://HealthPro-Moie-Zdorovia/scripts/session_report_v5.2.pdf"
+type = "pdf"
+title = "Приклад звіту сесії v5.2"
