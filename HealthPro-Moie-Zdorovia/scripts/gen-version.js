@@ -22,16 +22,24 @@ const __dir = dirname(fileURLToPath(import.meta.url));
 const root  = resolve(__dir, '..');
 
 // ── Зчитуємо package.json ──────────────────────────────────────────────────
-const pkg    = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'));
-const semver = pkg.version || '5.0.0';
+const pkgPath = resolve(root, 'package.json');
+const pkg     = JSON.parse(readFileSync(pkgPath, 'utf8'));
+const semver  = pkg.version || '5.0.0';
 
 // ── Новий формат: MAJOR.MINOR.PATCH(000-999) ─────────────────────────────
-const parts    = semver.split('.');
-const major    = Number(parts[0] || 0);
-const minor    = Number(parts[1] || 0);
-const patchNum = Number(parts[2] || 0);
-const patchStr = String(patchNum).padStart(3, '0'); // "000", "005", "042"
-const versionFormatted = `${major}.${minor}.${patchStr}`; // "5.2.000"
+const parts  = semver.split('.');
+let major    = Number(parts[0] || 0);
+let minor    = Number(parts[1] || 0);
+let patchNum = Number(parts[2] || 0) + 1;
+
+if (patchNum > 999) { patchNum = 0; minor += 1; }
+if (minor > 99)     { minor = 0;    major += 1; }
+
+pkg.version = `${major}.${minor}.${patchNum}`;
+writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
+
+const patchStr         = String(patchNum).padStart(3, '0');
+const versionFormatted = `${major}.${minor}.${patchStr}`;
 
 // ── Git-хеш (короткий) ────────────────────────────────────────────────────
 let gitHash = '';
