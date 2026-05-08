@@ -9,8 +9,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "version": "node scripts/gen-version.js",
-    "prebuild": "node scripts/gen-version.js"
+    "version": "node scripts/gen-version.js"
   },
   "dependencies": {
     "@aparajita/capacitor-biometric-auth": "10.0.0",
