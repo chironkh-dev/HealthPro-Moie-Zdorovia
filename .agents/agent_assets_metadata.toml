@@ -138,3 +138,9 @@ id = "YP8OS_8usOLS9WhoZBUwe"
 uri = "file://HealthPro-Moie-Zdorovia/scripts/session_report_v5.2.pdf"
 type = "pdf"
 title = "Приклад звіту сесії v5.2"
+
+[[outputs]]
+id = "ueXEYgy-Fvvu3IRl5aldn"
+uri = "file://HealthPro-Moie-Zdorovia/scripts/HealthPro_Session_May2026_SQLite_ECharts.pdf"
+type = "pdf"
+title = "Шаблон: SQLite + ECharts (травень 2026)"
