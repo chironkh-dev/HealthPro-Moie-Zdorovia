@@ -378,6 +378,21 @@ export async function queryStepLog({ from = '', to = '', limit = 90 } = {}) {
   }
 }
 
+// ── Очистка всіх реляційних таблиць (використовується при відновленні бекапу) ──
+
+export async function clearAll() {
+  if (!dbHandle) return false;
+  try {
+    for (const tbl of ['measurements', 'medications', 'med_taken', 'steps_log']) {
+      await dbHandle.execute(`DELETE FROM ${tbl};`);
+    }
+    return true;
+  } catch (e) {
+    console.warn('[SQLite] clearAll failed:', e?.message || e);
+    return false;
+  }
+}
+
 // ── Міграція v1 → v2: JSON-масиви з kv_state → реляційні таблиці ─────────────
 
 export async function migrateV1toV2() {

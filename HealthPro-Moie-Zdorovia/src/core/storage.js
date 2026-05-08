@@ -33,6 +33,8 @@ export const defaultSettings = {
   emergencyPhone: '', emergencyName: '',
   morningTime: '08:00', eveningTime: '20:00',
   stepGoal: 10000, stepsEnabled: false, stepMode: 'active-only', // see DEFAULT_STEP_GOAL in core/constants.js
+  biometricLock: false,
+  bpStandard: 'ESC2024',
 };
 
 const DB_NAME = 'HealthProDB';

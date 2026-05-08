@@ -156,3 +156,9 @@ id = "-ENv_TdDf5rfDdAn28jzP"
 uri = "file://HealthPro-Moie-Zdorovia/report/HealthPro_Session_v5.2.0_Biometric_PDF_DaysPicker_Part3_Report.pdf"
 type = "pdf"
 title = "Звіт сесії v5.2.0 Part 3 — Biometric · PDF · DaysPicker"
+
+[[outputs]]
+id = "LdKnji6Zp7mvIJLwUW5H9"
+uri = "file://HealthPro-Moie-Zdorovia/report/HealthPro_Session_v5.3.0_Backup_HPB_Biometric_Fix_Part4_Report.pdf"
+type = "pdf"
+title = "Звіт сесії v5.3.0 — Backup HPB + Biometric Fix"

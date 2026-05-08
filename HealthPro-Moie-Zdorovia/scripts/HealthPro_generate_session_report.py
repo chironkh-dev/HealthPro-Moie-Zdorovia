@@ -10,9 +10,9 @@ HealthPro — Моє Здоров'я
 # ══════════════════════════════════════════════════════════════════════════════
 # НАЛАШТУВАННЯ ЗВІТУ — редагуй перед кожною сесією
 # ══════════════════════════════════════════════════════════════════════════════
-VERSION     = "5.2.0"                   # версія застосунку
-DESCRIPTION = "Biometric_PDF_DaysPicker" # коротке уточнення теми сесії (без пробілів)
-PART        = 3                          # номер частини, якщо сесія розбита (1, 2, …) або None
+VERSION     = "5.3.0"                   # версія застосунку
+DESCRIPTION = "Backup_HPB_Biometric_Fix" # коротке уточнення теми сесії (без пробілів)
+PART        = 4                          # номер частини, якщо сесія розбита (1, 2, …) або None
 # ══════════════════════════════════════════════════════════════════════════════
 
 import datetime, os
@@ -263,193 +263,127 @@ def build_story():
 
     s += [cover(), sp(12)]
 
-    # Статистичні плитки — v5.2 Part 3
+    # Статистичні плитки — v5.3 Part 4
     s += [stats_row([
-        stat_cell("7",  "Завдань реалізовано",   "Tasks 1–7 (Part 3)"),
-        stat_cell("18", "Файлів оновлено",        "JS·HTML·CSS·i18n·py"),
-        stat_cell("3",  "Нові файли",             "biometric·adherence·pdf-report"),
-        stat_cell("0",  "Помилок компіляції",     "Vite build ✓ · dev ✓"),
+        stat_cell("2",  "Завдання сесії",        "Бекап HPB + Biometric Fix"),
+        stat_cell("9",  "Файлів оновлено/нових", "JS·HTML·i18n"),
+        stat_cell("1",  "Новий модуль",          "backup.js (AES-256-GCM)"),
+        stat_cell("0",  "Помилок компіляції",    "Vite build ✓ 1029 модулів"),
     ]), sp(14), hr()]
 
-    # ═══ 1. Task 1 — Tabletki.ua security ════════════════════════════════════
-    s.append(section_box("1", "Task 1 — Tabletki.ua · Безпека посилань"))
+    # ═══ 1. Резервне копіювання (.hpb, AES-256-GCM) ═══════════════════════════
+    s.append(section_box("1", "Бекап .hpb — AES-256-GCM (SubtleCrypto, без бібліотек)"))
     s.append(sp(6))
     s.append(body(
-        "searchPharmacy() тепер відкриває виключно tabletki.ua — видалено мультисайт. "
-        "У openDrugWarnModal(): іконка ⚠ (emoji) замінена на inline SVG; теги &lt;a href&gt; "
-        "замінені на &lt;button data-action='searchTabletki'&gt; з атрибутом data-drug. "
-        "URL ніколи не потрапляє в DOM — захист від XSS та Google Safe Browsing false-positives."
+        "Повністю новий модуль src/features/export/backup.js. Формат файлу: "
+        "healthpro-backup-YYYY-MM-DD.hpb — зашифрований JSON з AES-256-GCM. "
+        "Ключ деривується через PBKDF2 (SHA-256, 100 000 ітерацій, 16-байт salt). "
+        "Після шифрування — SHA-256 checksum усього payload для перевірки цілісності при відновленні. "
+        "Підтримка старого формату v4.0 (plain JSON без пароля) — автоматична трансформація даних."
+    ))
+    s.append(sp(4))
+    s.append(body(
+        "Структура бекапу: measurements (всі записи тиску), medications, med_taken, steps_log, "
+        "settings (bpStandard, pillReminder, measureReminder, morningTime, eveningTime, name, "
+        "height, weight, dob, doctor), theme, lang. "
+        "biometricLock навмисно виключено з бекапу — безпека на новому пристрої."
     ))
     s.append(sp(4))
     s.append(file_table([
-        ("src/features/meds/index.js", "ОНОВЛЕНО",
-         "searchPharmacy() → тільки tabletki.ua; searchTabletki(drug) — новий helper; "
-         "openDrugWarnModal() → SVG замість emoji, button замість &lt;a href&gt;"),
-        ("src/app.js",                  "ОНОВЛЕНО", "ACTIONS: searchTabletki, selectPillDay"),
-        ("src/i18n/ui.uk.js",           "ОНОВЛЕНО", "m-search-source — підпис 'Пошук: Tabletki.ua'"),
-        ("src/i18n/ui.ru.js",           "ОНОВЛЕНО", "m-search-source (ru)"),
-        ("styles/features.css",         "ОНОВЛЕНО", ".pill-link-btn — стиль кнопки-посилання"),
+        ("src/features/export/backup.js", "НОВИЙ",
+         "exportBackup(pwd): collectData+encrypt+download .hpb; "
+         "openBackupFile(file): file-picker → preview stats; "
+         "restoreBackup(pwd): decrypt+clearAll+insert+reload; "
+         "getBackupStats(): {measurements,medications,steps}; "
+         "AES-256-GCM+PBKDF2+SHA-256 via SubtleCrypto"),
+        ("src/core/sqlite.js",             "ОНОВЛЕНО",
+         "clearAll(): DELETE measurements/medications/med_taken/steps_log — "
+         "викликається перед відновленням бекапу"),
+        ("src/features/export/index.js",   "ОНОВЛЕНО",
+         "re-export exportBackup, openBackupFile, restoreBackup, getBackupStats"),
+        ("src/app.js",                      "ОНОВЛЕНО",
+         "import backup-функцій; _backupFileContent/_backupOpened state; "
+         "showBackupConfirmModal() helper; 7 нових ACTIONS: "
+         "openBackupExportModal, closeBackupExportModal, exportBackupAction, "
+         "openBackupImportModal, closeBackupImportModal, openBackupImportFile, "
+         "closeBackupConfirmModal, restoreBackupAction"),
+        ("index.html",                       "ОНОВЛЕНО",
+         "Секція Налаштувань: кнопки Зберегти .hpb (синя), CSV, Відновити (.hpb/.json). "
+         "3 модалки: #backupExportModal (пароль+підтвердження), "
+         "#backupImportModal (інфо файлу+пароль), #backupConfirmModal (підтвердження)"),
+        ("src/i18n/ui.uk.js",               "ОНОВЛЕНО",
+         "33 нові ключі bk-*: заголовки, підказки, помилки, статистика, кнопки"),
+        ("src/i18n/ui.ru.js",               "ОНОВЛЕНО",
+         "33 нові ключі bk-* (російський переклад)"),
     ]))
     s += [sp(8), hr()]
 
-    # ═══ 2. Task 2 — Biometric Auth ═══════════════════════════════════════════
-    s.append(section_box("2", "Task 2 — Biometric / PIN Lock Screen"))
+    # ═══ 2. Biometric Toggle Fix ═══════════════════════════════════════════════
+    s.append(section_box("2", "Виправлення тоглера біометрики (PIN-only пристрої)"))
     s.append(sp(6))
     s.append(body(
-        "Модуль src/core/biometric.js реалізує Capacitor BiometricAuth wrapper. "
-        "checkBiometric() та authenticate() — безпечні на вебі (завжди false). "
-        "На Android APK з плагіном @aparajita/capacitor-biometric-auth активується "
-        "fingerprint/PIN. Lock-screen overlay (#lockScreen) відображається при запуску якщо "
-        "biometricLock=true у settings. Toggle у вкладці 'Налаштування' → секція 'Безпека'."
+        "Проблема: на пристроях без відбитку пальця (тільки PIN/Pattern/Password) "
+        "checkBiometric() повертала false навіть якщо пристрій захищено. "
+        "Причина: перевірялось тільки isAvailable (пальцевий сканер), але ігнорувалось "
+        "deviceIsSecure (екран блокування). Виправлено: тепер умова "
+        "info?.isAvailable || info?.deviceIsSecure — тоглер активується на обох типах."
+    ))
+    s.append(sp(4))
+    s.append(body(
+        "Також: хардкод 'Біометрія недоступна' в app.js замінено на t('bio-err-unavailable'). "
+        "defaultSettings у storage.js тепер явно містить biometricLock: false та "
+        "bpStandard: 'ESC2024' — усуває потенційні undefined при першому запуску."
     ))
     s.append(sp(4))
     s.append(file_table([
-        ("src/core/biometric.js",  "НОВИЙ",
-         "checkBiometric(), authenticate() — web-safe dynamic import Capacitor plugin"),
-        ("index.html",             "ОНОВЛЕНО",
-         "#lockScreen overlay + .lock-screen div; settings card 'Безпека' з toggle #biometricToggle"),
-        ("src/app.js",             "ОНОВЛЕНО",
-         "import checkBiometric/authenticate; init: lockCheck при старті; "
-         "ACTIONS: toggleBiometric, unlockApp"),
-        ("styles/base.css",        "ОНОВЛЕНО",
-         "#lockScreen, .lock-screen стилі"),
-        ("src/i18n/ui.uk.js",      "ОНОВЛЕНО", "s-biometric, t-lock-title/sub/btn"),
+        ("src/core/biometric.js",   "ОНОВЛЕНО",
+         "checkBiometric(): info?.isAvailable || info?.deviceIsSecure (замість тільки isAvailable)"),
+        ("src/core/storage.js",     "ОНОВЛЕНО",
+         "defaultSettings: biometricLock: false, bpStandard: 'ESC2024' — явні дефолти"),
+        ("src/app.js",              "ОНОВЛЕНО",
+         "toggleBiometric: toast змінено з 'Біометрія недоступна' на t('bio-err-unavailable')"),
+        ("src/i18n/ui.uk.js",       "ОНОВЛЕНО",
+         "bio-err-unavailable: 'Блокування недоступне на цьому пристрої'"),
+        ("src/i18n/ui.ru.js",       "ОНОВЛЕНО",
+         "bio-err-unavailable: 'Блокировка недоступна на этом устройстве'"),
     ]))
     s += [sp(8), hr()]
 
-    # ═══ 3. Task 3 — Adherence Chart Modal ════════════════════════════════════
-    s.append(section_box("3", "Task 3 — Adherence Chart (Графік прийому ліків)"))
-    s.append(sp(6))
-    s.append(body(
-        "Новий файл src/features/analytics/adherence.js. Обчислює добову adherence "
-        "з state.pillsTaken (без async). Рендерить ECharts LineChart з ВООЗ 80% markLine. "
-        "Кольор лінії: зелений ≥80%, червоний <80%. Карта 'Прийом ліків' у bento тепер "
-        "tap-тригер → bottom-sheet модалка #adherenceModal."
-    ))
-    s.append(sp(4))
-    s.append(file_table([
-        ("src/features/analytics/adherence.js", "НОВИЙ",
-         "renderAdherenceChart(containerId), disposeAdherenceChart(containerId)"),
-        ("src/features/analytics/index.js",     "ОНОВЛЕНО",
-         "re-export renderAdherenceChart, disposeAdherenceChart"),
-        ("index.html",                           "ОНОВЛЕНО",
-         "bento-card bc-amber: data-action='openAdherenceModal', tap-hint; #adherenceModal bottom-sheet"),
-        ("src/app.js",                           "ОНОВЛЕНО",
-         "ACTIONS: openAdherenceModal (render+show), closeAdherenceModal (dispose+hide)"),
-        ("src/i18n/ui.uk.js",                    "ОНОВЛЕНО", "t-adherence-title, t-adherence-empty, t-btn-adherence"),
-    ]))
-    s += [sp(8), hr()]
-
-    # ═══ 4. Task 4 — Notes ════════════════════════════════════════════════════
-    s.append(section_box("4", "Task 4 — Нотатки до вимірів (вже реалізовано в v5.1)"))
-    s.append(sp(6))
-    s.append(body(
-        "Поле #note є у формі вимірювань. saveMeasurement() зчитує його. "
-        "journal.js відображає нотатки з SVG-іконкою (.history-note). "
-        "Завдання повністю реалізоване в попередніх сесіях — перевірено та підтверджено."
-    ))
-    s += [sp(8), hr()]
-
-    # ═══ 5. Task 5 — PDF Doctor Report ════════════════════════════════════════
-    s.append(section_box("5", "Task 5 — PDF-звіт для лікаря (html2canvas + jsPDF)"))
-    s.append(sp(6))
-    s.append(body(
-        "Новий файл src/features/export/pdf-report.js. Варіант А: html2canvas → jsPDF. "
-        "Повністю офлайн, кирилиця через рендер браузера. Звіт включає: "
-        "інфо пацієнта, статистика тиску (середній, макс, мін), SVG-графік 30 днів "
-        "побудований inline, таблиця останніх 30 вимірів, ліки, графік adherence. "
-        "Дисклеймер. Кнопка 'Друк' у журналі та 'PDF' у налаштуваннях → generateDoctorReport()."
-    ))
-    s.append(sp(4))
-    s.append(file_table([
-        ("src/features/export/pdf-report.js", "НОВИЙ",
-         "generateDoctorReport(): buildReportHTML + html2canvas + jsPDF; buildBPChartSVG(); "
-         "buildAdherenceSVG(); computeDailyAdherence()"),
-        ("src/features/export/index.js",       "ОНОВЛЕНО",
-         "import + export generateDoctorReport"),
-        ("src/app.js",                          "ОНОВЛЕНО", "ACTIONS: generateDoctorReport"),
-        ("index.html",                           "ОНОВЛЕНО",
-         "Журнал 'Друк' → generateDoctorReport; Налаштування 'PDF' → generateDoctorReport"),
-        ("assets/fonts/DejaVuSans.ttf",          "СКОПІЙОВАНО", "De Ja Vu Sans для pdf-report (html2canvas рендерить шрифт браузера)"),
-        ("package.json",                          "ОНОВЛЕНО", "svg2pdf.js встановлено (для майбутніх SVG-exports)"),
-    ]))
-    s += [sp(8), hr()]
-
-    # ═══ 6. Task 6 — Days-Picker ══════════════════════════════════════════════
-    s.append(section_box("6", "Task 6 — Days-Picker (кнопки замість select)"))
-    s.append(sp(6))
-    s.append(body(
-        "select#pillDays замінено на .days-picker — горизонтальний ряд кнопок-chips. "
-        "Варіанти: Щодня / Пн/Ср/Пт / Вт/Чт/Сб/Нд / Будні / Дата. "
-        "selectPillDay(el) — нова функція в meds/index.js: toggle .active, "
-        "викликає onPillDaysChange(days). addPill() читає активну кнопку через "
-        "querySelector('#pillDays .days-btn.active')?.dataset.days. "
-        "Reset після додавання: querySelector('#pillDays .days-btn[data-days=daily]').active."
-    ))
-    s.append(sp(4))
-    s.append(file_table([
-        ("index.html",                  "ОНОВЛЕНО",
-         "&lt;div class='days-picker'&gt; з 5 кнопками .days-btn data-action='selectPillDay'"),
-        ("src/features/meds/index.js",  "ОНОВЛЕНО",
-         "onPillDaysChange(days?): backward-compat; selectPillDay(el); addPill: querySelector; reset"),
-        ("styles/features.css",         "ОНОВЛЕНО", ".days-picker, .days-btn, .days-btn.active"),
-        ("src/i18n/ui.uk.js",           "ОНОВЛЕНО", "m-day-mon-wed-fri, m-day-tue-thu-sat-sun"),
-    ]))
-    s += [sp(8), hr()]
-
-    # ═══ 7. Task 7 — gen-version.js ═══════════════════════════════════════════
-    s.append(section_box("7", "Task 7 — gen-version.js · Новий формат версії"))
-    s.append(sp(6))
-    s.append(body(
-        "scripts/gen-version.js оновлено: PATCH тепер padStart(3, '0') → '000'...'999'. "
-        "Додано окремий export APP_DATE (DD.MM.YYYY) та APP_VERSION (5.2.000). "
-        "APP_BUILD_FULL: 'v5.2.000 / 08.05.2026'. "
-        "src/core/constants.js: re-export APP_VERSION, APP_DATE (видалено const APP_VERSION = '5.0'). "
-        "npm run version → version.gen.js успішно оновлено: v5.2.000 / 08.05.2026."
-    ))
-    s.append(sp(4))
-    s.append(file_table([
-        ("scripts/gen-version.js",      "ОНОВЛЕНО",
-         "PATCH padStart(3,'0'); APP_DATE DD.MM.YYYY; APP_BUILD_FULL 'v5.2.000 / DD.MM.YYYY'"),
-        ("src/core/constants.js",       "ОНОВЛЕНО",
-         "re-export APP_VERSION, APP_DATE; видалено const APP_VERSION='5.0'"),
-        ("src/core/version.gen.js",     "РЕГЕНЕРОВАНО",
-         "npm run version → v5.2.000 / 08.05.2026 (3f2242b)"),
-    ]))
-    s += [sp(8), hr()]
-
-    # ═══ 8. Архітектурні рішення ══════════════════════════════════════════════
-    s.append(section_box("8", "Архітектурні рішення сесії"))
+    # ═══ 3. Архітектурні рішення ══════════════════════════════════════════════
+    s.append(section_box("3", "Архітектурні рішення сесії"))
     s.append(sp(6))
     s.append(arch_table([
-        ("No &lt;a href&gt; в модалках",
-         "Всі зовнішні посилання — через <button data-action='searchTabletki'> та JS window.open(). "
-         "URL не в DOM → захист від XSS та Safe Browsing false positive."),
-        ("Biometric: web-safe dynamic import",
-         "loadPlugin() динамічно завантажує Capacitor плагін. На вебі — завжди false. "
-         "Vite не падає, бо пакет @aparajita/capacitor-biometric-auth встановлено."),
-        ("Adherence: обчислення з state (без async)",
-         "computeDailyAdherence() ітерує state.pillsTaken синхронно. "
-         "Немає залежності від SQLite API → працює на вебі і native однаково."),
-        ("PDF: html2canvas Variant A",
-         "html2canvas рендерить скрите &lt;div&gt; з повним звітом → canvas → jsPDF images. "
-         "Кирилиця через рендер браузера — не потрібен DejaVu у jsPDF."),
-        ("Days-picker: state у DOM",
-         ".days-btn.active — єдине джерело правди. Немає змінних у модулі. "
-         "Reset: querySelectorAll + classList.toggle за data-days."),
+        ("SubtleCrypto — без зовнішніх залежностей",
+         "AES-256-GCM + PBKDF2 реалізовано виключно через Web Crypto API (window.crypto.subtle). "
+         "Нульова залежність від npm crypto-бібліотек. Офлайн-ready, немає мережевих запитів."),
+        ("biometricLock виключено з бекапу",
+         "Навмисне рішення безпеки: при відновленні на новому пристрої "
+         "biometricLock=false за замовчуванням. Користувач явно вмикає блокування після відновлення."),
+        ("SHA-256 checksum у .hpb",
+         "checksum обчислюється від plaintext JSON перед шифруванням і зберігається у зашифрованому blob. "
+         "При відновленні: розшифрували → порівняли checksum → перевірили цілісність."),
+        ("Legacy v4.0 без пароля",
+         "Детекція: pkg.version==='4.0' || (!pkg.format && (pkg.measurements||pkg.pills)). "
+         "Пропускаємо пароль-модалку → одразу #backupConfirmModal. Зворотна сумісність."),
+        ("clearAll() перед відновленням",
+         "sqlite.clearAll() видаляє всі рядки з 4 таблиць. Потім INSERT нових даних пачками. "
+         "Ніколи не залишає mix старих/нових даних — атомарна операція відновлення."),
+        ("deviceIsSecure для PIN-only",
+         "Capacitor BiometricAuth info.deviceIsSecure=true якщо є будь-який екран блокування. "
+         "Дозволяє HealthPro Lock Screen на пристроях без сканера відбитку пальця."),
     ]))
     s += [sp(8), hr()]
 
-    # ═══ 9. Роадмап ═══════════════════════════════════════════════════════════
-    s.append(section_box("9", "Наступні кроки / Роадмап"))
+    # ═══ 4. Роадмап ═══════════════════════════════════════════════════════════
+    s.append(section_box("4", "Наступні кроки / Роадмап"))
     s.append(sp(6))
     s.append(proposal_table([
-        ("Ліки",    "Days-picker: weekdays/custom підтримка у isPillDueToday()",   "Високий"),
-        ("PDF",     "Варіант Б: ECharts SVG → svg2pdf.js → jsPDF (вища якість)",   "Середній"),
-        ("Безпека", "AppState listener Capacitor: блокувати при згортанні в фон",  "Середній"),
-        ("Профіль", "Вкладки «Вага» та «Сон»",                                     "Середній"),
-        ("Аналіз",  "Adherence weekly/monthly trend drill-down",                   "Низький"),
-        ("i18n",    "Стрінги days-picker у i18n (Будні ← id='t-day-weekdays')",    "Низький"),
+        ("Бекап",   "Google Drive / iCloud автобекап (Capacitor Filesystem)",      "Середній"),
+        ("Бекап",   "Автоматичний бекап кожні 7 днів з нотифікацією",              "Середній"),
+        ("Безпека", "AppState listener: блокувати при згортанні в фон",             "Середній"),
+        ("Профіль", "Вкладки 'Вага' та 'Сон'",                                     "Середній"),
+        ("Аналіз",  "Adherence weekly/monthly trend drill-down",                    "Низький"),
+        ("PDF",     "ECharts SVG → svg2pdf.js → jsPDF (векторна якість)",           "Низький"),
     ]))
     s += [sp(8), hr()]
 

@@ -6,6 +6,7 @@ import { getExportMeasurements as _getExportMeasurements, closeExportModal as _c
 import { generateDoctorReport as _generateDoctorReport } from './pdf-report.js';
 
 export { exportData, exportCSV, importData } from './csv.js';
+export { exportBackup, openBackupFile, restoreBackup, getBackupStats } from './backup.js';
 export { setShowPage as setPDFShowPage } from './pdf.js';
 export { openExportModal, closeExportModal, selectExportPeriod, getExportMeasurements, updateExportCount, getExportPeriod } from './modal.js';
 

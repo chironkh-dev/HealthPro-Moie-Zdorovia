@@ -103,6 +103,17 @@ HealthPro-Moie-Zdorovia/
 - **Task 6 (Days-picker):** `select#pillDays` → `.days-picker` (chips-кнопки: Щодня / Пн/Ср/Пт / Вт/Чт/Сб/Нд / Будні / Дата). `selectPillDay(el)` у meds/index.js. CSS: `.days-btn`, `.days-btn.active`.
 - **Task 7 (gen-version):** `scripts/gen-version.js` — PATCH `padStart(3,'0')`, `APP_DATE` DD.MM.YYYY, `APP_BUILD_FULL` `v5.2.000 / 08.05.2026`. `constants.js` — re-export `APP_VERSION`, `APP_DATE`. `npm run version` → `version.gen.js` v5.2.000.
 
+### v5.3.0 (2026-05-08) — Сесія Part 4
+- **Бекап `.hpb` (AES-256-GCM):** `src/features/export/backup.js` — `exportBackup()`, `openBackupFile()`, `restoreBackup()`, `getBackupStats()`. SubtleCrypto без бібліотек, PBKDF2 100k ітерацій, SHA-256 checksum, Schema 2 з SQLite-таблиць.
+- **Формат бекапу:** `healthpro-backup-YYYY-MM-DD.hpb` — зашифрований JSON з полями: `measurements`, `medications`, `med_taken`, `steps_log`, `settings` (з `bpStandard`, `notif`, `measureReminder`, `pillReminder`, `morningTime`, `eveningTime`), `theme`, `lang`. `biometricLock` навмисно виключено.
+- **Підтримка старого формату v4.0:** при імпорті `{ version: '4.0' }` — автоматична трансформація без пароля.
+- **UI бекапу:** секція Налаштувань замінена — кнопка HPB (синя), CSV, Відновити (.hpb/.json). 3 брендованих модалки: export-password, import-password, confirm-restore.
+- **sqlite.js `clearAll()`:** очищення таблиць measurements/medications/med_taken/steps_log перед відновленням.
+- **storage.js defaultSettings:** додано `biometricLock: false` та `bpStandard: 'ESC2024'`.
+- **biometric.js fix:** `checkBiometric()` тепер перевіряє `info?.isAvailable || info?.deviceIsSecure` — тоглер PIN-only пристроїв тепер працює.
+- **i18n:** 33 нових ключі `bk-*` та `bio-err-unavailable` (uk + ru).
+- **app.js:** хардкод `'Біометрія недоступна'` замінено на `t('bio-err-unavailable')`.
+
 ### v5.2.0 (2026-05-07) — Сесія Part 2
 - **AHA 2017 підтримка:** `norm.js` — `getBPDotClass()` та `getBPStatus()` враховують `state.settings.bpStandard` (ESC2024 / AHA2017), нові i18n ключі `n-bp-aha-elevated`, `n-bp-aha-ht1`, `n-bp-aha-ht2`.
 - **db.js `countByBPCategory()`** — standard-aware: AHA 2017 категорії маппуються до 5 ESC-слотів.

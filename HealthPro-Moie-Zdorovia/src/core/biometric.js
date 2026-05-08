@@ -21,7 +21,9 @@ export async function checkBiometric() {
     const plugin = await _loadPlugin();
     if (!plugin) return false;
     const info = await plugin.checkBiometry();
-    return !!info?.isAvailable;
+    // isAvailable = fingerprint/face; deviceIsSecure = PIN/pattern also works
+    // with allowDeviceCredential: true in authenticate()
+    return !!(info?.isAvailable || info?.deviceIsSecure);
   } catch { return false; }
 }
 

@@ -57,6 +57,7 @@ import {
   openExportModal, closeExportModal, selectExportPeriod, updateExportCount,
   exportPDF, exportCSV, exportReportCSV, exportData, importData,
   printReportPeriod, setPDFShowPage, generateDoctorReport,
+  exportBackup, openBackupFile, restoreBackup, getBackupStats,
 } from './features/export/index.js';
 import { renderAdherenceChart, disposeAdherenceChart } from './features/analytics/index.js';
 import { checkBiometric, authenticate } from './core/biometric.js';
@@ -278,6 +279,25 @@ window.addEventListener('resize', () => {
   updateHeaderHeight();
 });
 
+// ── Backup state ──────────────────────────────────────────────
+let _backupFileContent = null;
+let _backupOpened      = null;
+
+function showBackupConfirmModal(opened) {
+  const stats = getBackupStats(opened);
+  const el = document.getElementById('bkConfirmStats');
+  if (el) {
+    el.innerHTML =
+      `<div style="font-size:14px;line-height:2;color:var(--text2)">` +
+      `📊 ${t('bk-stats-m')}: <b>${stats.measurements}</b><br>` +
+      `💊 ${t('bk-stats-med')}: <b>${stats.medications}</b><br>` +
+      `👟 ${t('bk-stats-steps')}: <b>${stats.steps}</b><br>` +
+      `📅 ${t('bk-stats-date')}: <b>${stats.date}</b>` +
+      `</div>`;
+  }
+  document.getElementById('backupConfirmModal')?.classList.add('show');
+}
+
 // ── Event delegation: replaces removed inline on* handlers ───
 const ACTIONS = {
   // navigation / lang / theme
@@ -370,6 +390,76 @@ const ACTIONS = {
   printReportPeriod: () => printReportPeriod(),
   exportData: () => exportData(),
   importData: (el, ev) => importData(ev),
+  // backup (.hpb)
+  openBackupExportModal: () => {
+    document.getElementById('backupPassword').value = '';
+    document.getElementById('backupPasswordConfirm').value = '';
+    document.getElementById('backupExportModal')?.classList.add('show');
+  },
+  closeBackupExportModal: () => document.getElementById('backupExportModal')?.classList.remove('show'),
+  doExportBackup: async () => {
+    const pw  = document.getElementById('backupPassword').value;
+    const pw2 = document.getElementById('backupPasswordConfirm').value;
+    if (!pw)        { showToast(t('bk-err-empty-password'));   return; }
+    if (pw !== pw2) { showToast(t('bk-err-passwords-match')); return; }
+    try {
+      document.getElementById('backupExportModal')?.classList.remove('show');
+      await exportBackup(pw);
+    } catch (e) { showToast('❌ ' + (e?.message || 'Помилка')); }
+  },
+  onImportBackupFile: async (el) => {
+    const file = el.files?.[0];
+    if (!file) return;
+    _backupFileContent = await file.text();
+    el.value = '';
+    // Legacy unencrypted JSON — skip password modal
+    try {
+      const pkg = JSON.parse(_backupFileContent);
+      if (pkg.version === '4.0' || (!pkg.format && (pkg.measurements || pkg.pills))) {
+        _backupOpened = { isLegacy: true, data: pkg, meta: null };
+        showBackupConfirmModal(_backupOpened);
+        return;
+      }
+    } catch {}
+    document.getElementById('restorePassword').value = '';
+    document.getElementById('bkImportError').style.display = 'none';
+    document.getElementById('backupImportModal')?.classList.add('show');
+  },
+  closeBackupImportModal: () => {
+    document.getElementById('backupImportModal')?.classList.remove('show');
+    _backupFileContent = null;
+  },
+  doDecryptBackup: async () => {
+    const pw    = document.getElementById('restorePassword').value;
+    const errEl = document.getElementById('bkImportError');
+    if (!pw) { showToast(t('bk-err-empty-password')); return; }
+    try {
+      _backupOpened = await openBackupFile(_backupFileContent, pw);
+      document.getElementById('backupImportModal')?.classList.remove('show');
+      showBackupConfirmModal(_backupOpened);
+    } catch (e) {
+      const msg = e.message === 'wrong_password'  ? t('bk-err-password') :
+                  e.message === 'checksum_failed' ? t('bk-err-checksum') : t('bk-err-format');
+      errEl.textContent = msg;
+      errEl.style.display = 'block';
+    }
+  },
+  closeBackupConfirmModal: () => {
+    document.getElementById('backupConfirmModal')?.classList.remove('show');
+    _backupOpened = null;
+    _backupFileContent = null;
+  },
+  doRestoreBackup: async () => {
+    if (!_backupOpened) return;
+    try {
+      await restoreBackup(_backupOpened);
+      document.getElementById('backupConfirmModal')?.classList.remove('show');
+      showToast(t('bk-toast-restored'), 5000);
+      setTimeout(() => location.reload(), 1500);
+    } catch (e) {
+      showToast('❌ ' + (e?.message || 'Помилка відновлення'));
+    }
+  },
   clearAllData: () => clearAllData(),
   // disclaimer / welcome
   acceptDisclaimer: () => acceptDisclaimer(),
@@ -412,7 +502,7 @@ const ACTIONS = {
           st.biometricLock = false;
           saveData();
           if (btn) btn.classList.remove('active');
-          showToast('Біометрія недоступна на цьому пристрої');
+          showToast(t('bio-err-unavailable'));
         }
       });
     }
