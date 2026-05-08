@@ -144,3 +144,9 @@ id = "ueXEYgy-Fvvu3IRl5aldn"
 uri = "file://HealthPro-Moie-Zdorovia/scripts/HealthPro_Session_May2026_SQLite_ECharts.pdf"
 type = "pdf"
 title = "Шаблон: SQLite + ECharts (травень 2026)"
+
+[[outputs]]
+id = "cNeZkgJHQJSZxoI3iRca_"
+uri = "file://HealthPro-Moie-Zdorovia/report/HealthPro_Session_v5.2.0_SQLite_ECharts_Report.pdf"
+type = "pdf"
+title = "HealthPro_Session_v5.2.0_SQLite_ECharts_Report.pdf"
