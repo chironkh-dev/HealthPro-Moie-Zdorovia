@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
 import android.os.IBinder;
@@ -132,14 +133,32 @@ public class ForegroundStepPlugin extends Plugin {
      */
     @PluginMethod
     public void getSteps(PluginCall call) {
-        boolean running         = serviceBound && stepService != null;
-        int     steps           = running ? stepService.getStepCount() : 0;
-        boolean sensorAvailable = running && stepService.isSensorAvailable();
-
         JSObject ret = new JSObject();
-        ret.put("steps",           steps);
-        ret.put("running",         running);
-        ret.put("sensorAvailable", sensorAvailable);
+
+        if (serviceBound && stepService != null) {
+            ret.put("steps",           stepService.getStepCount());
+            ret.put("running",         true);
+            ret.put("sensorAvailable", stepService.isSensorAvailable());
+        } else {
+            // Плагін ще не bound після перезапуску додатку,
+            // але сервіс може бути живий — читаємо з SharedPrefs.
+            SharedPreferences prefs = getContext().getSharedPreferences(
+                BootReceiver.PREFS_NAME, Context.MODE_PRIVATE);
+            boolean wasRunning = prefs.getBoolean(BootReceiver.KEY_WAS_RUNNING, false);
+            int     savedSteps = prefs.getInt(BootReceiver.KEY_SAVED_STEPS, 0);
+
+            if (wasRunning) {
+                // Ініціюємо bind — наступні виклики вже через сервіс
+                Intent svc = new Intent(getContext(), StepCounterService.class);
+                getContext().bindService(svc, serviceConnection,
+                    Context.BIND_AUTO_CREATE);
+                registerStepReceiver();
+            }
+
+            ret.put("steps",           wasRunning ? savedSteps : 0);
+            ret.put("running",         wasRunning);
+            ret.put("sensorAvailable", wasRunning);
+        }
         call.resolve(ret);
     }
 
@@ -250,6 +269,21 @@ public class ForegroundStepPlugin extends Plugin {
         if (serviceBound) {
             try { getContext().unbindService(serviceConnection); } catch (Exception ignored) {}
             serviceBound = false;
+        }
+    }
+
+    @Override
+    protected void handleOnResume() {
+        SharedPreferences prefs = getContext().getSharedPreferences(
+            BootReceiver.PREFS_NAME, Context.MODE_PRIVATE);
+        boolean wasRunning = prefs.getBoolean(BootReceiver.KEY_WAS_RUNNING, false);
+
+        if (wasRunning && !serviceBound) {
+            Intent svc = new Intent(getContext(), StepCounterService.class);
+            getContext().bindService(svc, serviceConnection,
+                Context.BIND_AUTO_CREATE);
+            registerStepReceiver();
+            Log.d(TAG, "handleOnResume — auto-binding to running service");
         }
     }
 }

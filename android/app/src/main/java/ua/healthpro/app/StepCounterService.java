@@ -167,6 +167,7 @@ public class StepCounterService extends Service implements SensorEventListener {
     @Override
     public void onTaskRemoved(Intent rootIntent) {
         Log.d(TAG, "onTaskRemoved — scheduling restart");
+        saveStepState(currentSteps);
         saveRunningState(true);
 
         Intent restartIntent = new Intent(getApplicationContext(), StepCounterService.class);
