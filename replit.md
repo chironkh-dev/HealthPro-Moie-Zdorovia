@@ -81,6 +81,18 @@ HealthPro-Moie-Zdorovia/
 
 ## Changelog
 
+### v5.3.2 (2026-05-09) — Сесія: Крокомір + Біометрія поверх PIN
+- **ForegroundStepPlugin.java `getSteps()`:** якщо плагін не bound після перезапуску — читає кроки з SharedPrefs (не повертає 0); ініціює `bindService()` якщо `wasRunning=true`.
+- **ForegroundStepPlugin.java `handleOnResume()`:** при поверненні додатку з фону — auto-bind до живого сервісу + реєстрація stepReceiver.
+- **StepCounterService.java `onTaskRemoved()`:** `saveStepState(currentSteps)` як перший рядок — точний знімок кроків перед kill.
+- **biometric.js:** `allowDeviceCredential: false` (тільки відбиток/обличчя, не системний PIN); `checkBiometry().isAvailable` замість `deviceIsSecure`.
+- **AndroidManifest.xml:** додано `USE_BIOMETRIC` + `USE_FINGERPRINT` permissions.
+- **app.js `lockCheck()`:** нова async функція — спочатку `authenticate()` (відбиток), при відмові/помилці → PIN-пад.
+- **app.js `toggleBiometric`:** розрізняє PIN-кнопку (`biometricToggle`) та checkbox відбитка (`bioToggle`); при вимкненні PIN — скидає також `biometricEnabled`.
+- **app.js init:** `checkBiometric().then()` — показує `bioToggleRow` тільки при наявності апаратного відбитка; `lockCheck()` замість прямого показу lockScreen.
+- **index.html:** `bioToggleRow` (прихований за замовчуванням) — рядок налаштування відбитка з checkbox.
+- **i18n uk/ru:** нові ключі `bio-toggle`, `bio-toggle-hint`.
+
 ### v5.3.2 (2026-05-09) — Сесія: Toggle Bugfix + Backup Steps
 - **Тогл PIN-замку (biometricToggle):** виправлено клас `.active` → `.on` у всіх 6 місцях `app.js` — тогл тепер коректно відображає стан увімкнено/вимкнено.
 - **Тогл шифрування бекапу (bkUsePasswordToggle):** аналогічне виправлення `.active` → `.on` у `app.js` та `index.html` — тогл у модалці експорту бекапу тепер працює.

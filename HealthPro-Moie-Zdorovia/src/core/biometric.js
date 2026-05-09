@@ -1,7 +1,8 @@
-// Capacitor BiometricAuth wrapper — Task 2.
+// Capacitor BiometricAuth wrapper.
 // On web / emulator: checkBiometric() returns false, authenticate() returns false.
-// Real biometry / PIN works only on native Android APK with plugin installed.
+// Real biometry works only on native Android APK with plugin installed.
 // Never throws — all errors are caught internally.
+// allowDeviceCredential: false — тільки відбиток/обличчя, НЕ системний PIN.
 
 let _BiometricAuth = null;
 
@@ -11,7 +12,7 @@ async function _loadPlugin() {
     const m = await import('@aparajita/capacitor-biometric-auth');
     _BiometricAuth = m.BiometricAuth ?? null;
   } catch {
-    _BiometricAuth = false; // mark as unavailable
+    _BiometricAuth = false;
   }
   return _BiometricAuth || null;
 }
@@ -21,9 +22,8 @@ export async function checkBiometric() {
     const plugin = await _loadPlugin();
     if (!plugin) return false;
     const info = await plugin.checkBiometry();
-    // isAvailable = fingerprint/face; deviceIsSecure = PIN/pattern also works
-    // with allowDeviceCredential: true in authenticate()
-    return !!(info?.isAvailable || info?.deviceIsSecure);
+    // Тільки відбиток/обличчя — НЕ системний PIN (deviceIsSecure)
+    return !!(info?.isAvailable);
   } catch { return false; }
 }
 
@@ -33,9 +33,12 @@ export async function authenticate() {
     if (!plugin) return false;
     await plugin.authenticate({
       reason: 'Підтвердіть особу для доступу до HealthPro',
-      cancelTitle: 'Скасувати',
-      allowDeviceCredential: true,
+      cancelTitle: 'Використати PIN',
+      allowDeviceCredential: false,
+      iosFallbackTitle: 'Використати PIN',
     });
     return true;
-  } catch { return false; }
+  } catch {
+    return false; // скасування або помилка → fallback на PIN-пад у app.js
+  }
 }

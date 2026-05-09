@@ -61,6 +61,7 @@ import {
 } from './features/export/index.js';
 import { renderAdherenceChart, disposeAdherenceChart } from './features/analytics/index.js';
 import { isPINSet, setPIN, verifyPIN, clearPIN } from './core/pin.js';
+import { checkBiometric, authenticate } from './core/biometric.js';
 import {
   // settings
   applyTheme, toggleTheme,
@@ -223,7 +224,7 @@ function init() {
 
   onPillDaysChange();
 
-  // ── PIN lock init (П1) ──
+  // ── PIN lock init (П1 + біометрія) ──
   const _st = state.settings;
   const biometricBtn = document.getElementById('biometricToggle');
   if (biometricBtn) biometricBtn.classList.toggle('on', !!_st.biometricLock);
@@ -231,15 +232,22 @@ function init() {
   const _bpStd = _st.bpStandard || 'ESC2024';
   document.getElementById('bp-std-esc')?.classList.toggle('active', _bpStd === 'ESC2024');
   document.getElementById('bp-std-aha')?.classList.toggle('active', _bpStd === 'AHA2017');
-  // Show lock screen if PIN lock is enabled and a PIN hash exists
-  if (_st.biometricLock && isPINSet()) {
-    document.getElementById('lockScreen')?.classList.remove('hidden');
-  } else if (_st.biometricLock && !isPINSet()) {
-    // PIN was cleared (e.g. after restore) — disable the lock setting
-    _st.biometricLock = false;
+  // Guard: якщо PIN очищено (наприклад, після відновлення) — вимикаємо замок
+  if (_st.biometricLock && !isPINSet()) {
+    _st.biometricLock    = false;
+    _st.biometricEnabled = false;
     saveData();
     if (biometricBtn) biometricBtn.classList.remove('on');
   }
+  // Показуємо рядок відбитка тільки якщо є апаратна підтримка
+  checkBiometric().then(avail => {
+    const bioRow = document.getElementById('bioToggleRow');
+    if (bioRow) bioRow.style.display = avail ? '' : 'none';
+    const bioChk = document.getElementById('bioToggle');
+    if (bioChk) bioChk.checked = !!(avail && _st.biometricEnabled);
+  });
+  // Async: спробувати відбиток → fallback на PIN-пад
+  lockCheck();
 
   // Round 4 #2 — schedule was previously polled every minute (only worked
   // while the app was open). Now we pre-schedule via Android AlarmManager
@@ -304,6 +312,23 @@ function openPINSetup() {
   const sub = document.getElementById('pinSetupSubtitle');
   if (sub) sub.textContent = t('pin-setup-step1');
   document.getElementById('pinSetupModal')?.classList.add('show');
+}
+
+// ── Перевірка замку при старті: біометрія → PIN-пад ──────────────────────────
+async function lockCheck() {
+  if (!isPINSet()) return;
+  const _st = state.settings;
+  if (!_st.biometricLock) return;
+
+  const bioEnabled   = _st.biometricEnabled ?? false;
+  const bioAvailable = await checkBiometric();
+
+  if (bioEnabled && bioAvailable) {
+    const ok = await authenticate();
+    if (ok) return; // розблоковано відбитком → не показуємо PIN-пад
+    // відмова або помилка → fallback на PIN-пад (нижче)
+  }
+  document.getElementById('lockScreen')?.classList.remove('hidden');
 }
 
 function showBackupConfirmModal(opened) {
@@ -533,15 +558,31 @@ const ACTIONS = {
   },
   // doctor PDF report (Task 5)
   generateDoctorReport: () => generateDoctorReport(),
-  // ── PIN lock (П1) ──
-  toggleBiometric: () => {
+  // ── PIN lock (П1) + відбиток ──
+  toggleBiometric: (el) => {
+    if (el.id === 'bioToggle') {
+      // Відбиток пальця (checkbox) — поверх PIN
+      const enabled = el.checked;
+      if (enabled && !isPINSet()) {
+        el.checked = false;
+        showToast(t('bio-toggle-hint'));
+        return;
+      }
+      state.settings.biometricEnabled = enabled;
+      saveData();
+      return;
+    }
+    // PIN lock toggle (button) — існуюча логіка
     const st  = state.settings;
     const btn = document.getElementById('biometricToggle');
     if (st.biometricLock && isPINSet()) {
-      st.biometricLock = false;
+      st.biometricLock    = false;
+      st.biometricEnabled = false;
       clearPIN();
       saveData();
       if (btn) btn.classList.remove('on');
+      const bioChk = document.getElementById('bioToggle');
+      if (bioChk) bioChk.checked = false;
       showToast(t('pin-disabled'));
     } else {
       openPINSetup();

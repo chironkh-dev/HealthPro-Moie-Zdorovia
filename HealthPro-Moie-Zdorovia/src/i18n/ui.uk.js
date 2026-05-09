@@ -428,6 +428,10 @@ export const T_UK ={
   'bk-err-restore':'Помилка відновлення',
   'bio-err-unavailable':'Налаштуйте PIN або відбиток пальця у системі Android',
 
+  // ─── Біометрія — відбиток поверх PIN ───
+  'bio-toggle':      'Розблокування відбитком',
+  'bio-toggle-hint': 'Потребує встановленого PIN',
+
   // ─── PIN lock (П1) ───
   'pin-setup-title':'Встановити PIN-код',
   'pin-setup-step1':'Введіть 4-значний PIN-код',

@@ -434,6 +434,10 @@ export const T_RU ={
   'bk-err-restore':'Ошибка восстановления',
   'bio-err-unavailable':'Настройте PIN или отпечаток пальца в системе Android',
 
+  // ─── Биометрия — отпечаток поверх PIN ───
+  'bio-toggle':      'Разблокировка отпечатком',
+  'bio-toggle-hint': 'Требует установленного PIN',
+
   // ─── PIN lock (П1) ───
   'pin-setup-title':'Установить PIN-код',
   'pin-setup-step1':'Введите 4-значный PIN-код',

@@ -174,3 +174,9 @@ id = "U9S8zDi6HlPUIfGZH6gVR"
 uri = "file://HealthPro-Moie-Zdorovia/report/HealthPro_Session_v5.3.2_Toggle_Bugfix_Backup_Steps_Report.pdf"
 type = "pdf"
 title = "HealthPro v5.3.2 — Звіт сесії"
+
+[[outputs]]
+id = "oSQXllyHQmrbhwUb_6zPK"
+uri = "file://HealthPro-Moie-Zdorovia/report/HealthPro_Session_v5.3.2_Steps_Biometric_PIN_Part2_Report.pdf"
+type = "pdf"
+title = "HealthPro v5.3.2 Part 2 — Звіт сесії"

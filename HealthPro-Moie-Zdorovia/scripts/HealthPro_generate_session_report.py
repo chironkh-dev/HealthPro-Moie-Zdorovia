@@ -10,9 +10,9 @@ HealthPro — Моє Здоров'я
 # ══════════════════════════════════════════════════════════════════════════════
 # НАЛАШТУВАННЯ ЗВІТУ — редагуй перед кожною сесією
 # ══════════════════════════════════════════════════════════════════════════════
-VERSION     = "5.3.2"                        # версія застосунку
-DESCRIPTION = "Toggle_Bugfix_Backup_Steps"   # коротке уточнення теми сесії (без пробілів)
-PART        = None                           # номер частини, якщо сесія розбита (1, 2, …) або None
+VERSION     = "5.3.2"                    # версія застосунку
+DESCRIPTION = "Steps_Biometric_PIN"     # коротке уточнення теми сесії (без пробілів)
+PART        = 2                          # номер частини, якщо сесія розбита (1, 2, …) або None
 # ══════════════════════════════════════════════════════════════════════════════
 
 import datetime, os
@@ -263,117 +263,131 @@ def build_story():
 
     s += [cover(), sp(12)]
 
-    # Статистичні плитки — v5.3.2
+    # Статистичні плитки — v5.3.2 Part 2
     s += [stats_row([
-        stat_cell("4",  "Виправлень",            "toggle PIN + toggle bkp + steps"),
-        stat_cell("3",  "Файлів оновлено",       "app.js · backup.js · index.html"),
-        stat_cell("1",  "replit.md",             "правило версій + changelog"),
-        stat_cell("0",  "Помилок компіляції",    "Vite ready OK"),
+        stat_cell("3",  "Android-файли",         "Plugin · Service · Manifest"),
+        stat_cell("5",  "JS/HTML/i18n файлів",   "app · biometric · index · uk · ru"),
+        stat_cell("1",  "Нова функція",          "lockCheck() async"),
+        stat_cell("0",  "Помилок компіляції",    "Vite + biometric-auth optimized"),
     ]), sp(14), hr()]
 
     # ═══ 1. Тогл PIN-замку ══════════════════════════════════════════════════════
-    s.append(section_box("1", "Тогл PIN-замку — виправлення .active → .on"))
+    s.append(section_box("1", "Крокомір — синхронізація після свайп-кілу (Android)"))
     s.append(sp(6))
     s.append(body(
-        "Проблема: CSS .toggle-sw використовує клас .on для активного стану "
-        "(синій фон + thumb вправо), але весь код у app.js виставляв клас .active — "
-        "тому тогл завжди виглядав вимкненим незалежно від реального стану."
+        "Проблема: після свайпу додатку з таск-менеджера шторка продовжувала рахувати кроки, "
+        "але при поверненні до додатку JS отримував running:false / steps:0 — "
+        "плагін ще не був прив'язаний до сервісу. Додаток читав старі дані з localStorage."
     ))
     s.append(sp(4))
+    s.append(h2("Зміна 1 — ForegroundStepPlugin.getSteps()"))
     s.append(body(
-        "Виправлено 6 місць у app.js: init() (classList.toggle), "
-        "toggleBiometric() disable-гілка (classList.remove), "
-        "pinSetupKey() success-гілка (classList.add), cancelPINSetup() (classList.remove), "
-        "openBackupExportModal() (classList.add), toggleBkPassword() (classList.toggle + contains)."
+        "Якщо serviceBound=false — читаємо steps/wasRunning з SharedPrefs. "
+        "Якщо wasRunning=true — одразу ініціюємо bindService() + registerStepReceiver(). "
+        "Перший stepUpdate broadcast перезапише значення у JS автоматично."
+    ))
+    s.append(sp(4))
+    s.append(h2("Зміна 2 — handleOnResume()"))
+    s.append(body(
+        "При поверненні Activity на передній план — auto-bind до сервісу якщо "
+        "wasRunning=true && !serviceBound. Broadcasts більше не губляться між "
+        "поверненням і першим викликом getSteps() з JS."
+    ))
+    s.append(sp(4))
+    s.append(h2("Зміна 3 — StepCounterService.onTaskRemoved()"))
+    s.append(body(
+        "saveStepState(currentSteps) — перший рядок перед saveRunningState(true). "
+        "До фіксу: стан зберігався лише кожні 20 кроків — при кілі до 19 кроків губились. "
+        "Тепер точний знімок гарантований при будь-якому kill-сценарії."
     ))
     s.append(sp(4))
     s.append(file_table([
-        ("src/app.js",   "ОНОВЛЕНО",
-         "6 замін: .active → .on для biometricToggle та bkUsePasswordToggle. "
-         "contains('active') → contains('on') у doExportBackup."),
-        ("index.html",   "ОНОВЛЕНО",
-         "class=\"toggle-sw active\" → class=\"toggle-sw on\" для #bkUsePasswordToggle "
-         "(початковий стан при відкритті модалки — шифрування увімкнено за замовчуванням)."),
+        ("ForegroundStepPlugin.java", "ОНОВЛЕНО",
+         "getSteps(): SharedPrefs fallback + auto-bind якщо wasRunning. "
+         "handleOnResume(): auto-bind при поверненні з фону. "
+         "+import android.content.SharedPreferences."),
+        ("StepCounterService.java",   "ОНОВЛЕНО",
+         "onTaskRemoved(): saveStepState(currentSteps) першим рядком."),
     ]))
     s += [sp(8), hr()]
 
-    # ═══ 2. Бекап + кроки ══════════════════════════════════════════════════════
-    s.append(section_box("2", "Бекап — stepsEnabled не відновлюється + кроки збираються"))
+    # ═══ 2. Біометрія поверх PIN ════════════════════════════════════════════════
+    s.append(section_box("2", "Біометрія — відбиток пальця як опція поверх PIN"))
     s.append(sp(6))
-    s.append(h2("2а. stepsEnabled не відновлюється при restore"))
     s.append(body(
-        "Проблема: при відновленні бекапу на чистий пристрій (без виданих дозволів "
-        "крокоміра та foreground-сервісу) app намагається enableSteps() з settings.stepsEnabled=true "
-        "і падає — ForegroundStep plugin кидає виключення без ACTIVITY_RECOGNITION permission."
+        "Архітектура: isPINSet()=false → без блоку. "
+        "isPINSet()=true → biometricEnabled && bioAvailable? "
+        "ТАК → authenticate() → успіх=unlock / відмова=PIN-пад. "
+        "НІ → одразу PIN-пад. Відбиток — зручність, PIN — завжди fallback."
     ))
     s.append(sp(4))
+    s.append(h2("AndroidManifest.xml + biometric.js"))
     s.append(body(
-        "Рішення: у restoreBackup() після аналогічного guard для biometricLock — "
-        "delete settings.stepsEnabled + settings.stepsEnabled = false. "
-        "Користувач активує крокомір вручну після надання дозволів на новому пристрої. "
-        "Архітектурне рішення узгоджено з підходом до biometricLock."
-    ))
-    s.append(sp(6))
-    s.append(h2("2б. Дані кроків не зберігались у бекапі (web / без SQLite)"))
-    s.append(body(
-        "Проблема: у collectData() на вебі (SQLite не активний) гілка else "
-        "завжди повертала steps_log = [] — кроки з localStorage не збирались."
+        "USE_BIOMETRIC + USE_FINGERPRINT — без цих permissions BiometricPrompt відмовляє на Android 9+. "
+        "allowDeviceCredential:false — тільки відбиток/обличчя, НЕ системний PIN Android "
+        "(інакше два конкуруючих механізми блокування). "
+        "isAvailable замість deviceIsSecure — перевіряємо саме апаратний сенсор."
     ))
     s.append(sp(4))
+    s.append(h2("app.js — lockCheck() + init + toggleBiometric"))
     s.append(body(
-        "Рішення: у else-гілці перебираємо localStorage, знаходимо всі ключі "
-        "'stepCount-YYYY-MM-DD', формуємо масив {date, steps, goal} і включаємо "
-        "до steps_log. Кроки тепер повністю зберігаються у .hpb бекапі навіть без SQLite."
+        "lockCheck() — нова async функція: checkBiometric() → authenticate() → fallback PIN-пад. "
+        "init(): checkBiometric().then() показує bioToggleRow тільки на пристроях з сенсором. "
+        "toggleBiometric розрізняє PIN-кнопку та checkbox відбитка через el.id === 'bioToggle'."
     ))
     s.append(sp(4))
     s.append(file_table([
-        ("src/features/export/backup.js", "ОНОВЛЕНО",
-         "restoreBackup(): delete settings.stepsEnabled + settings.stepsEnabled = false. "
-         "collectData() else-гілка: збір steps_log з localStorage (stepCount-* ключі)."),
+        ("AndroidManifest.xml",       "ОНОВЛЕНО",
+         "USE_BIOMETRIC + USE_FINGERPRINT після ACTIVITY_RECOGNITION."),
+        ("src/core/biometric.js",     "ПЕРЕЗАПИС",
+         "allowDeviceCredential:false. isAvailable (не deviceIsSecure). "
+         "cancelTitle: 'Використати PIN'."),
+        ("src/app.js",                "ОНОВЛЕНО",
+         "import checkBiometric/authenticate. lockCheck() async. "
+         "init: checkBiometric().then(bioToggleRow) + lockCheck(). "
+         "toggleBiometric: el.id гілки для biometricEnabled та biometricLock."),
+        ("index.html",                "ОНОВЛЕНО",
+         "#bioToggleRow (display:none) — checkbox #bioToggle, data-change='toggleBiometric'."),
+        ("src/i18n/ui.uk.js",         "ОНОВЛЕНО",
+         "+bio-toggle, bio-toggle-hint."),
+        ("src/i18n/ui.ru.js",         "ОНОВЛЕНО",
+         "+bio-toggle, bio-toggle-hint."),
     ]))
     s += [sp(8), hr()]
 
-    # ═══ 3. replit.md + правило версій ═════════════════════════════════════════
-    s.append(section_box("3", "replit.md — правило версій + changelog v5.3.2"))
-    s.append(sp(6))
-    s.append(body(
-        "Зафіксовано у replit.md (User preferences): версії додатку генеруються ВРУЧНУ "
-        "користувачем. На початку кожної нової сесії агент зобов'язаний запитати поточну "
-        "версію для коректного формування звітів та changelog."
-    ))
-    s.append(sp(4))
-    s.append(body(
-        "Додано changelog v5.3.2 та v5.3.1 у replit.md. "
-        "Скрипт звіту оновлено: VERSION=5.3.2, DESCRIPTION=Toggle_Bugfix_Backup_Steps, PART=None."
-    ))
-    s += [sp(8), hr()]
-
-    # ═══ 4. Архітектурні рішення ══════════════════════════════════════════════
-    s.append(section_box("4", "Архітектурні рішення сесії"))
+    # ═══ 3. Архітектурні рішення ══════════════════════════════════════════════
+    s.append(section_box("3", "Архітектурні рішення сесії"))
     s.append(sp(6))
     s.append(arch_table([
-        (".on vs .active для toggle-sw",
-         "CSS .toggle-sw.on — єдиний клас активного стану. .active зарезервовано для nav-tabs, "
-         "кнопок мови, стандарту BP. Змішування двох семантик призвело до невидимого стану тогла."),
-        ("stepsEnabled = false при restore",
-         "Аналогічно biometricLock: дозволи на кроки (ACTIVITY_RECOGNITION + foreground service "
-         "+ battery opt) прив'язані до конкретного пристрою і не переносяться через бекап."),
-        ("localStorage steps у бекапі",
-         "На вебі кроки дзеркалюються у localStorage як stepCount-YYYY-MM-DD. "
-         "collectData() тепер читає ці ключі в else-гілці. Відновлення зворотньо сумісне: "
-         "restoreBackup() вже писав їх назад у localStorage та SQLite."),
+        ("SharedPrefs fallback у getSteps()",
+         "Плагін не bound одразу після перезапуску. SharedPrefs — надійне джерело "
+         "між kill і першим stepUpdate broadcast. Auto-bind у getSteps() та "
+         "handleOnResume() покривають обидва сценарії повернення."),
+        ("saveStepState перед kill",
+         "onTaskRemoved() гарантовано викликається Android перед kill. "
+         "SharedPrefs.apply() є асинхронним але завершується до kill."),
+        ("allowDeviceCredential:false",
+         "true → система може показати власний PIN-діалог Android замість нашого PIN-паду. "
+         "false = чистий fallback: відмова від відбитка → наш PIN-пад."),
+        ("isAvailable vs deviceIsSecure",
+         "deviceIsSecure=true якщо є будь-який захист екрана. "
+         "isAvailable=true тільки якщо є зареєстрований відбиток/Face ID. "
+         "Ми перевіряємо isAvailable — bioToggleRow не з'являється без реального сенсора."),
+        ("Один ACTIONS handler для двох елементів",
+         "data-action (click) на PIN-кнопці та data-change (change) на checkbox — "
+         "обидва через ACTIONS['toggleBiometric']. Розрізнення: el.id === 'bioToggle'."),
     ]))
     s += [sp(8), hr()]
 
-    # ═══ 5. Роадмап ═══════════════════════════════════════════════════════════
-    s.append(section_box("5", "Наступні кроки / Роадмап"))
+    # ═══ 4. Роадмап ═══════════════════════════════════════════════════════════
+    s.append(section_box("4", "Наступні кроки / Роадмап"))
     s.append(sp(6))
     s.append(proposal_table([
-        ("Безпека", "Б5: AppState listener — блокувати при згортанні в фон",          "Високий"),
-        ("Безпека", "Б6: Lock Screen поверх нативного back-жесту (Capacitor App)",     "Високий"),
-        ("Бекап",   "Автоматичний бекап кожні 7 днів з нотифікацією",                 "Середній"),
-        ("Профіль", "Вкладки 'Вага' та 'Цукор' (глюкометр)",                          "Середній"),
-        ("PDF",     "ECharts SVG → svg2pdf.js → jsPDF (векторна якість)",              "Низький"),
+        ("Безпека", "Б5: AppState listener — блокувати при згортанні в фон (5 хв таймер)", "Високий"),
+        ("Безпека", "Б6: Lock Screen поверх нативного back-жесту (Capacitor App plugin)",   "Високий"),
+        ("Бекап",   "Автоматичний бекап кожні 7 днів з нотифікацією",                       "Середній"),
+        ("Профіль", "Вкладки 'Вага' та 'Цукор' (глюкометр)",                                "Середній"),
+        ("PDF",     "ECharts SVG → svg2pdf.js → jsPDF (векторна якість)",                   "Низький"),
     ]))
     s += [sp(8), hr()]
 
