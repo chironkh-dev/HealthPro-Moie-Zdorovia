@@ -103,6 +103,18 @@ HealthPro-Moie-Zdorovia/
 - **Task 6 (Days-picker):** `select#pillDays` → `.days-picker` (chips-кнопки: Щодня / Пн/Ср/Пт / Вт/Чт/Сб/Нд / Будні / Дата). `selectPillDay(el)` у meds/index.js. CSS: `.days-btn`, `.days-btn.active`.
 - **Task 7 (gen-version):** `scripts/gen-version.js` — PATCH `padStart(3,'0')`, `APP_DATE` DD.MM.YYYY, `APP_BUILD_FULL` `v5.2.000 / 08.05.2026`. `constants.js` — re-export `APP_VERSION`, `APP_DATE`. `npm run version` → `version.gen.js` v5.2.000.
 
+### v5.3.1 (2026-05-09) — Сесія Part 2 (PIN + Backup bugfix)
+- **П1 — Автономний PIN-замок:** `src/core/pin.js` — `isPINSet/setPIN/verifyPIN/clearPIN` (SHA-256 + salt, localStorage). Замінює Capacitor Biometric Plugin повністю.
+- **Б1 — Файловий пікер:** `accept="*/*"` в `importBackupFile` — відкриває всі типи файлів на Android (не лише .hpb).
+- **Б2/Б4 — Захист backup.js:** `exportBackup(null)` — незашифрований шлях без пароля; `openBackupFile(content,null)` — no-password .hpb читається автоматично; `await sql.init()` guard + defensive state checks у `restoreBackup()`.
+- **Б3 — bpStandard sync:** `init()` синхронізує кнопки `#bp-std-esc/#bp-std-aha` після перезавантаження/відновлення.
+- **Emoji cleanup:** 🔑 ✅ 🔔 ⚠️ → SVG-іконки або видалені з усіх i18n-рядків uk/ru.
+- **Lock Screen → PIN Pad:** Кнопка «Розблокувати» замінена 12-кнопковим PIN-падом (0-9 + backspace + 4 крапки), id `lpd0-lpd3`.
+- **PIN Setup Modal:** `#pinSetupModal` — двокроковий ввід нового PIN (enter+confirm), id `spd0-spd3`.
+- **Backup Export Modal:** Новий toggle `#bkUsePasswordToggle` + `#bkPasswordFields` — пароль стає необов'язковим.
+- **app.js ACTIONS:** `toggleBiometric` → openPINSetup; нові: `lockPinKey/Del`, `pinSetupKey/Del`, `cancelPINSetup`, `toggleBkPassword`; оновлені: `doExportBackup`, `onImportBackupFile`, `doRestoreBackup`.
+- **base.css:** `.pin-dots`, `.pin-dot`, `.pin-pad`, `.pin-btn`, `.pin-btn-del`, `.pin-error`.
+
 ### v5.3.0 (2026-05-08) — Сесія Part 4
 - **Бекап `.hpb` (AES-256-GCM):** `src/features/export/backup.js` — `exportBackup()`, `openBackupFile()`, `restoreBackup()`, `getBackupStats()`. SubtleCrypto без бібліотек, PBKDF2 100k ітерацій, SHA-256 checksum, Schema 2 з SQLite-таблиць.
 - **Формат бекапу:** `healthpro-backup-YYYY-MM-DD.hpb` — зашифрований JSON з полями: `measurements`, `medications`, `med_taken`, `steps_log`, `settings` (з `bpStandard`, `notif`, `measureReminder`, `pillReminder`, `morningTime`, `eveningTime`), `theme`, `lang`. `biometricLock` навмисно виключено.

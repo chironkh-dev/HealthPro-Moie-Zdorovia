@@ -49,3 +49,13 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .lock-screen p{font-size:15px;color:var(--text2);margin-bottom:6px;line-height:1.5}
 .lock-screen p:first-of-type{font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px}
 .lock-screen .btn{margin-top:20px;min-width:160px;padding:14px 28px;font-size:16px;font-weight:700}
+
+/* ── PIN Pad (П1) ─── */
+.pin-dots{display:flex;gap:16px;justify-content:center;margin:16px 0 4px}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--text3);transition:background .15s,border-color .15s}
+.pin-dot.filled{background:var(--blue2);border-color:var(--blue2)}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px auto 0;max-width:256px;width:100%}
+.pin-btn{aspect-ratio:1;border-radius:50%;border:none;background:var(--surface2,rgba(255,255,255,.07));color:var(--text);font-size:22px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,transform .1s;min-height:60px;-webkit-tap-highlight-color:transparent}
+.pin-btn:active{background:var(--blue2);transform:scale(.93)}
+.pin-btn-del{font-size:16px;background:transparent}
+.pin-error{min-height:18px;color:var(--red,#ef4444);font-size:13px;text-align:center;margin:4px 0}

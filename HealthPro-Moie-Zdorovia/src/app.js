@@ -60,7 +60,7 @@ import {
   exportBackup, openBackupFile, restoreBackup, getBackupStats,
 } from './features/export/index.js';
 import { renderAdherenceChart, disposeAdherenceChart } from './features/analytics/index.js';
-import { checkBiometric, authenticate } from './core/biometric.js';
+import { isPINSet, setPIN, verifyPIN, clearPIN } from './core/pin.js';
 import {
   // settings
   applyTheme, toggleTheme,
@@ -223,23 +223,22 @@ function init() {
 
   onPillDaysChange();
 
-  // ── Biometric lock init (Task 2) ──
+  // ── PIN lock init (П1) ──
   const _st = state.settings;
   const biometricBtn = document.getElementById('biometricToggle');
   if (biometricBtn) biometricBtn.classList.toggle('active', !!_st.biometricLock);
-  if (_st.biometricLock) {
-    checkBiometric().then((avail) => {
-      if (avail) {
-        document.getElementById('lockScreen')?.classList.remove('hidden');
-        authenticate().then((ok) => {
-          if (ok) document.getElementById('lockScreen')?.classList.add('hidden');
-        });
-      } else {
-        _st.biometricLock = false;
-        saveData();
-        if (biometricBtn) biometricBtn.classList.remove('active');
-      }
-    });
+  // Sync bpStandard toggle buttons after reload/restore (Б3)
+  const _bpStd = _st.bpStandard || 'ESC2024';
+  document.getElementById('bp-std-esc')?.classList.toggle('active', _bpStd === 'ESC2024');
+  document.getElementById('bp-std-aha')?.classList.toggle('active', _bpStd === 'AHA2017');
+  // Show lock screen if PIN lock is enabled and a PIN hash exists
+  if (_st.biometricLock && isPINSet()) {
+    document.getElementById('lockScreen')?.classList.remove('hidden');
+  } else if (_st.biometricLock && !isPINSet()) {
+    // PIN was cleared (e.g. after restore) — disable the lock setting
+    _st.biometricLock = false;
+    saveData();
+    if (biometricBtn) biometricBtn.classList.remove('active');
   }
 
   // Round 4 #2 — schedule was previously polled every minute (only worked
@@ -283,16 +282,43 @@ window.addEventListener('resize', () => {
 let _backupFileContent = null;
 let _backupOpened      = null;
 
+// ── PIN state (П1) ────────────────────────────────────────────
+let _lockPinBuf  = '';
+let _setupPinBuf = '';
+let _setupStep   = 1;
+let _setupFirst  = '';
+
+function _updatePinDots(prefix, count) {
+  for (let i = 0; i < 4; i++) {
+    document.getElementById(prefix + i)?.classList.toggle('filled', i < count);
+  }
+}
+
+function openPINSetup() {
+  _setupPinBuf = '';
+  _setupStep   = 1;
+  _setupFirst  = '';
+  _updatePinDots('spd', 0);
+  const errEl = document.getElementById('setupPinError');
+  if (errEl) errEl.textContent = '';
+  const sub = document.getElementById('pinSetupSubtitle');
+  if (sub) sub.textContent = t('pin-setup-step1');
+  document.getElementById('pinSetupModal')?.classList.add('show');
+}
+
 function showBackupConfirmModal(opened) {
   const stats = getBackupStats(opened);
   const el = document.getElementById('bkConfirmStats');
   if (el) {
+    const row = (label, val) =>
+      `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border)">` +
+      `<span style="color:var(--text2);font-size:13px">${label}</span><b style="font-size:14px">${val}</b></div>`;
     el.innerHTML =
-      `<div style="font-size:14px;line-height:2;color:var(--text2)">` +
-      `📊 ${t('bk-stats-m')}: <b>${stats.measurements}</b><br>` +
-      `💊 ${t('bk-stats-med')}: <b>${stats.medications}</b><br>` +
-      `👟 ${t('bk-stats-steps')}: <b>${stats.steps}</b><br>` +
-      `📅 ${t('bk-stats-date')}: <b>${stats.date}</b>` +
+      `<div style="font-size:13px">` +
+      row(t('bk-stats-m'),    stats.measurements) +
+      row(t('bk-stats-med'),  stats.medications)  +
+      row(t('bk-stats-steps'),stats.steps)        +
+      row(t('bk-stats-date'), stats.date)         +
       `</div>`;
   }
   document.getElementById('backupConfirmModal')?.classList.add('show');
@@ -394,29 +420,48 @@ const ACTIONS = {
   openBackupExportModal: () => {
     document.getElementById('backupPassword').value = '';
     document.getElementById('backupPasswordConfirm').value = '';
+    const tog    = document.getElementById('bkUsePasswordToggle');
+    const fields = document.getElementById('bkPasswordFields');
+    if (tog)    tog.classList.add('active');
+    if (fields) fields.style.display = 'block';
     document.getElementById('backupExportModal')?.classList.add('show');
   },
   closeBackupExportModal: () => document.getElementById('backupExportModal')?.classList.remove('show'),
+  toggleBkPassword: () => {
+    const btn    = document.getElementById('bkUsePasswordToggle');
+    const fields = document.getElementById('bkPasswordFields');
+    if (!btn) return;
+    const on = btn.classList.toggle('active');
+    if (fields) fields.style.display = on ? 'block' : 'none';
+  },
   doExportBackup: async () => {
-    const pw  = document.getElementById('backupPassword').value;
-    const pw2 = document.getElementById('backupPasswordConfirm').value;
-    if (!pw)        { showToast(t('bk-err-empty-password'));   return; }
-    if (pw !== pw2) { showToast(t('bk-err-passwords-match')); return; }
+    const usePw = document.getElementById('bkUsePasswordToggle')?.classList.contains('active') ?? true;
+    const pw    = document.getElementById('backupPassword').value.trim();
+    const pw2   = document.getElementById('backupPasswordConfirm').value.trim();
+    if (usePw) {
+      if (!pw)        { showToast(t('bk-err-empty-password'));   return; }
+      if (pw !== pw2) { showToast(t('bk-err-passwords-match')); return; }
+    }
     try {
       document.getElementById('backupExportModal')?.classList.remove('show');
-      await exportBackup(pw);
-    } catch (e) { showToast('❌ ' + (e?.message || 'Помилка')); }
+      await exportBackup(usePw ? pw : null);
+    } catch (e) { showToast(t('bk-err-export')); }
   },
   onImportBackupFile: async (el) => {
     const file = el.files?.[0];
     if (!file) return;
     _backupFileContent = await file.text();
     el.value = '';
-    // Legacy unencrypted JSON — skip password modal
+    // Legacy unencrypted JSON or no-password .hpb — skip password modal
     try {
       const pkg = JSON.parse(_backupFileContent);
       if (pkg.version === '4.0' || (!pkg.format && (pkg.measurements || pkg.pills))) {
         _backupOpened = { isLegacy: true, data: pkg, meta: null };
+        showBackupConfirmModal(_backupOpened);
+        return;
+      }
+      if (pkg.format === 'healthpro-backup' && pkg.encrypted === false) {
+        _backupOpened = await openBackupFile(_backupFileContent, null);
         showBackupConfirmModal(_backupOpened);
         return;
       }
@@ -457,7 +502,7 @@ const ACTIONS = {
       showToast(t('bk-toast-restored'), 5000);
       setTimeout(() => location.reload(), 1500);
     } catch (e) {
-      showToast('❌ ' + (e?.message || 'Помилка відновлення'));
+      showToast(t('bk-err-restore'));
     }
   },
   clearAllData: () => clearAllData(),
@@ -488,30 +533,96 @@ const ACTIONS = {
   },
   // doctor PDF report (Task 5)
   generateDoctorReport: () => generateDoctorReport(),
-  // biometric lock (Task 2)
+  // ── PIN lock (П1) ──
   toggleBiometric: () => {
-    const st = state.settings;
-    const newVal = !st.biometricLock;
-    st.biometricLock = newVal;
-    saveData();
+    const st  = state.settings;
     const btn = document.getElementById('biometricToggle');
-    if (btn) btn.classList.toggle('active', newVal);
-    if (newVal) {
-      checkBiometric().then((avail) => {
-        if (!avail) {
-          st.biometricLock = false;
-          saveData();
-          if (btn) btn.classList.remove('active');
-          showToast(t('bio-err-unavailable'));
-        }
-      });
+    if (st.biometricLock && isPINSet()) {
+      st.biometricLock = false;
+      clearPIN();
+      saveData();
+      if (btn) btn.classList.remove('active');
+      showToast(t('pin-disabled'));
+    } else {
+      openPINSetup();
     }
   },
-  unlockApp: () => {
-    authenticate().then((ok) => {
-      if (ok) document.getElementById('lockScreen')?.classList.add('hidden');
-      else showToast('Автентифікацію скасовано');
-    });
+  unlockApp: () => {}, // replaced by PIN pad (lockPinKey)
+  lockPinKey: async (el) => {
+    if (_lockPinBuf.length >= 4) return;
+    _lockPinBuf += el.dataset.k;
+    _updatePinDots('lpd', _lockPinBuf.length);
+    if (_lockPinBuf.length === 4) {
+      const ok = await verifyPIN(_lockPinBuf);
+      if (ok) {
+        document.getElementById('lockScreen')?.classList.add('hidden');
+        _lockPinBuf = '';
+        _updatePinDots('lpd', 0);
+      } else {
+        const errEl = document.getElementById('lockPinError');
+        if (errEl) errEl.textContent = t('pin-wrong');
+        setTimeout(() => {
+          _lockPinBuf = '';
+          _updatePinDots('lpd', 0);
+          if (errEl) errEl.textContent = '';
+        }, 700);
+      }
+    }
+  },
+  lockPinDel: () => {
+    _lockPinBuf = _lockPinBuf.slice(0, -1);
+    _updatePinDots('lpd', _lockPinBuf.length);
+  },
+  pinSetupKey: async (el) => {
+    if (_setupPinBuf.length >= 4) return;
+    _setupPinBuf += el.dataset.k;
+    _updatePinDots('spd', _setupPinBuf.length);
+    if (_setupPinBuf.length === 4) {
+      if (_setupStep === 1) {
+        _setupFirst  = _setupPinBuf;
+        _setupPinBuf = '';
+        _setupStep   = 2;
+        _updatePinDots('spd', 0);
+        const sub = document.getElementById('pinSetupSubtitle');
+        if (sub) sub.textContent = t('pin-setup-step2');
+      } else {
+        if (_setupPinBuf === _setupFirst) {
+          await setPIN(_setupPinBuf);
+          state.settings.biometricLock = true;
+          saveData();
+          document.getElementById('biometricToggle')?.classList.add('active');
+          document.getElementById('pinSetupModal')?.classList.remove('show');
+          _setupPinBuf = _setupFirst = '';
+          _setupStep   = 1;
+          showToast(t('pin-set-ok'));
+        } else {
+          const errEl = document.getElementById('setupPinError');
+          if (errEl) errEl.textContent = t('pin-mismatch');
+          setTimeout(() => {
+            _setupPinBuf = _setupFirst = '';
+            _setupStep   = 1;
+            _updatePinDots('spd', 0);
+            if (errEl) errEl.textContent = '';
+            const sub = document.getElementById('pinSetupSubtitle');
+            if (sub) sub.textContent = t('pin-setup-step1');
+          }, 900);
+        }
+      }
+    }
+  },
+  pinSetupDel: () => {
+    _setupPinBuf = _setupPinBuf.slice(0, -1);
+    _updatePinDots('spd', _setupPinBuf.length);
+  },
+  cancelPINSetup: () => {
+    _setupPinBuf = _setupFirst = '';
+    _setupStep   = 1;
+    document.getElementById('pinSetupModal')?.classList.remove('show');
+    if (!isPINSet()) {
+      state.settings.biometricLock = false;
+      saveData();
+      document.getElementById('biometricToggle')?.classList.remove('active');
+    }
   },
   checkDrugName: () => checkDrugName(),
   // generic dismissals

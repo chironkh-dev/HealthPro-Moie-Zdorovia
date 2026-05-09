@@ -1,6 +1,6 @@
 // Encrypted .hpb backup — AES-256-GCM via SubtleCrypto (no external libs).
 // Schema 2: reads directly from SQLite relational tables (not state mirror).
-// biometricLock is deliberately excluded — PIN/fingerprint not transferable.
+// biometricLock is deliberately excluded — PIN not transferable across devices.
 
 import * as sql from '../../core/sqlite.js';
 import { state, showToast, today, saveData, persistTheme, persistLang } from '../../core/state.js';
@@ -34,8 +34,8 @@ async function sha256hex(str) {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-const b64    = arr => btoa(String.fromCharCode(...arr));
-const fromB64 = s  => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const b64     = arr => btoa(String.fromCharCode(...arr));
+const fromB64 = s   => Uint8Array.from(atob(s), c => c.charCodeAt(0));
 
 async function encryptAES(plaintext, password) {
   const salt = crypto.getRandomValues(new Uint8Array(16));
@@ -92,21 +92,36 @@ async function collectData() {
 
 // ── EXPORT ────────────────────────────────────────────────────────────────────
 
+// password === null → save without encryption (plain JSON wrapper)
 export async function exportBackup(password) {
-  const data      = await collectData();
-  const dataJson  = JSON.stringify(data);
-  const checksum  = await sha256hex(dataJson);
-  const encrypted = await encryptAES(dataJson, password);
+  const data     = await collectData();
+  const dataJson = JSON.stringify(data);
+  const checksum = await sha256hex(dataJson);
 
-  const pkg = {
-    format:            FORMAT,
-    hp_backup_version: BK_VER,
-    app_version:       APP_BUILD_FULL || '5.2.0',
-    schema:            SCHEMA,
-    created_at:        new Date().toISOString(),
-    checksum,
-    encrypted,
-  };
+  let pkg;
+  if (password) {
+    const encrypted = await encryptAES(dataJson, password);
+    pkg = {
+      format:            FORMAT,
+      hp_backup_version: BK_VER,
+      app_version:       APP_BUILD_FULL || '5.3.0',
+      schema:            SCHEMA,
+      created_at:        new Date().toISOString(),
+      checksum,
+      encrypted,
+    };
+  } else {
+    pkg = {
+      format:            FORMAT,
+      hp_backup_version: BK_VER,
+      app_version:       APP_BUILD_FULL || '5.3.0',
+      schema:            SCHEMA,
+      created_at:        new Date().toISOString(),
+      checksum,
+      encrypted:         false,
+      data:              dataJson,
+    };
+  }
 
   const blob = new Blob([JSON.stringify(pkg)], { type: 'application/octet-stream' });
   platformDownload('healthpro-backup-' + today() + '.hpb', blob, 'application/octet-stream');
@@ -124,7 +139,15 @@ export async function openBackupFile(fileContent, password) {
   }
 
   if (pkg.format !== FORMAT) throw new Error('invalid_format');
-  if (!pkg.encrypted)        throw new Error('invalid_format');
+
+  // No-password backup (encrypted === false)
+  if (pkg.encrypted === false) {
+    const checksum = await sha256hex(pkg.data);
+    if (checksum !== pkg.checksum) throw new Error('checksum_failed');
+    return { isLegacy: false, data: JSON.parse(pkg.data), meta: pkg };
+  }
+
+  if (!pkg.encrypted) throw new Error('invalid_format');
 
   let dataJson;
   try   { dataJson = await decryptAES(pkg.encrypted, password); }
@@ -151,6 +174,11 @@ export function getBackupStats(opened) {
 // ── RESTORE ───────────────────────────────────────────────────────────────────
 
 export async function restoreBackup(opened) {
+  // Ensure SQLite is initialized (important on fresh install or race condition)
+  if (!sql.isReady()) {
+    await sql.init();
+  }
+
   const { isLegacy, data } = opened;
   let measurements, medications, med_taken, steps_log, settings, theme, lang;
 
@@ -178,9 +206,14 @@ export async function restoreBackup(opened) {
     lang         = data.lang  || 'uk';
   }
 
-  // Never restore biometric lock — user must enable it manually
+  // Never restore biometric/PIN lock — user must enable it manually
   delete settings.biometricLock;
   settings.biometricLock = false;
+
+  // Defensive: ensure state arrays are initialized (fresh install safety)
+  if (!Array.isArray(state.measurements)) state.measurements = [];
+  if (!Array.isArray(state.pills))        state.pills        = [];
+  if (!state.pillsTaken || typeof state.pillsTaken !== 'object') state.pillsTaken = {};
 
   // Write to SQLite relational tables (native only)
   if (sql.isReady()) {
@@ -201,7 +234,11 @@ export async function restoreBackup(opened) {
       await sql.setMedTaken(r.med_id, r.date, !!r.taken);
     }
     for (const r of steps_log) {
-      await sql.upsertStepLog({ date: r.date, steps: r.steps, goal: r.goal || 10000 });
+      try {
+        await sql.upsertStepLog({ date: r.date, steps: r.steps, goal: r.goal || 10000 });
+      } catch (e) {
+        console.warn('[backup] upsertStepLog failed:', e?.message || e);
+      }
     }
   }
 
@@ -216,7 +253,7 @@ export async function restoreBackup(opened) {
     state.pillsTaken[r.date][r.med_id] = !!r.taken;
   }
 
-  // Steps localStorage fallback (web)
+  // Steps localStorage fallback (web / history cache)
   for (const r of steps_log) {
     try { localStorage.setItem('stepCount-' + r.date, String(r.steps)); } catch {}
   }

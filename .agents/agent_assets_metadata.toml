@@ -162,3 +162,9 @@ id = "LdKnji6Zp7mvIJLwUW5H9"
 uri = "file://HealthPro-Moie-Zdorovia/report/HealthPro_Session_v5.3.0_Backup_HPB_Biometric_Fix_Part4_Report.pdf"
 type = "pdf"
 title = "Звіт сесії v5.3.0 — Backup HPB + Biometric Fix"
+
+[[outputs]]
+id = "UTR4RmA4dmIXihKQ9EF4J"
+uri = "file://HealthPro-Moie-Zdorovia/report/HealthPro_Session_v5.3.1_PIN_Lock_Backup_Bugfix_Part2_Report.pdf"
+type = "pdf"
+title = "Звіт сесії v5.3.1 — PIN Lock + Backup Bugfix Part 2"

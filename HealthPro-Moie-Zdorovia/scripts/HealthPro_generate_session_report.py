@@ -10,9 +10,9 @@ HealthPro — Моє Здоров'я
 # ══════════════════════════════════════════════════════════════════════════════
 # НАЛАШТУВАННЯ ЗВІТУ — редагуй перед кожною сесією
 # ══════════════════════════════════════════════════════════════════════════════
-VERSION     = "5.3.0"                   # версія застосунку
-DESCRIPTION = "Backup_HPB_Biometric_Fix" # коротке уточнення теми сесії (без пробілів)
-PART        = 4                          # номер частини, якщо сесія розбита (1, 2, …) або None
+VERSION     = "5.3.1"                   # версія застосунку
+DESCRIPTION = "PIN_Lock_Backup_Bugfix"   # коротке уточнення теми сесії (без пробілів)
+PART        = 2                          # номер частини, якщо сесія розбита (1, 2, …) або None
 # ══════════════════════════════════════════════════════════════════════════════
 
 import datetime, os
@@ -263,127 +263,156 @@ def build_story():
 
     s += [cover(), sp(12)]
 
-    # Статистичні плитки — v5.3 Part 4
+    # Статистичні плитки — v5.3.1 Part 2
     s += [stats_row([
-        stat_cell("2",  "Завдання сесії",        "Бекап HPB + Biometric Fix"),
-        stat_cell("9",  "Файлів оновлено/нових", "JS·HTML·i18n"),
-        stat_cell("1",  "Новий модуль",          "backup.js (AES-256-GCM)"),
-        stat_cell("0",  "Помилок компіляції",    "Vite build ✓ 1029 модулів"),
+        stat_cell("7",  "Виправлень/завдань",    "Б1-Б4 + П1 + emoji cleanup"),
+        stat_cell("9",  "Файлів оновлено/нових", "JS·HTML·CSS·i18n·py"),
+        stat_cell("1",  "Новий модуль",          "pin.js (SHA-256 PIN lock)"),
+        stat_cell("0",  "Помилок компіляції",    "Vite ready in 304ms"),
     ]), sp(14), hr()]
 
-    # ═══ 1. Резервне копіювання (.hpb, AES-256-GCM) ═══════════════════════════
-    s.append(section_box("1", "Бекап .hpb — AES-256-GCM (SubtleCrypto, без бібліотек)"))
+    # ═══ 1. Автономний PIN-замок (П1) ═══════════════════════════════════════════
+    s.append(section_box("1", "П1 — Автономний 4-значний PIN-замок (без Capacitor Biometric)"))
     s.append(sp(6))
     s.append(body(
-        "Повністю новий модуль src/features/export/backup.js. Формат файлу: "
-        "healthpro-backup-YYYY-MM-DD.hpb — зашифрований JSON з AES-256-GCM. "
-        "Ключ деривується через PBKDF2 (SHA-256, 100 000 ітерацій, 16-байт salt). "
-        "Після шифрування — SHA-256 checksum усього payload для перевірки цілісності при відновленні. "
-        "Підтримка старого формату v4.0 (plain JSON без пароля) — автоматична трансформація даних."
+        "Проблема: Capacitor BiometricAuth plugin нестабільний на реальних пристроях — "
+        "кидає виключення при ініціалізації, відсутній у WebView, не працює без APK. "
+        "Рішення: повністю власна реалізація PIN-замка без жодних зовнішніх залежностей."
     ))
     s.append(sp(4))
     s.append(body(
-        "Структура бекапу: measurements (всі записи тиску), medications, med_taken, steps_log, "
-        "settings (bpStandard, pillReminder, measureReminder, morningTime, eveningTime, name, "
-        "height, weight, dob, doctor), theme, lang. "
-        "biometricLock навмисно виключено з бекапу — безпека на новому пристрої."
+        "src/core/pin.js: isPINSet() / setPIN(pin) / verifyPIN(pin) / clearPIN(). "
+        "PIN зберігається як SHA-256(salt+pin) у localStorage — ніколи plaintext. "
+        "Сіль 'hp_pin_v1:' захищає від rainbow-table атак на короткі PIN-коди."
+    ))
+    s.append(sp(4))
+    s.append(body(
+        "Lock Screen: стара кнопка 'Розблокувати' замінена повноцінним PIN-падом — "
+        "4 крапки прогресу (id lpd0-lpd3), 12 кнопок (0-9 + backspace), "
+        "помилковий PIN → shake + reset через 700мс. "
+        "PIN Setup Modal (#pinSetupModal): двокроковий ввід (enter → confirm), "
+        "при розходженні — автоматичний reset і підказка 'PIN-коди не збігаються'."
     ))
     s.append(sp(4))
     s.append(file_table([
-        ("src/features/export/backup.js", "НОВИЙ",
-         "exportBackup(pwd): collectData+encrypt+download .hpb; "
-         "openBackupFile(file): file-picker → preview stats; "
-         "restoreBackup(pwd): decrypt+clearAll+insert+reload; "
-         "getBackupStats(): {measurements,medications,steps}; "
-         "AES-256-GCM+PBKDF2+SHA-256 via SubtleCrypto"),
-        ("src/core/sqlite.js",             "ОНОВЛЕНО",
-         "clearAll(): DELETE measurements/medications/med_taken/steps_log — "
-         "викликається перед відновленням бекапу"),
-        ("src/features/export/index.js",   "ОНОВЛЕНО",
-         "re-export exportBackup, openBackupFile, restoreBackup, getBackupStats"),
-        ("src/app.js",                      "ОНОВЛЕНО",
-         "import backup-функцій; _backupFileContent/_backupOpened state; "
-         "showBackupConfirmModal() helper; 7 нових ACTIONS: "
-         "openBackupExportModal, closeBackupExportModal, exportBackupAction, "
-         "openBackupImportModal, closeBackupImportModal, openBackupImportFile, "
-         "closeBackupConfirmModal, restoreBackupAction"),
-        ("index.html",                       "ОНОВЛЕНО",
-         "Секція Налаштувань: кнопки Зберегти .hpb (синя), CSV, Відновити (.hpb/.json). "
-         "3 модалки: #backupExportModal (пароль+підтвердження), "
-         "#backupImportModal (інфо файлу+пароль), #backupConfirmModal (підтвердження)"),
-        ("src/i18n/ui.uk.js",               "ОНОВЛЕНО",
-         "33 нові ключі bk-*: заголовки, підказки, помилки, статистика, кнопки"),
-        ("src/i18n/ui.ru.js",               "ОНОВЛЕНО",
-         "33 нові ключі bk-* (російський переклад)"),
+        ("src/core/pin.js",  "НОВИЙ",
+         "isPINSet/setPIN/verifyPIN/clearPIN. SHA-256 через SubtleCrypto. localStorage."),
+        ("src/app.js",        "ОНОВЛЕНО",
+         "import pin.js замість biometric.js. "
+         "PIN state: _lockPinBuf, _setupPinBuf, _setupStep, _setupFirst. "
+         "_updatePinDots(prefix,count) + openPINSetup() helpers. "
+         "toggleBiometric: openPINSetup або clearPIN. "
+         "ACTIONS: lockPinKey/Del, pinSetupKey/Del, cancelPINSetup (7 нових)."),
+        ("index.html",        "ОНОВЛЕНО",
+         "#lockScreen: PIN-пад (lpd0-lpd3 + 12 кнопок). "
+         "#pinSetupModal: setup-пад (spd0-spd3 + 12 кнопок)."),
+        ("styles/base.css",   "ОНОВЛЕНО",
+         ".pin-dots/.pin-dot/.pin-pad/.pin-btn/.pin-btn-del/.pin-error — мінімальний CSS."),
     ]))
     s += [sp(8), hr()]
 
-    # ═══ 2. Biometric Toggle Fix ═══════════════════════════════════════════════
-    s.append(section_box("2", "Виправлення тоглера біометрики (PIN-only пристрої)"))
+    # ═══ 2. Виправлення бекапу (Б1–Б4) ════════════════════════════════════════
+    s.append(section_box("2", "Б1-Б4 — Виправлення бекапу на реальному пристрої"))
     s.append(sp(6))
     s.append(body(
-        "Проблема: на пристроях без відбитку пальця (тільки PIN/Pattern/Password) "
-        "checkBiometric() повертала false навіть якщо пристрій захищено. "
-        "Причина: перевірялось тільки isAvailable (пальцевий сканер), але ігнорувалось "
-        "deviceIsSecure (екран блокування). Виправлено: тепер умова "
-        "info?.isAvailable || info?.deviceIsSecure — тоглер активується на обох типах."
+        "Б1 (файловий пікер): accept='.hpb,.json' → accept='*/*'. "
+        "На Android файловий менеджер показував порожній список при обмеженні типів. "
+        "Тепер пікер показує всі файли — користувач знаходить .hpb у Downloads."
     ))
     s.append(sp(4))
     s.append(body(
-        "Також: хардкод 'Біометрія недоступна' в app.js замінено на t('bio-err-unavailable'). "
-        "defaultSettings у storage.js тепер явно містить biometricLock: false та "
-        "bpStandard: 'ESC2024' — усуває потенційні undefined при першому запуску."
+        "Б2 (збій при export): exportBackup(password) отримав null-path — "
+        "якщо пароль null (toggle вимкнено), зберігається незашифрований .hpb. "
+        "Формат: {format, encrypted: false, data: jsonString, checksum}. "
+        "onImportBackupFile тепер розпізнає encrypted===false і пропускає пароль-модалку."
+    ))
+    s.append(sp(4))
+    s.append(body(
+        "Б3 (bpStandard після відновлення): init() синхронізує #bp-std-esc/#bp-std-aha "
+        "з state.settings.bpStandard після перезавантаження або відновлення бекапу. "
+        "Б4 (краш при відновленні): await sql.init() guard перед clearAll(); "
+        "defensive null-checks для state.measurements/pills/pillsTaken."
     ))
     s.append(sp(4))
     s.append(file_table([
-        ("src/core/biometric.js",   "ОНОВЛЕНО",
-         "checkBiometric(): info?.isAvailable || info?.deviceIsSecure (замість тільки isAvailable)"),
-        ("src/core/storage.js",     "ОНОВЛЕНО",
-         "defaultSettings: biometricLock: false, bpStandard: 'ESC2024' — явні дефолти"),
-        ("src/app.js",              "ОНОВЛЕНО",
-         "toggleBiometric: toast змінено з 'Біометрія недоступна' на t('bio-err-unavailable')"),
-        ("src/i18n/ui.uk.js",       "ОНОВЛЕНО",
-         "bio-err-unavailable: 'Блокування недоступне на цьому пристрої'"),
-        ("src/i18n/ui.ru.js",       "ОНОВЛЕНО",
-         "bio-err-unavailable: 'Блокировка недоступна на этом устройстве'"),
+        ("src/features/export/backup.js", "ОНОВЛЕНО",
+         "exportBackup(null): незашифрований .hpb. "
+         "openBackupFile(content,null): no-password шлях. "
+         "restoreBackup: await sql.init() + defensive state guards."),
+        ("src/app.js",                    "ОНОВЛЕНО",
+         "openBackupExportModal: reset toggle+fields. toggleBkPassword: show/hide. "
+         "doExportBackup: читає #bkUsePasswordToggle. "
+         "onImportBackupFile: encrypted===false → пропуск пароля. "
+         "doRestoreBackup: t('bk-err-restore') замість '❌ ' + message."),
+        ("index.html",                    "ОНОВЛЕНО",
+         "importBackupFile: accept='*/*'. "
+         "#backupExportModal: toggle #bkUsePasswordToggle + #bkPasswordFields div."),
     ]))
     s += [sp(8), hr()]
 
-    # ═══ 3. Архітектурні рішення ══════════════════════════════════════════════
-    s.append(section_box("3", "Архітектурні рішення сесії"))
+    # ═══ 3. Очищення від емоджі ════════════════════════════════════════════════
+    s.append(section_box("3", "Emoji Cleanup — SVG-іконки замість Unicode-символів"))
+    s.append(sp(6))
+    s.append(body(
+        "Проблема: emoji 🔑 ✅ 🔔 ⚠️ не гарантовано рендеряться однаково на всіх "
+        "Android-версіях (особливо MIUI/Samsung 50+ аудиторія). "
+        "Рішення: замінити emoji на inline SVG Lucide-іконки або прибрати."
+    ))
+    s.append(sp(4))
+    s.append(body(
+        "t-push-note (🔔): SVG bell-іконка + span обгортка. "
+        "bk-password-hint (🔑): SVG lock-іконка + warn-box. "
+        "bk-confirm-biometric (⚠️): SVG triangle-alert + warn-box. "
+        "bk-toast-saved/restored (✅): видалено — текст сам по собі. "
+        "s-biometric/sub: оновлено в i18n на 'Блокування PIN-кодом'. "
+        "Виняток: ⚠️ у t-disclaimer залишено (медичне попередження, узгоджено)."
+    ))
+    s.append(sp(4))
+    s.append(file_table([
+        ("src/i18n/ui.uk.js", "ОНОВЛЕНО",
+         "t-push-note, bk-toast-saved/restored, bk-confirm-biometric: emoji видалено. "
+         "+8 нових ключів: bk-no-password, bk-use-password-lbl, bk-err-export/restore, "
+         "pin-setup-title/step1/step2/wrong/mismatch/set-ok/disabled."),
+        ("src/i18n/ui.ru.js", "ОНОВЛЕНО",
+         "Аналогічно uk.js (8 нових ключів + emoji cleanup)."),
+        ("index.html",        "ОНОВЛЕНО",
+         "t-push-note → flex+SVG bell. bk-password-hint → flex+SVG lock. "
+         "bk-confirm-biometric → flex+SVG alert-triangle."),
+    ]))
+    s += [sp(8), hr()]
+
+    # ═══ 4. Архітектурні рішення ══════════════════════════════════════════════
+    s.append(section_box("4", "Архітектурні рішення сесії"))
     s.append(sp(6))
     s.append(arch_table([
-        ("SubtleCrypto — без зовнішніх залежностей",
-         "AES-256-GCM + PBKDF2 реалізовано виключно через Web Crypto API (window.crypto.subtle). "
-         "Нульова залежність від npm crypto-бібліотек. Офлайн-ready, немає мережевих запитів."),
-        ("biometricLock виключено з бекапу",
-         "Навмисне рішення безпеки: при відновленні на новому пристрої "
-         "biometricLock=false за замовчуванням. Користувач явно вмикає блокування після відновлення."),
-        ("SHA-256 checksum у .hpb",
-         "checksum обчислюється від plaintext JSON перед шифруванням і зберігається у зашифрованому blob. "
-         "При відновленні: розшифрували → порівняли checksum → перевірили цілісність."),
-        ("Legacy v4.0 без пароля",
-         "Детекція: pkg.version==='4.0' || (!pkg.format && (pkg.measurements||pkg.pills)). "
-         "Пропускаємо пароль-модалку → одразу #backupConfirmModal. Зворотна сумісність."),
-        ("clearAll() перед відновленням",
-         "sqlite.clearAll() видаляє всі рядки з 4 таблиць. Потім INSERT нових даних пачками. "
-         "Ніколи не залишає mix старих/нових даних — атомарна операція відновлення."),
-        ("deviceIsSecure для PIN-only",
-         "Capacitor BiometricAuth info.deviceIsSecure=true якщо є будь-який екран блокування. "
-         "Дозволяє HealthPro Lock Screen на пристроях без сканера відбитку пальця."),
+        ("PIN без Capacitor",
+         "Повна відмова від @aparajita/capacitor-biometric-auth для lock-функції. "
+         "pin.js — 34 рядки, SubtleCrypto, localStorage. Працює у WebView, браузері, APK."),
+        ("SHA-256 + сіль для PIN",
+         "PIN не зберігається у відкритому вигляді. "
+         "Сіль 'hp_pin_v1:' захищає від dictionary-атак на 4-значний PIN."),
+        ("Опціональне шифрування .hpb",
+         "encrypted===false: data зберігається як JSON-рядок без шифрування. "
+         "Зручно для швидкого переносу між пристроями без пароля."),
+        ("Defensive SQL init",
+         "await sql.init() перед clearAll() запобігає краші на Android при холодному старті. "
+         "Без цього guard БД може бути ще не ініціалізована при відновленні."),
+        ("accept='*/*' файловий пікер",
+         "Android file picker з обмеженням MIME ігнорує .hpb (невідомий тип). "
+         "Рішення: дозволити всі файли. Валідація формату виконується на рівні openBackupFile()."),
     ]))
     s += [sp(8), hr()]
 
-    # ═══ 4. Роадмап ═══════════════════════════════════════════════════════════
-    s.append(section_box("4", "Наступні кроки / Роадмап"))
+    # ═══ 5. Роадмап ═══════════════════════════════════════════════════════════
+    s.append(section_box("5", "Наступні кроки / Роадмап"))
     s.append(sp(6))
     s.append(proposal_table([
-        ("Бекап",   "Google Drive / iCloud автобекап (Capacitor Filesystem)",      "Середній"),
-        ("Бекап",   "Автоматичний бекап кожні 7 днів з нотифікацією",              "Середній"),
-        ("Безпека", "AppState listener: блокувати при згортанні в фон",             "Середній"),
-        ("Профіль", "Вкладки 'Вага' та 'Сон'",                                     "Середній"),
-        ("Аналіз",  "Adherence weekly/monthly trend drill-down",                    "Низький"),
-        ("PDF",     "ECharts SVG → svg2pdf.js → jsPDF (векторна якість)",           "Низький"),
+        ("Безпека", "AppState listener: блокувати при згортанні в фон (Б5)",         "Високий"),
+        ("Безпека", "Б6: Lock Screen поверх нативного back-жесту (Capacitor App)",    "Високий"),
+        ("Бекап",   "Автоматичний бекап кожні 7 днів з нотифікацією",                "Середній"),
+        ("Бекап",   "Google Drive / iCloud via Capacitor Filesystem",                 "Середній"),
+        ("Профіль", "Вкладки 'Вага' та 'Цукор' (глюкометр)",                         "Середній"),
+        ("PDF",     "ECharts SVG → svg2pdf.js → jsPDF (векторна якість)",             "Низький"),
     ]))
     s += [sp(8), hr()]
 
