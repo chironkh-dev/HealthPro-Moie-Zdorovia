@@ -168,3 +168,9 @@ id = "UTR4RmA4dmIXihKQ9EF4J"
 uri = "file://HealthPro-Moie-Zdorovia/report/HealthPro_Session_v5.3.1_PIN_Lock_Backup_Bugfix_Part2_Report.pdf"
 type = "pdf"
 title = "Звіт сесії v5.3.1 — PIN Lock + Backup Bugfix Part 2"
+
+[[outputs]]
+id = "U9S8zDi6HlPUIfGZH6gVR"
+uri = "file://HealthPro-Moie-Zdorovia/report/HealthPro_Session_v5.3.2_Toggle_Bugfix_Backup_Steps_Report.pdf"
+type = "pdf"
+title = "HealthPro v5.3.2 — Звіт сесії"

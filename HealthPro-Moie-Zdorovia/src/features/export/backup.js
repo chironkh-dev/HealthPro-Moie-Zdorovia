@@ -80,7 +80,20 @@ async function collectData() {
         med_taken.push({ med_id: medId, date, taken: taken ? 1 : 0 });
       }
     }
+    // Collect steps from localStorage mirror (web / no SQLite)
     steps_log = [];
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('stepCount-')) {
+          const date  = key.slice('stepCount-'.length);
+          const steps = parseInt(localStorage.getItem(key), 10);
+          if (!isNaN(steps) && steps > 0) {
+            steps_log.push({ date, steps, goal: state.settings?.stepGoal || 10000 });
+          }
+        }
+      }
+    } catch {}
   }
 
   return {
@@ -209,6 +222,10 @@ export async function restoreBackup(opened) {
   // Never restore biometric/PIN lock — user must enable it manually
   delete settings.biometricLock;
   settings.biometricLock = false;
+  // Never restore stepsEnabled — permissions and foreground service
+  // must be granted manually on the new device/install
+  delete settings.stepsEnabled;
+  settings.stepsEnabled = false;
 
   // Defensive: ensure state arrays are initialized (fresh install safety)
   if (!Array.isArray(state.measurements)) state.measurements = [];

@@ -226,7 +226,7 @@ function init() {
   // ── PIN lock init (П1) ──
   const _st = state.settings;
   const biometricBtn = document.getElementById('biometricToggle');
-  if (biometricBtn) biometricBtn.classList.toggle('active', !!_st.biometricLock);
+  if (biometricBtn) biometricBtn.classList.toggle('on', !!_st.biometricLock);
   // Sync bpStandard toggle buttons after reload/restore (Б3)
   const _bpStd = _st.bpStandard || 'ESC2024';
   document.getElementById('bp-std-esc')?.classList.toggle('active', _bpStd === 'ESC2024');
@@ -238,7 +238,7 @@ function init() {
     // PIN was cleared (e.g. after restore) — disable the lock setting
     _st.biometricLock = false;
     saveData();
-    if (biometricBtn) biometricBtn.classList.remove('active');
+    if (biometricBtn) biometricBtn.classList.remove('on');
   }
 
   // Round 4 #2 — schedule was previously polled every minute (only worked
@@ -422,7 +422,7 @@ const ACTIONS = {
     document.getElementById('backupPasswordConfirm').value = '';
     const tog    = document.getElementById('bkUsePasswordToggle');
     const fields = document.getElementById('bkPasswordFields');
-    if (tog)    tog.classList.add('active');
+    if (tog)    tog.classList.add('on');
     if (fields) fields.style.display = 'block';
     document.getElementById('backupExportModal')?.classList.add('show');
   },
@@ -431,11 +431,11 @@ const ACTIONS = {
     const btn    = document.getElementById('bkUsePasswordToggle');
     const fields = document.getElementById('bkPasswordFields');
     if (!btn) return;
-    const on = btn.classList.toggle('active');
+    const on = btn.classList.toggle('on');
     if (fields) fields.style.display = on ? 'block' : 'none';
   },
   doExportBackup: async () => {
-    const usePw = document.getElementById('bkUsePasswordToggle')?.classList.contains('active') ?? true;
+    const usePw = document.getElementById('bkUsePasswordToggle')?.classList.contains('on') ?? true;
     const pw    = document.getElementById('backupPassword').value.trim();
     const pw2   = document.getElementById('backupPasswordConfirm').value.trim();
     if (usePw) {
@@ -541,7 +541,7 @@ const ACTIONS = {
       st.biometricLock = false;
       clearPIN();
       saveData();
-      if (btn) btn.classList.remove('active');
+      if (btn) btn.classList.remove('on');
       showToast(t('pin-disabled'));
     } else {
       openPINSetup();
@@ -590,7 +590,7 @@ const ACTIONS = {
           await setPIN(_setupPinBuf);
           state.settings.biometricLock = true;
           saveData();
-          document.getElementById('biometricToggle')?.classList.add('active');
+          document.getElementById('biometricToggle')?.classList.add('on');
           document.getElementById('pinSetupModal')?.classList.remove('show');
           _setupPinBuf = _setupFirst = '';
           _setupStep   = 1;
@@ -621,7 +621,7 @@ const ACTIONS = {
     if (!isPINSet()) {
       state.settings.biometricLock = false;
       saveData();
-      document.getElementById('biometricToggle')?.classList.remove('active');
+      document.getElementById('biometricToggle')?.classList.remove('on');
     }
   },
   checkDrugName: () => checkDrugName(),
