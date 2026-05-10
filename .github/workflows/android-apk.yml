@@ -2,8 +2,6 @@ name: Build Android APK
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 jobs:
   build-apk:
@@ -57,5 +55,6 @@ jobs:
         with:
           name: HealthPro-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 30
+          retention-days: 3
+          overwrite: true
           if-no-files-found: error
