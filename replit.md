@@ -13,6 +13,48 @@ npm run version  # Генерація src/core/version.gen.js (авто пере
 
 Змінні середовища: відсутні.
 
+## Build & Deploy (ОБОВ'ЯЗКОВО читати перед кожною командою)
+
+### Структура репозиторію ("матрьошка")
+```
+~/workspace/                          ← Capacitor root
+  capacitor.config.json               ← єдиний конфіг Capacitor
+  package.json                        ← залежності Capacitor + плагіни
+  android/                            ← Android проєкт
+  dist/                               ← збірка Vite (webDir)
+  HealthPro-Moie-Zdorovia/            ← весь JS/CSS/HTML код
+    package.json                      ← залежності Vite + npm
+    src/                              ← вихідний код
+    vite.config.js                    ← outDir: '../dist'
+```
+
+### Правила (порушення = плагіни не працюють)
+| Команда | Де виконувати |
+|---|---|
+| `npm install <plugin>` | `~/workspace/` І `~/workspace/HealthPro-Moie-Zdorovia/` |
+| `npm run build` | `~/workspace/HealthPro-Moie-Zdorovia/` |
+| `npm run version` | `~/workspace/HealthPro-Moie-Zdorovia/` |
+| `npx cap sync android` | `~/workspace/` |
+| `git add/commit/push` | `~/workspace/` |
+
+### Повний flow (копіювати без змін)
+```bash
+# 1. Новий плагін — ОБИДВІ папки!
+cd ~/workspace && npm install <plugin>
+cd ~/workspace/HealthPro-Moie-Zdorovia && npm install <plugin>
+
+# 2. Змінити код в src/
+
+# 3. Зібрати
+cd ~/workspace/HealthPro-Moie-Zdorovia && npm run build && npm run version
+
+# 4. Синхронізувати
+cd ~/workspace && npx cap sync android
+
+# 5. Push
+git add . && git commit -m "vX.X.X" && git push origin main
+```
+
 ## Stack
 
 - **Фреймворк:** Vanilla JS (ES-modules), Vite 5
