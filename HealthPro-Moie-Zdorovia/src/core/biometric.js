@@ -21,8 +21,10 @@ export async function authenticate() {
       reason: 'Підтвердіть особу для доступу до HealthPro',
       title: 'HealthPro',
       subtitle: 'Біометричний вхід',
+      negativeButtonText: 'Використати PIN',
+      maxAttempts: 3,
       useFallback: false,
     });
     return true; // resolve = успіх
-  } catch { return false; } // reject = cancel/помилка
+  } catch { return false; } // reject = cancel/помилка/3 невдалі спроби
 }

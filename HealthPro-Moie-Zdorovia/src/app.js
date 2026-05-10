@@ -425,6 +425,10 @@ function init() {
     saveData();
     if (biometricBtn) biometricBtn.classList.remove("on");
   }
+  // Показати lockScreen ОДРАЗУ (синхронно) — контент не видно до розблокування
+  if (isPINSet() && _st.biometricLock) {
+    document.getElementById("lockScreen")?.classList.remove("hidden");
+  }
   // Показуємо рядок відбитка тільки якщо є апаратна підтримка
   checkBiometric().then((avail) => {
     const bioRow = document.getElementById("bioToggleRow");
@@ -528,12 +532,16 @@ async function lockCheck() {
       const bioAvailable = await checkBiometric();
       if (bioAvailable) {
         const ok = await authenticate();
-        if (ok === true) return; // розблоковано відбитком
+        if (ok === true) {
+          // відбиток успішний — ховаємо lockScreen (він вже показаний з init)
+          document.getElementById("lockScreen")?.classList.add("hidden");
+          return;
+        }
       }
     } catch { /* fallback на PIN */ }
   }
 
-  // PIN-пад — завжди як fallback
+  // PIN-пад — lockScreen вже показано синхронно в init(), просто переконуємось
   document.getElementById("lockScreen")?.classList.remove("hidden");
 }
 
