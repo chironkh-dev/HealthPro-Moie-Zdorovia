@@ -522,14 +522,18 @@ async function lockCheck() {
   const _st = state.settings;
   if (!_st.biometricLock) return;
 
-  const bioEnabled = _st.biometricEnabled ?? false;
-  const bioAvailable = await checkBiometric();
-
-  if (bioEnabled && bioAvailable) {
-    const ok = await authenticate();
-    if (ok) return; // розблоковано відбитком → не показуємо PIN-пад
-    // відмова або помилка → fallback на PIN-пад (нижче)
+  // Біометрію пробуємо ТІЛЬКИ якщо юзер увімкнув
+  if (_st.biometricEnabled) {
+    try {
+      const bioAvailable = await checkBiometric();
+      if (bioAvailable) {
+        const ok = await authenticate();
+        if (ok) return; // розблоковано відбитком
+      }
+    } catch { /* fallback на PIN */ }
   }
+
+  // PIN-пад — завжди як fallback
   document.getElementById("lockScreen")?.classList.remove("hidden");
 }
 
