@@ -25,12 +25,13 @@ export async function authenticate() {
       reason: 'Підтвердіть особу для доступу до HealthPro',
       title: 'HealthPro',
       cancelButtonTitle: 'Використати PIN',
-      maxAttempts: 3,
+      maxAttempts: 1,  // ← 1 спроба, потім одразу fallback
+      useFallback: false, // ← НЕ використовувати системний fallback
     });
     console.log('[BIO] authenticate: success');
     return true;
   } catch(e) { 
     console.log('[BIO] authenticate error:', e?.message, e?.code);
-    return false; 
+    return false;  // ← одразу PIN пад
   }
 }

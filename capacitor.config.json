@@ -14,6 +14,11 @@
       "launchAutoHide": true,
       "backgroundColor": "#0d1630",
       "androidScaleType": "CENTER_CROP"
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#0d1630",
+      "overlaysWebView": false
     }
   }
 }
