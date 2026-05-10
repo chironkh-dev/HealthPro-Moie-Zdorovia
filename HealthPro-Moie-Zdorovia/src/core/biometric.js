@@ -21,17 +21,23 @@ export async function checkBiometric() {
 
 export async function authenticate() {
   try {
-    await NativeBiometric.verifyIdentity({
+    const result = await NativeBiometric.verifyIdentity({
       reason: 'Підтвердіть особу для доступу до HealthPro',
       title: 'HealthPro',
-      cancelButtonTitle: 'Використати PIN',
-      maxAttempts: 1,  // ← 1 спроба, потім одразу fallback
-      useFallback: false, // ← НЕ використовувати системний fallback
+      subtitle: 'Біометричний вхід',
+      description: 'Використайте відбиток або обличчя',
+      useFallback: false,
     });
-    console.log('[BIO] authenticate: success');
-    return true;
-  } catch(e) { 
+
+    const ok = result === undefined
+      || result === true
+      || result?.verified === true
+      || result?.success === true;
+
+    console.log('[BIO] authenticate result:', JSON.stringify(result), 'ok=', ok);
+    return ok;
+  } catch(e) {
     console.log('[BIO] authenticate error:', e?.message, e?.code);
-    return false;  // ← одразу PIN пад
+    return false;
   }
 }
