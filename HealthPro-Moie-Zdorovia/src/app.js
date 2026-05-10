@@ -528,7 +528,7 @@ async function lockCheck() {
       const bioAvailable = await checkBiometric();
       if (bioAvailable) {
         const ok = await authenticate();
-        if (ok) return; // розблоковано відбитком
+        if (ok === true) return; // розблоковано відбитком
       }
     } catch { /* fallback на PIN */ }
   }
