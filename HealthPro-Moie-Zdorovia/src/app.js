@@ -429,10 +429,14 @@ function init() {
   checkBiometric().then((avail) => {
     const bioRow = document.getElementById("bioToggleRow");
     if (bioRow) bioRow.style.display = avail ? "" : "none";
+    if (!avail && _st.biometricEnabled) {
+      _st.biometricEnabled = false;
+      saveData();
+    }
     const bioChk = document.getElementById("bioToggle");
     if (bioChk) bioChk.checked = !!(avail && _st.biometricEnabled);
-    lockCheck();
   });
+  lockCheck();
 
   // Round 4 #2 — schedule was previously polled every minute (only worked
   // while the app was open). Now we pre-schedule via Android AlarmManager
@@ -819,7 +823,7 @@ const ACTIONS = {
   // doctor PDF report (Task 5)
   generateDoctorReport: () => generateDoctorReport(),
   // ── PIN lock (П1) + відбиток ──
-  toggleBiometric: (el) => {
+  toggleBiometric: async (el) => {
     if (el.id === "bioToggle") {
       // Відбиток пальця (checkbox) — поверх PIN
       const enabled = el.checked;
@@ -827,6 +831,16 @@ const ACTIONS = {
         el.checked = false;
         showToast(t("bio-toggle-hint"));
         return;
+      }
+      if (enabled) {
+        const avail = await checkBiometric();
+        if (!avail) {
+          el.checked = false;
+          state.settings.biometricEnabled = false;
+          saveData();
+          showToast(t("bio-toggle-hint"));
+          return;
+        }
       }
       state.settings.biometricEnabled = enabled;
       saveData();
