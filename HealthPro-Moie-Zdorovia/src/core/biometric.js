@@ -4,41 +4,24 @@
 // Never throws — all errors are caught internally.
 // allowDeviceCredential: false — тільки відбиток/обличчя, НЕ системний PIN.
 
-// Capacitor BiometricAuth wrapper.
-// Uses static plugin API — no instantiation needed.
+// @capgo/capacitor-native-biometric wrapper
 
-let _plugin = null;
-
-async function _loadPlugin() {
-  if (_plugin !== null) return _plugin;
-  try {
-    const { BiometricAuth } = 
-      await import('@aparajita/capacitor-biometric-auth');
-    // BiometricAuth — статичний об'єкт, не клас
-    _plugin = BiometricAuth;
-  } catch {
-    _plugin = false;
-  }
-  return _plugin || null;
-}
+import { NativeBiometric } from '@capgo/capacitor-native-biometric';
 
 export async function checkBiometric() {
   try {
-    const plugin = await _loadPlugin();
-    if (!plugin) return false;
-    const info = await plugin.checkBiometry();
-    return !!(info?.isAvailable);
+    const result = await NativeBiometric.isAvailable();
+    return !!(result?.isAvailable);
   } catch { return false; }
 }
 
 export async function authenticate() {
   try {
-    const plugin = await _loadPlugin();
-    if (!plugin) return false;
-    await plugin.authenticate({
+    await NativeBiometric.verifyIdentity({
       reason: 'Підтвердіть особу для доступу до HealthPro',
-      cancelTitle: 'Використати PIN',
-      allowDeviceCredential: false,
+      title: 'HealthPro',
+      cancelButtonTitle: 'Використати PIN',
+      maxAttempts: 3,
     });
     return true;
   } catch { return false; }

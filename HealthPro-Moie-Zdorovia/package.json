@@ -1,6 +1,6 @@
 {
   "name": "healthpro",
-  "version": "5.3.7",
+  "version": "5.3.8",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,7 +12,6 @@
     "version": "node scripts/gen-version.js"
   },
   "dependencies": {
-    "@aparajita/capacitor-biometric-auth": "10.0.0",
     "@capacitor-community/sqlite": "8.1.0",
     "@capacitor/android": "8.3.3",
     "@capacitor/app": "8.1.0",
@@ -23,6 +22,7 @@
     "@capacitor/share": "8.0.1",
     "@capacitor/splash-screen": "8.0.1",
     "@capacitor/status-bar": "8.0.2",
+    "@capgo/capacitor-native-biometric": "8.4.2",
     "echarts": "6.0.0",
     "html2canvas": "1.4.1",
     "jspdf": "2.5.2",
