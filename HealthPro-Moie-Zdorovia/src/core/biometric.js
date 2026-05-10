@@ -4,15 +4,19 @@
 // Never throws — all errors are caught internally.
 // allowDeviceCredential: false — тільки відбиток/обличчя, НЕ системний PIN.
 
-// @capgo/capacitor-native-biometric wrapper
+// @capgo/capacitor-native-biometric wrapper -- log
 
 import { NativeBiometric } from '@capgo/capacitor-native-biometric';
 
 export async function checkBiometric() {
   try {
     const result = await NativeBiometric.isAvailable();
+    console.log('[BIO] isAvailable:', JSON.stringify(result));
     return !!(result?.isAvailable);
-  } catch { return false; }
+  } catch(e) { 
+    console.log('[BIO] error:', e?.message, e?.code);
+    return false; 
+  }
 }
 
 export async function authenticate() {
@@ -23,6 +27,10 @@ export async function authenticate() {
       cancelButtonTitle: 'Використати PIN',
       maxAttempts: 3,
     });
+    console.log('[BIO] authenticate: success');
     return true;
-  } catch { return false; }
+  } catch(e) { 
+    console.log('[BIO] authenticate error:', e?.message, e?.code);
+    return false; 
+  }
 }
