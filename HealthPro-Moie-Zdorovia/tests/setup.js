@@ -25,3 +25,9 @@ if (typeof globalThis.document === 'undefined') {
     addEventListener: () => {},
   };
 }
+// navigator — потрібен zrender (ECharts) при завантаженні модуля.
+// Навіть якщо charts.js замокано через vitest.config.js alias,
+// цей стаб слугує страховкою для будь-яких інших browser-globals.
+if (typeof globalThis.navigator === 'undefined') {
+  globalThis.navigator = { userAgent: 'node' };
+}
