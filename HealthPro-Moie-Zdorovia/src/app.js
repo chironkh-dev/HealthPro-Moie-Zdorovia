@@ -425,10 +425,6 @@ function init() {
     saveData();
     if (biometricBtn) biometricBtn.classList.remove("on");
   }
-  // Показати lockScreen ОДРАЗУ (синхронно) — контент не видно до розблокування
-  if (isPINSet() && _st.biometricLock) {
-    document.getElementById("lockScreen")?.classList.remove("hidden");
-  }
   // Показуємо рядок відбитка тільки якщо є апаратна підтримка
   checkBiometric().then((avail) => {
     const bioRow = document.getElementById("bioToggleRow");
@@ -440,6 +436,7 @@ function init() {
     const bioChk = document.getElementById("bioToggle");
     if (bioChk) bioChk.checked = !!(avail && _st.biometricEnabled);
   });
+  // lockCheck() показує lockScreen + кнопку відбитка (БЕЗ авто-authenticate)
   lockCheck();
 
   // Round 4 #2 — schedule was previously polled every minute (only worked
@@ -520,29 +517,30 @@ function openPINSetup() {
   document.getElementById("pinSetupModal")?.classList.add("show");
 }
 
-// ── Перевірка замку при старті: біометрія → PIN-пад ──────────────────────────
-async function lockCheck() {
+// ── Mutex для біометрії (запобігає подвійному виклику) ───────────────────────
+let _bioLockBusy = false;
+
+// ── Показати lockScreen + оновити видимість кнопки відбитка ──────────────────
+// НІКОЛИ не викликає authenticate() автоматично — тільки по тапу користувача.
+function lockCheck() {
   if (!isPINSet()) return;
   const _st = state.settings;
   if (!_st.biometricLock) return;
 
-  // Біометрію пробуємо ТІЛЬКИ якщо юзер увімкнув
-  if (_st.biometricEnabled) {
-    try {
-      const bioAvailable = await checkBiometric();
-      if (bioAvailable) {
-        const ok = await authenticate();
-        if (ok === true) {
-          // відбиток успішний — ховаємо lockScreen (він вже показаний з init)
-          document.getElementById("lockScreen")?.classList.add("hidden");
-          return;
-        }
-      }
-    } catch { /* fallback на PIN */ }
-  }
-
-  // PIN-пад — lockScreen вже показано синхронно в init(), просто переконуємось
+  // Показати lockScreen синхронно
   document.getElementById("lockScreen")?.classList.remove("hidden");
+
+  // Показати / сховати кнопку відбитка залежно від налаштувань
+  const bioBtnEl = document.getElementById("lockBioBtn");
+  if (bioBtnEl) {
+    if (_st.biometricEnabled) {
+      checkBiometric().then((avail) => {
+        bioBtnEl.style.display = avail ? "flex" : "none";
+      });
+    } else {
+      bioBtnEl.style.display = "none";
+    }
+  }
 }
 
 function showBackupConfirmModal(opened) {
@@ -875,6 +873,33 @@ const ACTIONS = {
     }
   },
   unlockApp: () => {}, // replaced by PIN pad (lockPinKey)
+  // ── Кнопка відбитка на lockScreen — ТІЛЬКИ по тапу користувача ──
+  lockBioBtn: async () => {
+    if (_bioLockBusy) return; // mutex: не дати запустити двічі
+    _bioLockBusy = true;
+    const bioBtnEl = document.getElementById("lockBioBtn");
+    if (bioBtnEl) bioBtnEl.disabled = true;
+    try {
+      // Samsung потребує delay 400мс після Activity transitions
+      await new Promise((r) => setTimeout(r, 400));
+      // Timeout 8с — захист від зависання Samsung BiometricPrompt
+      const authResult = await Promise.race([
+        authenticate(),
+        new Promise((_, rej) => setTimeout(() => rej(new Error("bio_timeout")), 8000)),
+      ]);
+      if (authResult === true) {
+        document.getElementById("lockScreen")?.classList.add("hidden");
+        _lockPinBuf = "";
+        _updatePinDots("lpd", 0);
+      }
+      // authResult === false → скасовано або помилка → залишаємося на PIN-паді
+    } catch {
+      // timeout або будь-яка інша помилка → залишаємося на PIN-паді (нічого не робимо)
+    } finally {
+      _bioLockBusy = false;
+      if (bioBtnEl) bioBtnEl.disabled = false;
+    }
+  },
   lockPinKey: async (el) => {
     if (_lockPinBuf.length >= 4) return;
     _lockPinBuf += el.dataset.k;

@@ -431,6 +431,7 @@ export const T_UK ={
   // ─── Біометрія — відбиток поверх PIN ───
   'bio-toggle':      'Розблокування відбитком',
   'bio-toggle-hint': 'Потребує встановленого PIN',
+  'lock-bio-btn':    'Увійти відбитком пальця',
 
   // ─── PIN lock (П1) ───
   'pin-setup-title':'Встановити PIN-код',
