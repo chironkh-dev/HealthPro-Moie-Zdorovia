@@ -209,6 +209,8 @@ HealthPro-Moie-Zdorovia
 │   ├── tips.css
 │   └── welcome.css
 ├── tests
+│   ├── mocks
+│   │   └── charts.js
 │   ├── activity-score.test.js
 │   ├── bmi-activity-combo.test.js
 │   ├── bmi-score.test.js
