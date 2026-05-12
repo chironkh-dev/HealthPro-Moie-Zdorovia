@@ -1,0 +1,271 @@
+﻿2026-05-12T13:59:44.8184861Z Current runner version: '2.334.0'
+2026-05-12T13:59:44.8211184Z ##[group]Runner Image Provisioner
+2026-05-12T13:59:44.8211942Z Hosted Compute Agent
+2026-05-12T13:59:44.8212494Z Version: 20260213.493
+2026-05-12T13:59:44.8213218Z Commit: 5c115507f6dd24b8de37d8bbe0bb4509d0cc0fa3
+2026-05-12T13:59:44.8213941Z Build Date: 2026-02-13T00:28:41Z
+2026-05-12T13:59:44.8214594Z Worker ID: {894cde12-e14f-4857-99d4-d8d29e57c574}
+2026-05-12T13:59:44.8215549Z Azure Region: eastus2
+2026-05-12T13:59:44.8216119Z ##[endgroup]
+2026-05-12T13:59:44.8217493Z ##[group]Operating System
+2026-05-12T13:59:44.8218225Z Ubuntu
+2026-05-12T13:59:44.8218670Z 24.04.4
+2026-05-12T13:59:44.8219139Z LTS
+2026-05-12T13:59:44.8219594Z ##[endgroup]
+2026-05-12T13:59:44.8220130Z ##[group]Runner Image
+2026-05-12T13:59:44.8220702Z Image: ubuntu-24.04
+2026-05-12T13:59:44.8221246Z Version: 20260413.86.1
+2026-05-12T13:59:44.8222446Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260413.86/images/ubuntu/Ubuntu2404-Readme.md
+2026-05-12T13:59:44.8223966Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260413.86
+2026-05-12T13:59:44.8224848Z ##[endgroup]
+2026-05-12T13:59:44.8226210Z ##[group]GITHUB_TOKEN Permissions
+2026-05-12T13:59:44.8228365Z Contents: read
+2026-05-12T13:59:44.8228923Z Metadata: read
+2026-05-12T13:59:44.8229383Z Packages: read
+2026-05-12T13:59:44.8230019Z ##[endgroup]
+2026-05-12T13:59:44.8232929Z Secret source: Actions
+2026-05-12T13:59:44.8233923Z Prepare workflow directory
+2026-05-12T13:59:44.8636658Z Prepare all required actions
+2026-05-12T13:59:44.8673322Z Getting action download info
+2026-05-12T13:59:45.2814254Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+2026-05-12T13:59:45.5720431Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+2026-05-12T13:59:45.8569917Z Complete job name: test-and-build
+2026-05-12T13:59:45.9280135Z ##[group]Run actions/checkout@v4
+2026-05-12T13:59:45.9280982Z with:
+2026-05-12T13:59:45.9281497Z   repository: chironkh-dev/HealthPro-Moie-Zdorovia
+2026-05-12T13:59:45.9282334Z   token: ***
+2026-05-12T13:59:45.9282754Z   ssh-strict: true
+2026-05-12T13:59:45.9283202Z   ssh-user: git
+2026-05-12T13:59:45.9283626Z   persist-credentials: true
+2026-05-12T13:59:45.9284116Z   clean: true
+2026-05-12T13:59:45.9284552Z   sparse-checkout-cone-mode: true
+2026-05-12T13:59:45.9285255Z   fetch-depth: 1
+2026-05-12T13:59:45.9285688Z   fetch-tags: false
+2026-05-12T13:59:45.9286112Z   show-progress: true
+2026-05-12T13:59:45.9286562Z   lfs: false
+2026-05-12T13:59:45.9286949Z   submodules: false
+2026-05-12T13:59:45.9287376Z   set-safe-directory: true
+2026-05-12T13:59:45.9288060Z ##[endgroup]
+2026-05-12T13:59:46.0406739Z Syncing repository: chironkh-dev/HealthPro-Moie-Zdorovia
+2026-05-12T13:59:46.0408681Z ##[group]Getting Git version info
+2026-05-12T13:59:46.0409699Z Working directory is '/home/runner/work/HealthPro-Moie-Zdorovia/HealthPro-Moie-Zdorovia'
+2026-05-12T13:59:46.0410865Z [command]/usr/bin/git version
+2026-05-12T13:59:46.0450177Z git version 2.53.0
+2026-05-12T13:59:46.0475446Z ##[endgroup]
+2026-05-12T13:59:46.0495522Z Temporarily overriding HOME='/home/runner/work/_temp/29b264b4-9c1e-42a0-9c51-78727a9342a8' before making global git config changes
+2026-05-12T13:59:46.0497064Z Adding repository directory to the temporary git global config as a safe directory
+2026-05-12T13:59:46.0501070Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/HealthPro-Moie-Zdorovia/HealthPro-Moie-Zdorovia
+2026-05-12T13:59:46.0534824Z Deleting the contents of '/home/runner/work/HealthPro-Moie-Zdorovia/HealthPro-Moie-Zdorovia'
+2026-05-12T13:59:46.0538508Z ##[group]Initializing the repository
+2026-05-12T13:59:46.0543696Z [command]/usr/bin/git init /home/runner/work/HealthPro-Moie-Zdorovia/HealthPro-Moie-Zdorovia
+2026-05-12T13:59:46.0603639Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-05-12T13:59:46.0605681Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-05-12T13:59:46.0607735Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-05-12T13:59:46.0609056Z hint: call:
+2026-05-12T13:59:46.0609725Z hint:
+2026-05-12T13:59:46.0610605Z hint: 	git config --global init.defaultBranch <name>
+2026-05-12T13:59:46.0611676Z hint:
+2026-05-12T13:59:46.0612647Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-05-12T13:59:46.0614229Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-05-12T13:59:46.0615771Z hint:
+2026-05-12T13:59:46.0616471Z hint: 	git branch -m <name>
+2026-05-12T13:59:46.0617281Z hint:
+2026-05-12T13:59:46.0618377Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-05-12T13:59:46.0620446Z Initialized empty Git repository in /home/runner/work/HealthPro-Moie-Zdorovia/HealthPro-Moie-Zdorovia/.git/
+2026-05-12T13:59:46.0623889Z [command]/usr/bin/git remote add origin https://github.com/chironkh-dev/HealthPro-Moie-Zdorovia
+2026-05-12T13:59:46.0650120Z ##[endgroup]
+2026-05-12T13:59:46.0651397Z ##[group]Disabling automatic garbage collection
+2026-05-12T13:59:46.0655087Z [command]/usr/bin/git config --local gc.auto 0
+2026-05-12T13:59:46.0684434Z ##[endgroup]
+2026-05-12T13:59:46.0685862Z ##[group]Setting up auth
+2026-05-12T13:59:46.0692384Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-05-12T13:59:46.0724018Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-05-12T13:59:46.1019429Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-05-12T13:59:46.1050938Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-05-12T13:59:46.1275564Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-05-12T13:59:46.1307717Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-05-12T13:59:46.1537297Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-05-12T13:59:46.1571791Z ##[endgroup]
+2026-05-12T13:59:46.1572577Z ##[group]Fetching the repository
+2026-05-12T13:59:46.1580192Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +84bbb0aaeb78ec7d85581b8f85eb365a60ec1d48:refs/remotes/origin/main
+2026-05-12T13:59:47.0462922Z From https://github.com/chironkh-dev/HealthPro-Moie-Zdorovia
+2026-05-12T13:59:47.0464588Z  * [new ref]         84bbb0aaeb78ec7d85581b8f85eb365a60ec1d48 -> origin/main
+2026-05-12T13:59:47.0493544Z ##[endgroup]
+2026-05-12T13:59:47.0494827Z ##[group]Determining the checkout info
+2026-05-12T13:59:47.0496752Z ##[endgroup]
+2026-05-12T13:59:47.0500382Z [command]/usr/bin/git sparse-checkout disable
+2026-05-12T13:59:47.0538720Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-05-12T13:59:47.0565483Z ##[group]Checking out the ref
+2026-05-12T13:59:47.0570379Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2026-05-12T13:59:47.3836169Z Switched to a new branch 'main'
+2026-05-12T13:59:47.3837578Z branch 'main' set up to track 'origin/main'.
+2026-05-12T13:59:47.3855297Z ##[endgroup]
+2026-05-12T13:59:47.3900934Z [command]/usr/bin/git log -1 --format=%H
+2026-05-12T13:59:47.3926749Z 84bbb0aaeb78ec7d85581b8f85eb365a60ec1d48
+2026-05-12T13:59:47.4159633Z ##[group]Run actions/setup-node@v4
+2026-05-12T13:59:47.4159948Z with:
+2026-05-12T13:59:47.4160168Z   node-version: 20
+2026-05-12T13:59:47.4160406Z   cache: npm
+2026-05-12T13:59:47.4160731Z   cache-dependency-path: HealthPro-Moie-Zdorovia/package-lock.json
+2026-05-12T13:59:47.4161134Z   always-auth: false
+2026-05-12T13:59:47.4161611Z   check-latest: false
+2026-05-12T13:59:47.4161998Z   token: ***
+2026-05-12T13:59:47.4162239Z ##[endgroup]
+2026-05-12T13:59:47.5932436Z Found in cache @ /opt/hostedtoolcache/node/20.20.2/x64
+2026-05-12T13:59:47.5938841Z ##[group]Environment details
+2026-05-12T13:59:50.4088706Z node: v20.20.2
+2026-05-12T13:59:50.4089283Z npm: 10.8.2
+2026-05-12T13:59:50.4089570Z yarn: 1.22.22
+2026-05-12T13:59:50.4090419Z ##[endgroup]
+2026-05-12T13:59:50.4112815Z [command]/opt/hostedtoolcache/node/20.20.2/x64/bin/npm config get cache
+2026-05-12T13:59:50.6115585Z /home/runner/.npm
+2026-05-12T13:59:50.7126023Z npm cache is not found
+2026-05-12T13:59:50.7268534Z ##[group]Run npm install
+2026-05-12T13:59:50.7268845Z [36;1mnpm install[0m
+2026-05-12T13:59:50.7300455Z shell: /usr/bin/bash -e {0}
+2026-05-12T13:59:50.7300721Z ##[endgroup]
+2026-05-12T13:59:54.5174641Z npm warn deprecated prebuild-install@7.1.3: No longer maintained. Please contact the author of the relevant native addon; alternatives are available.
+2026-05-12T13:59:54.5493651Z npm warn deprecated q@1.5.1: You or someone you depend on is using Q, the JavaScript Promise library that gave JavaScript developers strong feelings about promises. They can almost certainly migrate to the native JavaScript promise now. Thank you literally everyone for joining me in this bet against the odds. Be excellent to each other.
+2026-05-12T13:59:54.5495558Z npm warn deprecated
+2026-05-12T13:59:54.5496390Z npm warn deprecated (For a CapTP with native promises, see @endo/eventual-send and @endo/captp)
+2026-05-12T13:59:54.7191067Z npm warn deprecated tar@6.2.1: Old versions of tar are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+2026-05-12T13:59:54.8806571Z npm warn deprecated uuid@7.0.3: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+2026-05-12T13:59:54.9869271Z npm warn deprecated git-semver-tags@4.1.1: This package is no longer maintained. For the JavaScript API, please use @conventional-changelog/git-client instead.
+2026-05-12T13:59:55.0248988Z npm warn deprecated git-raw-commits@2.0.11: This package is no longer maintained. For the JavaScript API, please use @conventional-changelog/git-client instead.
+2026-05-12T13:59:56.8071166Z npm warn deprecated glob@9.3.5: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+2026-05-12T14:00:01.4353313Z 
+2026-05-12T14:00:01.4354207Z added 553 packages, and audited 554 packages in 11s
+2026-05-12T14:00:01.4354841Z 
+2026-05-12T14:00:01.4355401Z 77 packages are looking for funding
+2026-05-12T14:00:01.4355952Z   run `npm fund` for details
+2026-05-12T14:00:01.4765775Z 
+2026-05-12T14:00:01.4768996Z 10 vulnerabilities (3 moderate, 6 high, 1 critical)
+2026-05-12T14:00:01.4769460Z 
+2026-05-12T14:00:01.4769956Z To address all issues possible (including breaking changes), run:
+2026-05-12T14:00:01.4770563Z   npm audit fix --force
+2026-05-12T14:00:01.4770788Z 
+2026-05-12T14:00:01.4771082Z Some issues need review, and may require choosing
+2026-05-12T14:00:01.4771599Z a different dependency.
+2026-05-12T14:00:01.4771832Z 
+2026-05-12T14:00:01.4772014Z Run `npm audit` for details.
+2026-05-12T14:00:01.5088624Z ##[group]Run npm test
+2026-05-12T14:00:01.5088875Z [36;1mnpm test[0m
+2026-05-12T14:00:01.5112283Z shell: /usr/bin/bash -e {0}
+2026-05-12T14:00:01.5112547Z ##[endgroup]
+2026-05-12T14:00:01.9464087Z 
+2026-05-12T14:00:01.9465204Z > healthpro@5.3.16 test
+2026-05-12T14:00:01.9465679Z > vitest run
+2026-05-12T14:00:01.9465907Z 
+2026-05-12T14:00:02.2430265Z 
+2026-05-12T14:00:02.2435509Z [1m[30m[46m RUN [49m[39m[22m [36mv4.1.5 [39m[90m/home/runner/work/HealthPro-Moie-Zdorovia/HealthPro-Moie-Zdorovia/HealthPro-Moie-Zdorovia[39m
+2026-05-12T14:00:02.2436436Z 
+2026-05-12T14:00:02.7860926Z  [32m✓[39m tests/measurement-window.test.js [2m([22m[2m39 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+2026-05-12T14:00:02.8490939Z  [31m❯[39m tests/foreground-step.test.js [2m([22m[2m0 test[22m[2m)[22m
+2026-05-12T14:00:02.9450166Z  [31m❯[39m tests/bp-pulse-thresholds.test.js [2m([22m[2m0 test[22m[2m)[22m
+2026-05-12T14:00:03.1458198Z  [32m✓[39m tests/bmi-activity-combo.test.js [2m([22m[2m43 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+2026-05-12T14:00:03.2866834Z  [31m❯[39m tests/step-fixes.test.js [2m([22m[2m0 test[22m[2m)[22m
+2026-05-12T14:00:03.3734609Z  [31m❯[39m tests/veto-boundary.test.js [2m([22m[2m0 test[22m[2m)[22m
+2026-05-12T14:00:03.5437172Z  [31m❯[39m tests/bmi-score.test.js [2m([22m[2m0 test[22m[2m)[22m
+2026-05-12T14:00:03.6104835Z  [32m✓[39m tests/activity-score.test.js [2m([22m[2m36 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+2026-05-12T14:00:03.6847537Z  [32m✓[39m tests/stepgoal-bmi-combo.test.js [2m([22m[2m50 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+2026-05-12T14:00:03.9347108Z  [32m✓[39m tests/bp-dot-class.test.js [2m([22m[2m38 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+2026-05-12T14:00:03.9667620Z  [31m❯[39m tests/health-score-i18n.test.js [2m([22m[2m0 test[22m[2m)[22m
+2026-05-12T14:00:04.0846974Z  [31m❯[39m tests/pills-score.test.js [2m([22m[2m0 test[22m[2m)[22m
+2026-05-12T14:00:04.2091026Z  [32m✓[39m tests/bmi.test.js [2m([22m[2m23 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+2026-05-12T14:00:04.3385282Z  [32m✓[39m tests/pill-schedule.test.js [2m([22m[2m13 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+2026-05-12T14:00:04.3632255Z  [31m❯[39m tests/health-score.test.js [2m([22m[2m0 test[22m[2m)[22m
+2026-05-12T14:00:04.4032104Z  [32m✓[39m tests/bp-norm.test.js [2m([22m[2m8 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+2026-05-12T14:00:04.4089723Z 
+2026-05-12T14:00:04.4090792Z [31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Suites 8 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+2026-05-12T14:00:04.4091295Z 
+2026-05-12T14:00:04.4095275Z [41m[1m FAIL [22m[49m tests/bmi-score.test.js[2m [ tests/bmi-score.test.js ][22m
+2026-05-12T14:00:04.4096703Z [41m[1m FAIL [22m[49m tests/bp-pulse-thresholds.test.js[2m [ tests/bp-pulse-thresholds.test.js ][22m
+2026-05-12T14:00:04.4098158Z [41m[1m FAIL [22m[49m tests/foreground-step.test.js[2m [ tests/foreground-step.test.js ][22m
+2026-05-12T14:00:04.4099578Z [41m[1m FAIL [22m[49m tests/health-score-i18n.test.js[2m [ tests/health-score-i18n.test.js ][22m
+2026-05-12T14:00:04.4100878Z [41m[1m FAIL [22m[49m tests/health-score.test.js[2m [ tests/health-score.test.js ][22m
+2026-05-12T14:00:04.4102083Z [41m[1m FAIL [22m[49m tests/pills-score.test.js[2m [ tests/pills-score.test.js ][22m
+2026-05-12T14:00:04.4103181Z [41m[1m FAIL [22m[49m tests/step-fixes.test.js[2m [ tests/step-fixes.test.js ][22m
+2026-05-12T14:00:04.4104330Z [41m[1m FAIL [22m[49m tests/veto-boundary.test.js[2m [ tests/veto-boundary.test.js ][22m
+2026-05-12T14:00:04.4105302Z [31m[1mReferenceError[22m: navigator is not defined[39m
+2026-05-12T14:00:04.4106274Z [90m [2m❯[22m node_modules/zrender/lib/core/env.js:[2m43:12[22m[39m
+2026-05-12T14:00:04.4106914Z [36m [2m❯[22m src/core/charts.js:[2m5:1[22m[39m
+2026-05-12T14:00:04.4150712Z     [90m  3|[39m [90m// CanvasRenderer — резерв для скаттерплотів з великими датасетами.[39m
+2026-05-12T14:00:04.4151820Z     [90m  4|[39m
+2026-05-12T14:00:04.4152424Z     [90m  5|[39m [35mimport[39m { init[33m,[39m use } [35mfrom[39m [32m'echarts/core'[39m[33m;[39m
+2026-05-12T14:00:04.4153175Z     [90m   |[39m [31m^[39m
+2026-05-12T14:00:04.4154171Z     [90m  6|[39m [35mimport[39m { [33mLineChart[39m[33m,[39m [33mBarChart[39m[33m,[39m [33mScatterChart[39m } [35mfrom[39m [32m'echarts/charts'[39m[33m;[39m
+2026-05-12T14:00:04.4154860Z     [90m  7|[39m [35mimport[39m {
+2026-05-12T14:00:04.4155498Z 
+2026-05-12T14:00:04.4155875Z [31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/8]⎯[22m[39m
+2026-05-12T14:00:04.4156183Z 
+2026-05-12T14:00:04.4156210Z 
+2026-05-12T14:00:04.4160753Z [2m Test Files [22m [1m[31m8 failed[39m[22m[2m | [22m[1m[32m8 passed[39m[22m[90m (16)[39m
+2026-05-12T14:00:04.4162354Z [2m      Tests [22m [1m[32m250 passed[39m[22m[90m (250)[39m
+2026-05-12T14:00:04.4162979Z [2m   Start at [22m 14:00:02
+2026-05-12T14:00:04.4165669Z [2m   Duration [22m 2.16s[2m (transform 912ms, setup 133ms, import 816ms, tests 137ms, environment 2ms)[22m
+2026-05-12T14:00:04.4168038Z 
+2026-05-12T14:00:04.4189098Z 
+2026-05-12T14:00:04.4209916Z ##[error]ReferenceError: navigator is not defined
+ ❯ node_modules/zrender/lib/core/env.js:43:12
+ ❯ src/core/charts.js:5:1
+
+
+2026-05-12T14:00:04.4217658Z 
+2026-05-12T14:00:04.4219170Z ##[error]ReferenceError: navigator is not defined
+ ❯ node_modules/zrender/lib/core/env.js:43:12
+ ❯ src/core/charts.js:5:1
+
+
+2026-05-12T14:00:04.4220083Z 
+2026-05-12T14:00:04.4221187Z ##[error]ReferenceError: navigator is not defined
+ ❯ node_modules/zrender/lib/core/env.js:43:12
+ ❯ src/core/charts.js:5:1
+
+
+2026-05-12T14:00:04.4221969Z 
+2026-05-12T14:00:04.4223034Z ##[error]ReferenceError: navigator is not defined
+ ❯ node_modules/zrender/lib/core/env.js:43:12
+ ❯ src/core/charts.js:5:1
+
+
+2026-05-12T14:00:04.4223811Z 
+2026-05-12T14:00:04.4224822Z ##[error]ReferenceError: navigator is not defined
+ ❯ node_modules/zrender/lib/core/env.js:43:12
+ ❯ src/core/charts.js:5:1
+
+
+2026-05-12T14:00:04.4225876Z 
+2026-05-12T14:00:04.4226900Z ##[error]ReferenceError: navigator is not defined
+ ❯ node_modules/zrender/lib/core/env.js:43:12
+ ❯ src/core/charts.js:5:1
+
+
+2026-05-12T14:00:04.4227716Z 
+2026-05-12T14:00:04.4228782Z ##[error]ReferenceError: navigator is not defined
+ ❯ node_modules/zrender/lib/core/env.js:43:12
+ ❯ src/core/charts.js:5:1
+
+
+2026-05-12T14:00:04.4229590Z 
+2026-05-12T14:00:04.4230787Z ##[error]ReferenceError: navigator is not defined
+ ❯ node_modules/zrender/lib/core/env.js:43:12
+ ❯ src/core/charts.js:5:1
+
+
+2026-05-12T14:00:04.4510602Z ##[error]Process completed with exit code 1.
+2026-05-12T14:00:04.4623540Z Post job cleanup.
+2026-05-12T14:00:04.5595896Z [command]/usr/bin/git version
+2026-05-12T14:00:04.5631406Z git version 2.53.0
+2026-05-12T14:00:04.5672146Z Temporarily overriding HOME='/home/runner/work/_temp/e1a876ba-e5e5-498b-a2cb-b8b800224ab3' before making global git config changes
+2026-05-12T14:00:04.5673162Z Adding repository directory to the temporary git global config as a safe directory
+2026-05-12T14:00:04.5684889Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/HealthPro-Moie-Zdorovia/HealthPro-Moie-Zdorovia
+2026-05-12T14:00:04.5721585Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-05-12T14:00:04.5754395Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-05-12T14:00:04.5990407Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-05-12T14:00:04.6011123Z http.https://github.com/.extraheader
+2026-05-12T14:00:04.6022919Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-05-12T14:00:04.6053446Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-05-12T14:00:04.6291587Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-05-12T14:00:04.6325903Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-05-12T14:00:04.6695567Z Cleaning up orphan processes
+2026-05-12T14:00:04.6990902Z ##[warning]Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-node@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
