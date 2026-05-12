@@ -123,6 +123,18 @@ HealthPro-Moie-Zdorovia/
 
 ## Changelog
 
+### v5.3.15 (2026-05-12) — Сесія: Скидання кроків опівночі + Графік по днях
+
+- **`_checkDayRollover()` (JS):** нова функція у `steps/index.js` — при зміні `today()` синхронно скидає `stepCount=0`, зберігає вчорашній підсумок у `steps_log` (idempotent upsert), записує 0 для нового дня, перезапускає Foreground Service з `initialSteps=0`. Викликається з `_persistSteps()`, `restoreSteps()`, та `onResume`-хелс-чеку.
+- **`_lastStepDate` (JS):** нова module-level змінна — зберігається у localStorage (`stepLastDate`), ініціалізується при `restoreSteps()`.
+- **`StepCounterService.java`:** додано `currentDate` поле + перевірка зміни дати в `onSensorChanged` — захист на випадок якщо JS-шар вимкнено (сервіс живий вночі): скидає `initialSteps=0`, `currentSteps=0`, `baselineSteps=rawSteps`, бродкастить 0.
+- **Графік «Кроки по днях»:** `renderStepsDayChart()` / `disposeStepsDayChart()` / `openStepsDayModal()` / `closeStepsDayModal()` у `steps/index.js`. ECharts bar chart (SVG) за останні 30 днів — стовпчики зелені (ціль досягнута) або cyan (не досягнута), пунктирна лінія мети, tooltip з датою та кількістю.
+- **Нова кнопка «Кроки по днях»:** поруч з «Кроки ↔ Тиск» у flex-обгортці у блоці активності (`index.html`).
+- **Модалка `#stepsDayModal`:** bottom-sheet, та сама структура що й `scatterModal`.
+- **`app.js`:** імпорт + ACTIONS `openStepsDayModal`/`closeStepsDayModal`, dispose при навігації між вкладками.
+- **i18n uk/ru:** нові ключі `t-btn-steps-day`, `t-steps-day-modal-title`, `t-steps-day-empty`.
+- **Тести:** 513/513 ✅, збірка Vite без помилок.
+
 ### v5.3.15 (2026-05-12) — Сесія: Архітектурне виправлення біометрії
 - **`lockCheck()` → синхронна:** прибрано авто-виклик `authenticate()` при старті — головна причина зависання Samsung A24.
 - **Кнопка `#lockBioBtn` на lockScreen:** `authenticate()` тепер викликається ТІЛЬКИ по тапу користувача (згідно з Samsung BiometricPrompt best practices).

@@ -19,6 +19,7 @@
 
 import { state, saveData, showToast, today, DB } from '../../core/state.js';
 import { saveStepLog as dbSaveStep, queryStepLog } from '../../core/db.js';
+import { createChart, disposeChart } from '../../core/charts.js';
 import {
   DEFAULT_STEP_GOAL,
   STEP_ACCEL_THRESHOLD,
@@ -45,6 +46,9 @@ const MIN_PEAK_SAMPLES = STEP_MIN_PEAK_SAMPLES;
 
 // ── Хелпер збереження кроків: LS дзеркало + SQLite steps_log ───────────────
 function _persistSteps(count) {
+  // Перевіряємо перехід опівночі. Якщо день змінився — stepCount вже скинуто,
+  // count зі старого дня не зберігаємо (він вже збережений у _checkDayRollover).
+  if (_checkDayRollover()) return;
   const d    = today();
   const goal = state.settings?.stepGoal || DEFAULT_STEP_GOAL;
   DB.set('stepCount-' + d, count);                           // localStorage mirror
@@ -68,6 +72,42 @@ let _motionCheckTimer = null;
 
 // onResume handler cleanup (avoid duplicate registration)
 let _resumeUnsubscribe = null;
+
+// ── Midnight day-rollover tracking ──────────────────────────────────────────
+let _lastStepDate = '';
+
+// Виявляє перехід опівночі. Синхронний (скидання stepCount) + async (запис у БД).
+// Повертає true якщо день змінився.
+function _checkDayRollover() {
+  const todayStr = today();
+  if (!_lastStepDate) {
+    // Перший запуск — завантажуємо з localStorage
+    _lastStepDate = DB.get('stepLastDate', '') || todayStr;
+    DB.set('stepLastDate', _lastStepDate);
+  }
+  if (_lastStepDate === todayStr) return false; // той самий день
+
+  // Опівніч пройшла: зберегти вчорашній підсумок (idempotent upsert)
+  const goal = state.settings?.stepGoal || DEFAULT_STEP_GOAL;
+  dbSaveStep({ date: _lastStepDate, steps: stepCount, goal }).catch(() => {});
+
+  // Скидаємо лічильник (синхронно — важливо до будь-яких нових записів)
+  _lastStepDate = todayStr;
+  DB.set('stepLastDate', todayStr);
+  stepCount = 0;
+
+  // Записуємо 0 для нового дня (щоб в аналітиці був запис навіть якщо 0 кроків)
+  DB.set('stepCount-' + todayStr, '0');
+  dbSaveStep({ date: todayStr, steps: 0, goal }).catch(() => {});
+
+  // Перезапускаємо Foreground Service з initialSteps=0 — він скине свій лічильник
+  if (state.settings?.stepMode === 'foreground' && isNative() && getPlatform() === 'android') {
+    startStepService(goal, t('st-notif-title'), t('st-notif-text'), 0).catch(() => {});
+  }
+
+  updateStepUI();
+  return true;
+}
 
 // ── Public toggle ───────────────────────────────────────────────────────────
 
@@ -301,6 +341,8 @@ function _setupResumeHealthCheck() {
   if (_resumeUnsubscribe) { _resumeUnsubscribe(); _resumeUnsubscribe = null; }
 
   _resumeUnsubscribe = onResume(async () => {
+    // При поверненні в додаток — перевіряємо чи не пройшла опівніч
+    _checkDayRollover();
     if (!stepEnabled || state.settings.stepMode !== 'foreground') return;
 
     const status = await getServiceStatus();
@@ -488,6 +530,13 @@ export function updateStepUI() {
 // ── Restore on load / app resume ───────────────────────────────────────────
 
 export async function restoreSteps() {
+  // Ініціалізуємо date-tracking та перевіряємо перехід опівночі при старті
+  if (!_lastStepDate) {
+    _lastStepDate = DB.get('stepLastDate', '') || today();
+    DB.set('stepLastDate', _lastStepDate);
+  }
+  _checkDayRollover();
+
   const mode = state.settings.stepMode || 'active-only';
 
   if (mode === 'foreground' && isNative() && getPlatform() === 'android') {
@@ -557,4 +606,108 @@ export function saveStepGoal() {
 
 export function getStepCount() {
   return stepCount;
+}
+
+// ── Steps-by-day bar chart ──────────────────────────────────────────────────
+
+export async function renderStepsDayChart(containerId) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+
+  disposeChart(el);
+
+  const rows = await queryStepLog({ days: 30 }).catch(() => []);
+
+  if (rows.length < 2) {
+    el.style.height = '';
+    el.innerHTML = `<div class="chart-empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><p>${t('t-steps-day-empty')}</p></div>`;
+    return;
+  }
+
+  el.innerHTML = '';
+  el.style.height = '260px';
+
+  const goal = state.settings?.stepGoal || DEFAULT_STEP_GOAL;
+  const chart = createChart(el, 'svg');
+  if (!chart) return;
+
+  const dates  = rows.map(r => r.date.slice(5));   // MM-DD
+  const values = rows.map(r => r.steps);
+  const barData = rows.map((r, i) => ({
+    value: r.steps,
+    itemStyle: {
+      color: r.steps >= (r.goal || goal) ? '#22c55e' : '#06b6d4',
+      borderRadius: [3, 3, 0, 0],
+    },
+  }));
+
+  chart.setOption({
+    backgroundColor: 'transparent',
+    grid: { left: 52, right: 12, top: 20, bottom: 50 },
+    xAxis: {
+      type: 'category',
+      data: dates,
+      axisLabel: { color: '#64748b', fontSize: 9, rotate: 45, interval: 0 },
+      axisLine: { lineStyle: { color: '#475569' } },
+      axisTick: { show: false },
+    },
+    yAxis: {
+      type: 'value',
+      axisLabel: { color: '#64748b', fontSize: 10 },
+      splitLine: { lineStyle: { color: 'rgba(99,140,255,0.07)' } },
+      axisLine: { lineStyle: { color: '#475569' } },
+    },
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: 'rgba(15,23,42,0.92)',
+      borderColor: 'rgba(99,140,255,0.18)',
+      textStyle: { color: '#e2e8f0', fontSize: 12 },
+      formatter: (params) => {
+        const p = params[0];
+        return `${rows[p.dataIndex].date}<br><b>${Number(p.value).toLocaleString()}</b> ${t('t-steps')}`;
+      },
+    },
+    series: [{
+      type: 'bar',
+      data: barData,
+      barMaxWidth: 18,
+      markLine: {
+        silent: true,
+        symbol: 'none',
+        lineStyle: { color: '#f59e0b', type: 'dashed', width: 1.5 },
+        data: [{
+          yAxis: goal,
+          label: {
+            formatter: () => goal.toLocaleString(),
+            color: '#f59e0b',
+            fontSize: 10,
+            position: 'end',
+          },
+        }],
+      },
+    }],
+  });
+}
+
+export function disposeStepsDayChart(containerId) {
+  const el = typeof containerId === 'string'
+    ? document.getElementById(containerId)
+    : containerId;
+  disposeChart(el);
+}
+
+export function openStepsDayModal() {
+  const m = document.getElementById('stepsDayModal');
+  if (!m) return;
+  m.classList.add('show');
+  document.body.style.overflow = 'hidden';
+  renderStepsDayChart('stepsDayChart').catch(() => {});
+}
+
+export function closeStepsDayModal() {
+  disposeStepsDayChart('stepsDayChart');
+  const m = document.getElementById('stepsDayModal');
+  if (!m) return;
+  m.classList.remove('show');
+  document.body.style.overflow = '';
 }

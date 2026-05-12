@@ -10,9 +10,9 @@ HealthPro — Моє Здоров'я
 # ══════════════════════════════════════════════════════════════════════════════
 # НАЛАШТУВАННЯ ЗВІТУ — редагуй перед кожною сесією
 # ══════════════════════════════════════════════════════════════════════════════
-VERSION     = "5.3.2"                    # версія застосунку
-DESCRIPTION = "Steps_Biometric_PIN"     # коротке уточнення теми сесії (без пробілів)
-PART        = 2                          # номер частини, якщо сесія розбита (1, 2, …) або None
+VERSION     = "5.3.15"                   # версія застосунку
+DESCRIPTION = "Steps_Midnight_DayChart" # коротке уточнення теми сесії (без пробілів)
+PART        = None                       # номер частини, якщо сесія розбита (1, 2, …) або None
 # ══════════════════════════════════════════════════════════════════════════════
 
 import datetime, os
@@ -263,95 +263,108 @@ def build_story():
 
     s += [cover(), sp(12)]
 
-    # Статистичні плитки — v5.3.2 Part 2
+    # Статистичні плитки — v5.3.15
     s += [stats_row([
-        stat_cell("3",  "Android-файли",         "Plugin · Service · Manifest"),
-        stat_cell("5",  "JS/HTML/i18n файлів",   "app · biometric · index · uk · ru"),
-        stat_cell("1",  "Нова функція",          "lockCheck() async"),
-        stat_cell("0",  "Помилок компіляції",    "Vite + biometric-auth optimized"),
+        stat_cell("1",  "Java-файл",              "StepCounterService.java"),
+        stat_cell("5",  "JS/HTML/i18n файлів",    "steps · app · html · uk · ru"),
+        stat_cell("2",  "Нові фічі",              "Скидання опівночі + Графік по днях"),
+        stat_cell("0",  "Помилок компіляції",     "513/513 тестів ✓"),
     ]), sp(14), hr()]
 
-    # ═══ 1. Тогл PIN-замку ══════════════════════════════════════════════════════
-    s.append(section_box("1", "Крокомір — синхронізація після свайп-кілу (Android)"))
+    # ═══ 1. Скидання кроків опівночі ═══════════════════════════════════════════
+    s.append(section_box("1", "Скидання кроків опівночі (JS + Android)"))
     s.append(sp(6))
     s.append(body(
-        "Проблема: після свайпу додатку з таск-менеджера шторка продовжувала рахувати кроки, "
-        "але при поверненні до додатку JS отримував running:false / steps:0 — "
-        "плагін ще не був прив'язаний до сервісу. Додаток читав старі дані з localStorage."
+        "Проблема: module-level змінна stepCount ніколи не скидалась при зміні дня. "
+        "При безперервній роботі Foreground Service через північ (START_STICKY) — "
+        "наступного дня лічильник продовжував від вчорашнього значення, а не з нуля. "
+        "localStorage-ключі зберігались коректно за датою (today()), але stepCount у "
+        "пам'яті залишався 'вчорашнім' — звідси некоректні дані в аналітиці."
     ))
     s.append(sp(4))
-    s.append(h2("Зміна 1 — ForegroundStepPlugin.getSteps()"))
+    s.append(h2("_checkDayRollover() — синхронне ядро скидання"))
     s.append(body(
-        "Якщо serviceBound=false — читаємо steps/wasRunning з SharedPrefs. "
-        "Якщо wasRunning=true — одразу ініціюємо bindService() + registerStepReceiver(). "
-        "Перший stepUpdate broadcast перезапише значення у JS автоматично."
+        "Нова функція у src/features/steps/index.js. "
+        "Зберігає дату в localStorage (stepLastDate). "
+        "При виявленні зміни дня — синхронно скидає stepCount=0 та _lastStepDate, "
+        "async зберігає вчорашній підсумок у steps_log (idempotent upsert), "
+        "записує 0 для нового дня (щоб аналітика мала запис), "
+        "перезапускає Foreground Service з initialSteps=0 (скидає його внутрішній лічильник). "
+        "Повертає true якщо день змінився — _persistSteps() виходить достроково."
     ))
     s.append(sp(4))
-    s.append(h2("Зміна 2 — handleOnResume()"))
-    s.append(body(
-        "При поверненні Activity на передній план — auto-bind до сервісу якщо "
-        "wasRunning=true && !serviceBound. Broadcasts більше не губляться між "
-        "поверненням і першим викликом getSteps() з JS."
-    ))
+    s.append(h2("Точки виклику _checkDayRollover()"))
+    s.append(bullet("_persistSteps(count) — при кожному новому кроці з сенсора або сервісу"))
+    s.append(bullet("restoreSteps() — при старті/відновленні додатку (якщо відкрили після ночі)"))
+    s.append(bullet("onResume callback — при поверненні з фону (напр. зранку після ночі)"))
     s.append(sp(4))
-    s.append(h2("Зміна 3 — StepCounterService.onTaskRemoved()"))
+    s.append(h2("StepCounterService.java — захист на рівні Android"))
     s.append(body(
-        "saveStepState(currentSteps) — перший рядок перед saveRunningState(true). "
-        "До фіксу: стан зберігався лише кожні 20 кроків — при кілі до 19 кроків губились. "
-        "Тепер точний знімок гарантований при будь-якому kill-сценарії."
+        "Додано поле currentDate (ініціалізується у onStartCommand). "
+        "В onSensorChanged — перевірка nowDate vs currentDate. "
+        "При зміні: скидає initialSteps=0, currentSteps=0, baselineSteps=rawSteps, "
+        "broadcastStepUpdate(0), updateNotification(0), saveStepState(0). "
+        "Захищає сценарій: JS-процес вбито (Doze), але сервіс живе через північ."
     ))
     s.append(sp(4))
     s.append(file_table([
-        ("ForegroundStepPlugin.java", "ОНОВЛЕНО",
-         "getSteps(): SharedPrefs fallback + auto-bind якщо wasRunning. "
-         "handleOnResume(): auto-bind при поверненні з фону. "
-         "+import android.content.SharedPreferences."),
-        ("StepCounterService.java",   "ОНОВЛЕНО",
-         "onTaskRemoved(): saveStepState(currentSteps) першим рядком."),
+        ("src/features/steps/index.js", "ОНОВЛЕНО",
+         "+let _lastStepDate. +_checkDayRollover(). "
+         "_persistSteps: виклик rollover, ранній return якщо день змінився. "
+         "restoreSteps: ініціалізація _lastStepDate + rollover check. "
+         "onResume: rollover check перед health check сервісу."),
+        ("StepCounterService.java",     "ОНОВЛЕНО",
+         "+String currentDate. onStartCommand: ініціалізація currentDate. "
+         "onSensorChanged: midnight rollover block — скидання всіх лічильників."),
     ]))
     s += [sp(8), hr()]
 
-    # ═══ 2. Біометрія поверх PIN ════════════════════════════════════════════════
-    s.append(section_box("2", "Біометрія — відбиток пальця як опція поверх PIN"))
+    # ═══ 2. Графік «Кроки по днях» ═════════════════════════════════════════════
+    s.append(section_box("2", "Графік «Кроки по днях» — ECharts bar chart"))
     s.append(sp(6))
     s.append(body(
-        "Архітектура: isPINSet()=false → без блоку. "
-        "isPINSet()=true → biometricEnabled && bioAvailable? "
-        "ТАК → authenticate() → успіх=unlock / відмова=PIN-пад. "
-        "НІ → одразу PIN-пад. Відбиток — зручність, PIN — завжди fallback."
+        "Нова аналітична функція: bar chart кроків за останні 30 днів. "
+        "Стовпчики кольором показують досягнення цілі: зелений (#22c55e) — ціль досягнута, "
+        "cyan (#06b6d4) — не досягнута. Пунктирна горизонтальна лінія — поточна ціль. "
+        "Мінімум 2 записи для відображення (інакше — empty state)."
     ))
     s.append(sp(4))
-    s.append(h2("AndroidManifest.xml + biometric.js"))
+    s.append(h2("Нові функції у steps/index.js"))
+    s.append(bullet("renderStepsDayChart(containerId) — async, queryStepLog({days:30}), ECharts SVGRenderer, barMaxWidth:18, markLine з ціллю"))
+    s.append(bullet("disposeStepsDayChart(containerId) — dispose через charts.js WeakMap"))
+    s.append(bullet("openStepsDayModal() — відкриває модалку + рендерить графік"))
+    s.append(bullet("closeStepsDayModal() — dispose + закриває модалку, скидає overflow"))
+    s.append(sp(4))
+    s.append(h2("UI — кнопка + модалка"))
     s.append(body(
-        "USE_BIOMETRIC + USE_FINGERPRINT — без цих permissions BiometricPrompt відмовляє на Android 9+. "
-        "allowDeviceCredential:false — тільки відбиток/обличчя, НЕ системний PIN Android "
-        "(інакше два конкуруючих механізми блокування). "
-        "isAvailable замість deviceIsSecure — перевіряємо саме апаратний сенсор."
+        "Кнопка «Кроки по днях» додана поруч з «Кроки ↔ Тиск» у flex-обгортці "
+        "(display:flex, gap:6px, flex-wrap:wrap) в блоці активності. "
+        "Стиль iz-action-btn, SVG-іконка календаря (Lucide). "
+        "Модалка #stepsDayModal — bottom-sheet (та сама структура що й scatterModal): "
+        "modal-overlay > modal-sheet > modal-handle + modal-title + #stepsDayChart."
     ))
     s.append(sp(4))
-    s.append(h2("app.js — lockCheck() + init + toggleBiometric"))
+    s.append(h2("Інтеграція в app.js"))
     s.append(body(
-        "lockCheck() — нова async функція: checkBiometric() → authenticate() → fallback PIN-пад. "
-        "init(): checkBiometric().then() показує bioToggleRow тільки на пристроях з сенсором. "
-        "toggleBiometric розрізняє PIN-кнопку та checkbox відбитка через el.id === 'bioToggle'."
+        "Імпорт: openStepsDayModal, closeStepsDayModal, disposeStepsDayChart. "
+        "ACTIONS: openStepsDayModal → openStepsDayModal(), closeStepsDayModal → closeStepsDayModal(). "
+        "showPage dispose block: disposeStepsDayChart('stepsDayChart') + "
+        "removeClass('show') при навігації між вкладками."
     ))
     s.append(sp(4))
     s.append(file_table([
-        ("AndroidManifest.xml",       "ОНОВЛЕНО",
-         "USE_BIOMETRIC + USE_FINGERPRINT після ACTIVITY_RECOGNITION."),
-        ("src/core/biometric.js",     "ПЕРЕЗАПИС",
-         "allowDeviceCredential:false. isAvailable (не deviceIsSecure). "
-         "cancelTitle: 'Використати PIN'."),
-        ("src/app.js",                "ОНОВЛЕНО",
-         "import checkBiometric/authenticate. lockCheck() async. "
-         "init: checkBiometric().then(bioToggleRow) + lockCheck(). "
-         "toggleBiometric: el.id гілки для biometricEnabled та biometricLock."),
-        ("index.html",                "ОНОВЛЕНО",
-         "#bioToggleRow (display:none) — checkbox #bioToggle, data-change='toggleBiometric'."),
-        ("src/i18n/ui.uk.js",         "ОНОВЛЕНО",
-         "+bio-toggle, bio-toggle-hint."),
-        ("src/i18n/ui.ru.js",         "ОНОВЛЕНО",
-         "+bio-toggle, bio-toggle-hint."),
+        ("src/features/steps/index.js", "ОНОВЛЕНО",
+         "+import createChart/disposeChart. "
+         "+renderStepsDayChart, disposeStepsDayChart, openStepsDayModal, closeStepsDayModal (export)."),
+        ("index.html",                  "ОНОВЛЕНО",
+         "Кнопки у flex-обгортці. +#stepsDayModal bottom-sheet modal."),
+        ("src/app.js",                  "ОНОВЛЕНО",
+         "+import openStepsDayModal/closeStepsDayModal/disposeStepsDayChart. "
+         "+ACTIONS. +dispose в showPage block."),
+        ("src/i18n/ui.uk.js",           "ОНОВЛЕНО",
+         "+t-btn-steps-day, t-steps-day-modal-title, t-steps-day-empty."),
+        ("src/i18n/ui.ru.js",           "ОНОВЛЕНО",
+         "+t-btn-steps-day (рос.), t-steps-day-modal-title, t-steps-day-empty."),
     ]))
     s += [sp(8), hr()]
 
@@ -359,23 +372,24 @@ def build_story():
     s.append(section_box("3", "Архітектурні рішення сесії"))
     s.append(sp(6))
     s.append(arch_table([
-        ("SharedPrefs fallback у getSteps()",
-         "Плагін не bound одразу після перезапуску. SharedPrefs — надійне джерело "
-         "між kill і першим stepUpdate broadcast. Auto-bind у getSteps() та "
-         "handleOnResume() покривають обидва сценарії повернення."),
-        ("saveStepState перед kill",
-         "onTaskRemoved() гарантовано викликається Android перед kill. "
-         "SharedPrefs.apply() є асинхронним але завершується до kill."),
-        ("allowDeviceCredential:false",
-         "true → система може показати власний PIN-діалог Android замість нашого PIN-паду. "
-         "false = чистий fallback: відмова від відбитка → наш PIN-пад."),
-        ("isAvailable vs deviceIsSecure",
-         "deviceIsSecure=true якщо є будь-який захист екрана. "
-         "isAvailable=true тільки якщо є зареєстрований відбиток/Face ID. "
-         "Ми перевіряємо isAvailable — bioToggleRow не з'являється без реального сенсора."),
-        ("Один ACTIONS handler для двох елементів",
-         "data-action (click) на PIN-кнопці та data-change (change) на checkbox — "
-         "обидва через ACTIONS['toggleBiometric']. Розрізнення: el.id === 'bioToggle'."),
+        ("Синхронне скидання + async БД",
+         "_checkDayRollover() скидає stepCount=0 синхронно (критично — до будь-яких нових записів). "
+         "Збереження у БД — fire-and-forget (.catch(() => {})). "
+         "Це гарантує що наступний _persistSteps() одразу пише правильну дату."),
+        ("Ранній return у _persistSteps",
+         "Якщо _checkDayRollover() повертає true — _persistSteps() завершується без запису. "
+         "Причина: count (від сервісу) ще може містити 'вчорашнє' значення "
+         "до того як сервіс перезапуститься з initialSteps=0."),
+        ("Java-рівень як другий захист",
+         "Якщо JS-процес вбито Doze/Samsung OEM killer — сервіс живе і рахує. "
+         "При зміні дати в onSensorChanged — самостійно скидається без участі JS. "
+         "JS отримає правильний 0 при наступному connect/getServiceStatus."),
+        ("ECharts SVGRenderer для bar chart",
+         "SVGRenderer обрано (не Canvas) — послідовність: мало точок (<500), "
+         "краща чіткість на HiDPI екранах Samsung, та відповідає патерну iz-trend.js."),
+        ("disposeChart перед render (WeakMap)",
+         "WeakMap у charts.js повертає мертвий інстанс після innerHTML-зміни. "
+         "disposeChart(el) перед кожним renderStepsDayChart — обов'язковий патерн."),
     ]))
     s += [sp(8), hr()]
 
@@ -383,11 +397,11 @@ def build_story():
     s.append(section_box("4", "Наступні кроки / Роадмап"))
     s.append(sp(6))
     s.append(proposal_table([
-        ("Безпека", "Б5: AppState listener — блокувати при згортанні в фон (5 хв таймер)", "Високий"),
-        ("Безпека", "Б6: Lock Screen поверх нативного back-жесту (Capacitor App plugin)",   "Високий"),
-        ("Бекап",   "Автоматичний бекап кожні 7 днів з нотифікацією",                       "Середній"),
-        ("Профіль", "Вкладки 'Вага' та 'Цукор' (глюкометр)",                                "Середній"),
-        ("PDF",     "ECharts SVG → svg2pdf.js → jsPDF (векторна якість)",                   "Низький"),
+        ("Безпека",   "AppState listener — блокувати при згортанні в фон (5 хв таймер)",      "Високий"),
+        ("Безпека",   "Lock Screen поверх нативного back-жесту (Capacitor App plugin)",        "Високий"),
+        ("Кроки",     "Середній тижневий/місячний крок — статистика на картці активності",     "Середній"),
+        ("Бекап",     "Автоматичний бекап кожні 7 днів з нотифікацією",                        "Середній"),
+        ("Профіль",   "Вкладки 'Вага' та 'Цукор' (глюкометр)",                                "Низький"),
     ]))
     s += [sp(8), hr()]
 

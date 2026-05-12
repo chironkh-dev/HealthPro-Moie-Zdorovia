@@ -64,6 +64,7 @@ public class StepCounterService extends Service implements SensorEventListener {
     private int  initialSteps   = 0;      // steps from DB before service started
     private int  currentSteps   = 0;      // total daily steps (initial + session)
     private int  dailyGoal      = 10000;
+    private String currentDate  = "";     // for midnight rollover detection
     private String notifTitle   = "HealthPro";
     private String notifText    = "\u0420\u0430\u0445\u0443\u044e \u043a\u0440\u043e\u043a\u0438...";
     private boolean sensorAvailable = false;
@@ -107,6 +108,8 @@ public class StepCounterService extends Service implements SensorEventListener {
         currentSteps = initialSteps;
         // Reset baseline so the first sensor event re-establishes the reference.
         baselineSteps = -1;
+        // Ініціалізуємо поточну дату для виявлення переходу опівночі.
+        currentDate = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
 
         startForeground(NOTIF_ID, buildNotification(currentSteps, dailyGoal));
         saveRunningState(true);
@@ -124,6 +127,22 @@ public class StepCounterService extends Service implements SensorEventListener {
         if (event.sensor.getType() != Sensor.TYPE_STEP_COUNTER) return;
 
         int rawSteps = (int) event.values[0];
+
+        // Захист від переходу опівночі: якщо JS-шар недоступний (сервіс живий, app вимкнений),
+        // сервіс сам скидає лічильник при зміні дати.
+        String nowDate = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
+        if (!currentDate.isEmpty() && !nowDate.equals(currentDate)) {
+            Log.d(TAG, "Midnight rollover detected in service: " + currentDate + " → " + nowDate);
+            currentDate   = nowDate;
+            initialSteps  = 0;
+            currentSteps  = 0;
+            baselineSteps = rawSteps;  // новий baseline — щоб delta стартувала з 0
+            broadcastStepUpdate(0);
+            updateNotification(0, dailyGoal);
+            saveStepState(0);
+            saveRunningState(true);
+            return;
+        }
 
         if (baselineSteps < 0) {
             // First event after (re)start — establish delta baseline.

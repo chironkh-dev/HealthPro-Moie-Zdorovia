@@ -50,6 +50,9 @@ import {
   declineStepPerm,
   acceptStepFg,
   declineStepFg,
+  openStepsDayModal,
+  closeStepsDayModal,
+  disposeStepsDayChart,
 } from "./features/steps/index.js";
 import {
   // charts
@@ -203,6 +206,12 @@ export function showPage(name) {
     } catch {
       /* noop */
     }
+    try {
+      disposeStepsDayChart("stepsDayChart");
+    } catch {
+      /* noop */
+    }
+    document.getElementById("stepsDayModal")?.classList.remove("show");
   }
 }
 
@@ -620,6 +629,8 @@ const ACTIONS = {
     disposeScatterChart("scatterChart");
     document.getElementById("scatterModal")?.classList.remove("show");
   },
+  openStepsDayModal: () => openStepsDayModal(),
+  closeStepsDayModal: () => closeStepsDayModal(),
   // ліки — попередження про дозу
   openDrugWarnModal: () => openDrugWarnModal(),
   closeDrugWarnModal: () =>
