@@ -119,6 +119,39 @@ HealthPro-Moie-Zdorovia
 │   ├── site.webmanifest
 │   ├── web-app-manifest-192x192.png
 │   └── web-app-manifest-512x512.png
+├── public
+│   ├── assets
+│   │   ├── fonts
+│   │   │   ├── .gitignore
+│   │   │   ├── ArialBold.ttf
+│   │   │   ├── DejaVuSans.ttf
+│   │   │   └── Royal_Arial.ttf
+│   │   ├── tips
+│   │   │   ├── tips_ru.json
+│   │   │   └── tips_uk.json
+│   │   ├── ic_running.png
+│   │   └── icon.png
+│   ├── icons
+│   │   ├── apple-touch-icon.png
+│   │   ├── favicon-96x96.png
+│   │   ├── favicon.ico
+│   │   ├── favicon.svg
+│   │   ├── site.webmanifest
+│   │   ├── web-app-manifest-192x192.png
+│   │   └── web-app-manifest-512x512.png
+│   ├── styles
+│   │   ├── app.css
+│   │   ├── app.css.bak
+│   │   ├── base.css
+│   │   ├── charts.css
+│   │   ├── components.css
+│   │   ├── features.css
+│   │   ├── layout.css
+│   │   ├── modal.css
+│   │   ├── tips.css
+│   │   └── welcome.css
+│   ├── manifest.json
+│   └── sw.js
 ├── scripts
 │   ├── HealthPro_generate_session_report.py
 │   └── gen-version.js
@@ -184,6 +217,7 @@ HealthPro-Moie-Zdorovia
 │   │   │   ├── profile.js
 │   │   │   └── theme.js
 │   │   ├── steps
+│   │   │   ├── api.js
 │   │   │   └── index.js
 │   │   └── tips
 │   │       └── index.js
