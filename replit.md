@@ -123,6 +123,16 @@ HealthPro-Moie-Zdorovia/
 
 ## Changelog
 
+### v5.3.15 (2026-05-12) — Сесія: Архітектурне виправлення біометрії
+- **`lockCheck()` → синхронна:** прибрано авто-виклик `authenticate()` при старті — головна причина зависання Samsung A24.
+- **Кнопка `#lockBioBtn` на lockScreen:** `authenticate()` тепер викликається ТІЛЬКИ по тапу користувача (згідно з Samsung BiometricPrompt best practices).
+- **Mutex `_bioLockBusy`:** блокує подвійний виклик при швидких повторних тапах.
+- **Timeout 8с:** `Promise.race([authenticate(), timeout(8000)])` — захист від зависання BiometricPrompt.
+- **Delay 400мс:** перед `authenticate()` — Samsung потребує паузу після Activity transitions.
+- **`onResume`:** тепер тільки показує lockScreen (без авто-auth), кнопка відбитка чекає на тап.
+- **i18n uk/ru:** новий ключ `lock-bio-btn` — підпис кнопки відбитка.
+- **`npm install` у `~/workspace/`:** виправлено відсутні залежності Capacitor CLI для `npx cap sync android`.
+
 ### v5.3.2 (2026-05-09) — Сесія: Крокомір + Біометрія поверх PIN
 - **ForegroundStepPlugin.java `getSteps()`:** якщо плагін не bound після перезапуску — читає кроки з SharedPrefs (не повертає 0); ініціює `bindService()` якщо `wasRunning=true`.
 - **ForegroundStepPlugin.java `handleOnResume()`:** при поверненні додатку з фону — auto-bind до живого сервісу + реєстрація stepReceiver.
