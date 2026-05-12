@@ -1,8 +1,8 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from "vite";
 
 export default defineConfig({
-  root: '.',
-  publicDir: '.',
+  root: ".",
+  publicDir: ".",
   css: {
     devSourcemap: false,
   },
@@ -10,33 +10,39 @@ export default defineConfig({
     __DEFINES__: {},
   },
   server: {
-    host: '0.0.0.0',
+    host: "0.0.0.0",
     port: 5000,
     strictPort: true,
     allowedHosts: true,
     hmr: false,
     headers: {
-      'Cache-Control': 'no-store',
+      "Cache-Control": "no-store",
     },
   },
   preview: {
-    host: '0.0.0.0',
+    host: "0.0.0.0",
     port: 5000,
     strictPort: true,
     allowedHosts: true,
   },
   build: {
-    outDir: '../dist',
+    outDir: "../dist",
     emptyOutDir: true,
-    target: 'es2020',
+    target: "es2020",
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes('node_modules/echarts') || id.includes('node_modules/zrender')) {
-            return 'echarts';
+          if (
+            id.includes("node_modules/echarts") ||
+            id.includes("node_modules/zrender")
+          ) {
+            return "echarts";
           }
         },
       },
     },
+  },
+  test: {
+    environment: "jsdom",
   },
 });
