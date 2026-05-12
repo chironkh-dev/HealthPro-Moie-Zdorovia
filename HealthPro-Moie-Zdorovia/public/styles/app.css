@@ -1,0 +1,13 @@
+/*
+ * app.css — barrel that imports the seven domain stylesheets.
+ * Each file holds one cohesive responsibility (see the comment at the top
+ * of each). Vite inlines / bundles the @imports for production builds.
+ */
+@import './base.css';
+@import './layout.css';
+@import './components.css';
+@import './charts.css';
+@import './features.css';
+@import './modal.css';
+@import './welcome.css';
+@import './tips.css';

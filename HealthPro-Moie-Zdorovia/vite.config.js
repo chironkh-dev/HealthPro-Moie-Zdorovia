@@ -2,12 +2,17 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   root: ".",
-  publicDir: ".",
+  publicDir: "public",
   css: {
     devSourcemap: false,
   },
-  define: {
-    __DEFINES__: {},
+  optimizeDeps: {
+    include: [
+      "echarts/core",
+      "echarts/charts",
+      "echarts/components",
+      "echarts/renderers",
+    ],
   },
   server: {
     host: "0.0.0.0",

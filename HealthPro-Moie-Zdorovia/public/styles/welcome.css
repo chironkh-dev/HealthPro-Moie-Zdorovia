@@ -1,0 +1,159 @@
+/* welcome.css — splash screen, welcome overlay, disclaimer modal, history */
+
+/* ════════════ SPLASH SCREEN — Android Material 3 Style ════════════ */
+#splashScreen{
+  position:fixed;inset:0;z-index:10001;
+  background:#0d1630;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:0;
+  opacity:1;pointer-events:all;
+  transition:opacity .38s cubic-bezier(.4,0,1,1);
+}
+#splashScreen.hidden{opacity:0;pointer-events:none}
+
+/* Обгортка іконки — Android launcher icon shape */
+.splash-icon-wrap{
+  position:relative;
+  width:120px;height:120px;
+  border-radius:32px;
+  background:linear-gradient(145deg,#1e3a6e 0%,#1a2d5a 50%,#0f1e40 100%);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.07),
+    0 8px 32px rgba(0,0,0,.55),
+    0 2px 8px rgba(0,0,0,.4);
+  animation:splashIconIn .42s cubic-bezier(.34,1.56,.64,1) both;
+  animation-delay:.08s;
+}
+
+/* Внутрішнє світіння іконки */
+.splash-icon-wrap::before{
+  content:'';
+  position:absolute;inset:0;
+  border-radius:32px;
+  background:radial-gradient(ellipse at 40% 30%,rgba(99,153,255,.18) 0%,transparent 65%);
+  pointer-events:none;
+}
+
+.splash-icon-wrap svg{
+  width:68px;height:68px;
+  color:#fff;fill:none;stroke:currentColor;
+  stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
+  filter:drop-shadow(0 0 14px rgba(99,153,255,.55));
+}
+
+/* Нижня частина сплешу */
+.splash-brand{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  margin-top:36px;
+  animation:splashBrandIn .36s ease both;
+  animation-delay:.28s;
+}
+.splash-title{
+  font-size:26px;font-weight:800;letter-spacing:-.3px;
+  color:#e8eeff;
+}
+.splash-sub{
+  font-size:13px;color:#4a6080;
+  font-style:italic;letter-spacing:.2px;
+}
+
+/* Точки завантаження (Android-style indeterminate indicator) */
+.splash-dots{
+  display:flex;gap:7px;margin-top:48px;
+  animation:splashBrandIn .3s ease both;
+  animation-delay:.4s;
+}
+.splash-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:#2a4070;
+  animation:splashDotPulse 1.2s ease-in-out infinite;
+}
+.splash-dot:nth-child(1){animation-delay:0s}
+.splash-dot:nth-child(2){animation-delay:.18s}
+.splash-dot:nth-child(3){animation-delay:.36s}
+
+@keyframes splashIconIn{
+  from{opacity:0;transform:scale(.72)}
+  to{opacity:1;transform:scale(1)}
+}
+@keyframes splashBrandIn{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@keyframes splashDotPulse{
+  0%,100%{background:#2a4070;transform:scale(1)}
+  45%{background:#4a7abf;transform:scale(1.35)}
+}
+
+/* ════════════ WELCOME / DISCLAIMER SCREEN ════════════ */
+.welcome-overlay{position:fixed;inset:0;z-index:9999;background:linear-gradient(160deg,#080d1a 0%,#0d1630 45%,#162050 100%);display:flex;align-items:center;justify-content:center;padding:24px;overflow-y:auto;animation:welcomeFade .4s ease}
+.welcome-overlay.hidden{display:none}
+@keyframes welcomeFade{from{opacity:0}to{opacity:1}}
+.welcome-card{max-width:420px;width:100%;display:flex;flex-direction:column;align-items:center;text-align:center;color:#e2e8f0;padding:32px 20px}
+.welcome-logo-wrap{position:relative;width:140px;height:140px;display:flex;align-items:center;justify-content:center;margin-bottom:22px}
+.welcome-logo-glow{position:absolute;inset:-20px;border-radius:50%;background:radial-gradient(circle,rgba(59,130,246,.45) 0%,rgba(139,92,246,.25) 40%,transparent 70%);filter:blur(20px);animation:welcomePulse 3s ease-in-out infinite}
+@keyframes welcomePulse{0%,100%{transform:scale(1);opacity:.7}50%{transform:scale(1.1);opacity:1}}
+.welcome-logo{position:relative;width:120px;height:120px;border-radius:32px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;box-shadow:0 12px 40px rgba(59,130,246,.4),inset 0 1px 0 rgba(255,255,255,.2)}
+.welcome-logo svg{width:64px;height:64px;color:#fff}
+.welcome-title{font-size:26px;font-weight:900;margin-bottom:6px;background:linear-gradient(135deg,#fff,#bfdbfe);-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:-.5px}
+.welcome-subtitle{font-size:13px;color:#94a3b8;margin-bottom:6px;font-weight:500}
+.welcome-tagline{font-size:12px;color:#64748b;margin-bottom:20px;font-style:italic}
+.welcome-features{display:flex;flex-direction:column;gap:10px;width:100%;margin-bottom:24px}
+.welcome-feat{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.04);border:1px solid rgba(99,140,255,.15);border-radius:14px;padding:12px 14px;text-align:left}
+.welcome-feat-ico{flex-shrink:0;width:36px;height:36px;border-radius:10px;background:rgba(59,130,246,.15);display:flex;align-items:center;justify-content:center;color:#60a5fa}
+.welcome-feat-ico svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.welcome-feat-txt{font-size:12px;color:#cbd5e1;font-weight:500;line-height:1.35}
+.welcome-disclaimer-link{font-size:13px;color:#60a5fa;text-decoration:none;cursor:pointer;padding:9px 14px;border-radius:10px;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);margin-bottom:14px;display:inline-flex;align-items:center;gap:6px;transition:.2s;font-weight:600}
+.welcome-disclaimer-link:hover,.welcome-disclaimer-link:active{background:rgba(59,130,246,.15)}
+.welcome-disclaimer-link svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2}
+.welcome-accept-btn{width:100%;padding:16px;border:none;border-radius:14px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 8px 24px rgba(59,130,246,.35);transition:transform .15s,box-shadow .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.welcome-accept-btn:active{transform:scale(.98);box-shadow:0 4px 14px rgba(59,130,246,.3)}
+.welcome-accept-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.welcome-version{margin-top:16px;font-size:11px;color:#475569;letter-spacing:.5px}
+
+/* Disclaimer modal */
+.disclaimer-modal{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.75);display:none;align-items:flex-end;justify-content:center;padding:0}
+.disclaimer-modal.show{display:flex;animation:welcomeFade .25s ease}
+.disclaimer-sheet{background:#0d1630;width:100%;max-width:480px;max-height:90vh;border-radius:24px 24px 0 0;display:flex;flex-direction:column;box-shadow:0 -10px 40px rgba(0,0,0,.6);animation:slideUp .3s cubic-bezier(.22,1,.36,1)}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.disclaimer-handle{width:40px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin:10px auto 0}
+.disclaimer-head{padding:14px 20px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(99,140,255,.12)}
+.disclaimer-head h3{font-size:15px;font-weight:800;color:#e2e8f0;margin:0;display:flex;align-items:center;gap:8px}
+.disclaimer-head h3 svg{width:18px;height:18px;fill:none;stroke:#f59e0b;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.disclaimer-close{background:rgba(255,255,255,.06);border:none;color:#94a3b8;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.disclaimer-body{padding:18px 20px 24px;overflow-y:auto;color:#cbd5e1;font-size:13.5px;line-height:1.55;-webkit-overflow-scrolling:touch}
+.disclaimer-body h4{color:#fff;font-size:14px;font-weight:800;margin:18px 0 8px;display:flex;align-items:center;gap:8px}
+.disclaimer-body h4:first-child{margin-top:0}
+.disclaimer-body h4 .num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;font-size:11px;flex-shrink:0}
+.disclaimer-body p{margin-bottom:8px;color:#cbd5e1}
+.disclaimer-body ul{margin:6px 0 8px 20px}
+.disclaimer-body li{margin-bottom:4px;color:#94a3b8}
+.disclaimer-body .risk-table{width:100%;border-collapse:collapse;margin:8px 0;font-size:12.5px}
+.disclaimer-body .risk-table th,.disclaimer-body .risk-table td{padding:8px 10px;text-align:left;border-bottom:1px solid rgba(99,140,255,.12);vertical-align:top}
+.disclaimer-body .risk-table th{color:#60a5fa;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+.disclaimer-body .risk-table td:first-child{color:#fff;font-weight:600;width:38%}
+.disclaimer-body .accent-box{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:10px;padding:12px;margin-top:14px;color:#fbbf24;font-size:12.5px;font-weight:600;line-height:1.45}
+.disclaimer-version{text-align:center;font-size:11px;color:#475569;margin-bottom:14px;padding-top:6px}
+
+/* Disclaimer status (acceptance + history) */
+.discl-status{border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;flex-direction:column;gap:8px}
+.discl-status.ok{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25)}
+.discl-status.warn{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3)}
+.discl-status-row{display:flex;align-items:center;gap:10px}
+.discl-status-ico{width:24px;height:24px;flex-shrink:0;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.discl-status.ok .discl-status-ico{stroke:#10b981}
+.discl-status.warn .discl-status-ico{stroke:#f59e0b}
+.discl-status-title{font-size:13px;font-weight:700;color:#e2e8f0;line-height:1.2}
+.discl-status-date{font-size:12px;color:#94a3b8;margin-top:2px}
+.discl-status-warn{font-size:12px;color:#fbbf24;font-weight:600;line-height:1.4;padding-top:4px;border-top:1px solid rgba(245,158,11,.2)}
+.discl-hist-block{margin-bottom:14px;border:1px solid rgba(99,140,255,.15);border-radius:10px;overflow:hidden}
+.discl-hist-block summary{cursor:pointer;padding:10px 14px;font-size:12px;color:#94a3b8;font-weight:600;background:rgba(255,255,255,.03);user-select:none;list-style:none;display:flex;align-items:center;gap:6px}
+.discl-hist-block summary::-webkit-details-marker{display:none}
+.discl-hist-block summary::before{content:'▸';display:inline-block;transition:transform .2s;color:#60a5fa}
+.discl-hist-block[open] summary::before{transform:rotate(90deg)}
+.discl-hist-list{padding:8px 14px 12px;display:flex;flex-direction:column;gap:6px}
+.discl-hist-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;padding:6px 0;border-bottom:1px dashed rgba(99,140,255,.1)}
+.discl-hist-row:last-child{border-bottom:none}
+.discl-hist-v{font-weight:700;color:#60a5fa;background:rgba(59,130,246,.1);padding:2px 8px;border-radius:6px;font-size:11px}
+.discl-hist-d{color:#94a3b8;text-align:right}
