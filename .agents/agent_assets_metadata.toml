@@ -180,3 +180,9 @@ id = "oSQXllyHQmrbhwUb_6zPK"
 uri = "file://HealthPro-Moie-Zdorovia/report/HealthPro_Session_v5.3.2_Steps_Biometric_PIN_Part2_Report.pdf"
 type = "pdf"
 title = "HealthPro v5.3.2 Part 2 — Звіт сесії"
+
+[[outputs]]
+id = "qZgYkys_ZWWWm_dw641Ct"
+uri = "file://HealthPro-Moie-Zdorovia/report/HealthPro_Session_v5.3.16_CI_Fix_Tests_APK_Report.pdf"
+type = "pdf"
+title = "HealthPro v5.3.16 — Звіт сесії: CI Fix Tests + APK"

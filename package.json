@@ -1,7 +1,7 @@
 {
   "name": "healthpro-moie-zdorovia",
-  "version": "5.2.0",
-  "description": "",
+  "version": "5.3.16",
+  "description": "HealthPro — Capacitor root (Android wrapper)",
   "main": "index.js",
   "scripts": {
     "dev": "vite",
@@ -25,9 +25,7 @@
     "@capacitor/android": "^8.3.3",
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.3.1",
-    "@capacitor/core": "^8.3.1",
-    "jsdom": "^29.1.1",
-    "vitest": "^4.1.6"
+    "@capacitor/core": "^8.3.1"
   },
   "dependencies": {
     "@capacitor-community/sqlite": "^8.1.0",
@@ -35,13 +33,10 @@
     "@capacitor/filesystem": "^8.1.2",
     "@capacitor/haptics": "^8.0.2",
     "@capacitor/local-notifications": "^8.0.2",
-    "@capacitor/motion": "^8.0.0",
     "@capacitor/preferences": "^8.0.1",
     "@capacitor/share": "^8.0.1",
     "@capacitor/splash-screen": "^8.0.1",
     "@capacitor/status-bar": "^8.0.2",
-    "@capgo/capacitor-native-biometric": "^8.4.2",
-    "html2canvas": "^1.4.1",
-    "jspdf": "^4.2.1"
+    "@capgo/capacitor-native-biometric": "^8.4.2"
   }
 }

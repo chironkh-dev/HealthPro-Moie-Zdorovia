@@ -10,9 +10,9 @@ HealthPro — Моє Здоров'я
 # ══════════════════════════════════════════════════════════════════════════════
 # НАЛАШТУВАННЯ ЗВІТУ — редагуй перед кожною сесією
 # ══════════════════════════════════════════════════════════════════════════════
-VERSION     = "5.3.15"                   # версія застосунку
-DESCRIPTION = "Steps_Midnight_DayChart" # коротке уточнення теми сесії (без пробілів)
-PART        = None                       # номер частини, якщо сесія розбита (1, 2, …) або None
+VERSION     = "5.3.16"               # версія застосунку
+DESCRIPTION = "CI_Fix_Tests_APK"    # коротке уточнення теми сесії (без пробілів)
+PART        = None                   # номер частини, якщо сесія розбита (1, 2, …) або None
 # ══════════════════════════════════════════════════════════════════════════════
 
 import datetime, os
@@ -36,11 +36,11 @@ pdfmetrics.registerFont(TTFont("Arial-Italic", f"{DEJAVU}/DejaVuSans.ttf"))
 pdfmetrics.registerFont(TTFont("Arial-Mono",   f"{DEJAVU}/DejaVuSansMono.ttf"))
 
 # ── Кольори ───────────────────────────────────────────────────────────────────
-C_COVER_BG   = colors.HexColor("#DBEAFE")  # світло-синій фон обкладинки
-C_COVER_LINE = colors.HexColor("#1E40AF")  # акцентна лінія на обкладинці
-C_TITLE_TEXT = colors.HexColor("#1E3A5F")  # заголовок обкладинки (темно-синій)
-C_SUB_TEXT   = colors.HexColor("#1D4ED8")  # підзаголовок обкладинки
-C_DATE_TEXT  = colors.HexColor("#64748B")  # дата на обкладинці
+C_COVER_BG   = colors.HexColor("#DBEAFE")
+C_COVER_LINE = colors.HexColor("#1E40AF")
+C_TITLE_TEXT = colors.HexColor("#1E3A5F")
+C_SUB_TEXT   = colors.HexColor("#1D4ED8")
+C_DATE_TEXT  = colors.HexColor("#64748B")
 
 C_NAVY   = colors.HexColor("#0D1630")
 C_ACCENT = colors.HexColor("#1A3A6E")
@@ -153,7 +153,6 @@ def stat_cell(val, label, sub=""):
         ]))
 
 def stats_row(cells):
-    """cells = [(value, label, sub), ...]  — до 4 плиток"""
     return Table([cells], colWidths=[3.7*cm]*len(cells), hAlign="CENTER",
         style=TableStyle([("LEFTPADDING",(0,0),(-1,-1),4),("RIGHTPADDING",(0,0),(-1,-1),4)]))
 
@@ -177,9 +176,6 @@ def section_box(num, title):
 
 # ── Таблиця змінених файлів ───────────────────────────────────────────────────
 def file_table(rows):
-    """rows = [(файл, статус, опис), ...]
-    статус: 'НОВИЙ' | 'ОНОВЛЕНО' | 'ПЕРЕЗАПИС'
-    """
     SC = {"НОВИЙ":    colors.HexColor("#065F46"),
           "ОНОВЛЕНО": colors.HexColor("#1D4ED8"),
           "ПЕРЕЗАПИС":colors.HexColor("#92400E")}
@@ -207,9 +203,6 @@ def file_table(rows):
 
 # ── Таблиця пропозицій / роадмапу ─────────────────────────────────────────────
 def proposal_table(rows):
-    """rows = [(вкладка, пропозиція, пріоритет), ...]
-    пріоритет: 'Високий' | 'Середній' | 'Низький'
-    """
     head = [Paragraph("Вкладка / Функція", ST["TH"]),
             Paragraph("Пропозиція", ST["TH"]),
             Paragraph("Пріоритет", ST["TH"])]
@@ -239,7 +232,6 @@ def proposal_table(rows):
 
 # ── Таблиця архітектурних рішень ──────────────────────────────────────────────
 def arch_table(rows):
-    """rows = [(рішення, деталі), ...]"""
     head = [Paragraph("Рішення", ST["TH"]), Paragraph("Деталі", ST["TH"])]
     data = [head]
     for decision, detail in rows:
@@ -256,156 +248,221 @@ def arch_table(rows):
         ]))
 
 # ══════════════════════════════════════════════════════════════════════════════
-# ЗМІСТ ЗВІТУ — заповнюй для кожної сесії
+# ЗМІСТ ЗВІТУ
 # ══════════════════════════════════════════════════════════════════════════════
 def build_story():
     s = []
 
     s += [cover(), sp(12)]
 
-    # Статистичні плитки — v5.3.15
+    # Статистичні плитки
     s += [stats_row([
-        stat_cell("1",  "Java-файл",              "StepCounterService.java"),
-        stat_cell("5",  "JS/HTML/i18n файлів",    "steps · app · html · uk · ru"),
-        stat_cell("2",  "Нові фічі",              "Скидання опівночі + Графік по днях"),
-        stat_cell("0",  "Помилок компіляції",     "513/513 тестів ✓"),
+        stat_cell("7",  "Файлів змінено",         "CI · Vite · Vitest · package.json"),
+        stat_cell("1",  "Новий файл",              "tests/mocks/charts.js (stub)"),
+        stat_cell("2",  "CI-пайплайни виправлено", "ci.yml (тести) + android-apk.yml (APK)"),
+        stat_cell("513","Тестів проходить",         "16/16 файлів ✓ локально"),
     ]), sp(14), hr()]
 
-    # ═══ 1. Скидання кроків опівночі ═══════════════════════════════════════════
-    s.append(section_box("1", "Скидання кроків опівночі (JS + Android)"))
+    # ═══ 1. Проблема: navigator is not defined ═══════════════════════════════
+    s.append(section_box("1", "Причина падіння 8/16 тестів на CI"))
     s.append(sp(6))
     s.append(body(
-        "Проблема: module-level змінна stepCount ніколи не скидалась при зміні дня. "
-        "При безперервній роботі Foreground Service через північ (START_STICKY) — "
-        "наступного дня лічильник продовжував від вчорашнього значення, а не з нуля. "
-        "localStorage-ключі зберігались коректно за датою (today()), але stepCount у "
-        "пам'яті залишався 'вчорашнім' — звідси некоректні дані в аналітиці."
+        "GitHub CI використовував Node 20.20.2 (LTS). У Node до версії 22 глобальна "
+        "змінна navigator (Web API) відсутня. При запуску тестів Vitest імпортує "
+        "src/core/charts.js, який статично імпортує echarts/core, який транзитивно "
+        "завантажує zrender/lib/core/env.js. Рядок 43 цього файлу: "
+        "navigator.userAgent — ReferenceError: navigator is not defined."
     ))
     s.append(sp(4))
-    s.append(h2("_checkDayRollover() — синхронне ядро скидання"))
+    s.append(h2("Транзитивний ланцюжок імпортів (для аналітичних тестів)"))
+    s.append(code(
+        "health-score.test.js  →  analytics/health-score.js"
+        "  →  features/steps/index.js  →  src/core/charts.js"
+        "  →  echarts/core  →  zrender/lib/core/env.js:43  →  navigator  →  CRASH"
+    ))
+    s.append(sp(4))
     s.append(body(
-        "Нова функція у src/features/steps/index.js. "
-        "Зберігає дату в localStorage (stepLastDate). "
-        "При виявленні зміни дня — синхронно скидає stepCount=0 та _lastStepDate, "
-        "async зберігає вчорашній підсумок у steps_log (idempotent upsert), "
-        "записує 0 для нового дня (щоб аналітика мала запис), "
-        "перезапускає Foreground Service з initialSteps=0 (скидає його внутрішній лічильник). "
-        "Повертає true якщо день змінився — _persistSteps() виходить достроково."
+        "8 тестових файлів падали з цією помилкою на CI, при цьому локально "
+        "513/513 — тому що Node 24 (Replit/локально) має navigator як глобальний. "
+        "Жоден із цих 8 тестів не тестує графіки — вони тестують чисту логіку "
+        "(health score, BMI, pills, BP thresholds, step counters). "
+        "Проблема — архітектурна: логічні модулі тягнуть browser-залежний charts.js "
+        "через ланцюжок steps/index.js."
     ))
     s.append(sp(4))
-    s.append(h2("Точки виклику _checkDayRollover()"))
-    s.append(bullet("_persistSteps(count) — при кожному новому кроці з сенсора або сервісу"))
-    s.append(bullet("restoreSteps() — при старті/відновленні додатку (якщо відкрили після ночі)"))
-    s.append(bullet("onResume callback — при поверненні з фону (напр. зранку після ночі)"))
-    s.append(sp(4))
-    s.append(h2("StepCounterService.java — захист на рівні Android"))
+    s.append(h2("Список файлів що падали"))
+    for f in [
+        "health-score.test.js", "bmi-score.test.js", "veto-boundary.test.js",
+        "pills-score.test.js", "health-score-i18n.test.js", "bp-pulse-thresholds.test.js",
+        "foreground-step.test.js", "step-fixes.test.js",
+    ]:
+        s.append(bullet(f))
+    s += [sp(8), hr()]
+
+    # ═══ 2. Виправлення: тести ══════════════════════════════════════════════
+    s.append(section_box("2", "Три рівні захисту — виправлення тестів"))
+    s.append(sp(6))
+
+    s.append(h2("Рівень 1: Node 20 → 22 (ci.yml)"))
     s.append(body(
-        "Додано поле currentDate (ініціалізується у onStartCommand). "
-        "В onSensorChanged — перевірка nowDate vs currentDate. "
-        "При зміні: скидає initialSteps=0, currentSteps=0, baselineSteps=rawSteps, "
-        "broadcastStepUpdate(0), updateNotification(0), saveStepState(0). "
-        "Захищає сценарій: JS-процес вбито (Doze), але сервіс живе через північ."
+        "node-version: '20' змінено на '22'. Node 22 є LTS з жовтня 2024, "
+        "GitHub вже надсилав deprecation warnings для Node 20. "
+        "Node 22 містить navigator як глобальний (Web API compatibility). "
+        "Це найшвидший фікс, але не архітектурно достатній — "
+        "наступна мажорна версія Node може знову прибрати цей глобал."
     ))
     s.append(sp(4))
+
+    s.append(h2("Рівень 2: Глобальний alias charts.js у vitest.config.js"))
+    s.append(body(
+        "У vitest.config.js додано resolve.alias з regex find: "
+        "/\\/src\\/core\\/charts\\.js$/ → replacement: tests/mocks/charts.js. "
+        "Vite при regex-алiасі матчить проти абсолютного resolved-шляху модуля. "
+        "Це перехоплює будь-який імпорт charts.js незалежно від глибини відносного шляху. "
+        "Ефект: ЖОДЕН тестовий файл не потребує змін — alias діє глобально."
+    ))
+    s.append(code(
+        "resolve: { alias: [ {"
+        "  find: /\\/src\\/core\\/charts\\.js$/,"
+        "  replacement: resolve(__dirname, 'tests/mocks/charts.js')"
+        "} ] }"
+    ))
+    s.append(sp(4))
+
+    s.append(h2("Рівень 3: navigator stub у tests/setup.js"))
+    s.append(body(
+        "До наявного setup.js (localStorage/window/document stubs) додано: "
+        "if (typeof globalThis.navigator === 'undefined') "
+        "{ globalThis.navigator = { userAgent: 'node' }; }. "
+        "Страховка: якщо alias не перехопить інший browser-залежний модуль, "
+        "navigator буде доступний. Незалежний від версії Node."
+    ))
+    s.append(sp(4))
+
+    s.append(h2("Новий файл: tests/mocks/charts.js"))
+    s.append(body(
+        "Повний стаб charts.js. Повторює весь публічний API: "
+        "createChart() → null, disposeChart() → void, resizeAllCharts() → void, "
+        "COLORS (об'єкт з усіма кольорами). Без жодного рядка ECharts/zrender. "
+        "Виконується миттєво, без browser-globals."
+    ))
+    s.append(sp(4))
+
     s.append(file_table([
-        ("src/features/steps/index.js", "ОНОВЛЕНО",
-         "+let _lastStepDate. +_checkDayRollover(). "
-         "_persistSteps: виклик rollover, ранній return якщо день змінився. "
-         "restoreSteps: ініціалізація _lastStepDate + rollover check. "
-         "onResume: rollover check перед health check сервісу."),
-        ("StepCounterService.java",     "ОНОВЛЕНО",
-         "+String currentDate. onStartCommand: ініціалізація currentDate. "
-         "onSensorChanged: midnight rollover block — скидання всіх лічильників."),
+        (".github/workflows/ci.yml",         "ОНОВЛЕНО",
+         "node-version: '20' → '22'. Усуває deprecation warning і navigator відсутність."),
+        ("tests/mocks/charts.js",             "НОВИЙ",
+         "Стаб charts.js: createChart/disposeChart/resizeAllCharts/COLORS без browser globals."),
+        ("vitest.config.js",                  "ПЕРЕЗАПИС",
+         "Додано resolve.alias з regex /\\/src\\/core\\/charts\\.js$/ → mock. "
+         "Глобально замінює charts.js для всіх тестів."),
+        ("tests/setup.js",                    "ОНОВЛЕНО",
+         "+navigator stub: if (typeof globalThis.navigator === 'undefined') { ... }"),
     ]))
     s += [sp(8), hr()]
 
-    # ═══ 2. Графік «Кроки по днях» ═════════════════════════════════════════════
-    s.append(section_box("2", "Графік «Кроки по днях» — ECharts bar chart"))
+    # ═══ 3. Виправлення: APK збірка ════════════════════════════════════════
+    s.append(section_box("3", "Виправлення збірки Android APK"))
     s.append(sp(6))
     s.append(body(
-        "Нова аналітична функція: bar chart кроків за останні 30 днів. "
-        "Стовпчики кольором показують досягнення цілі: зелений (#22c55e) — ціль досягнута, "
-        "cyan (#06b6d4) — не досягнута. Пунктирна горизонтальна лінія — поточна ціль. "
-        "Мінімум 2 записи для відображення (інакше — empty state)."
+        "android-apk.yml встановлював platforms;android-35, але android/variables.gradle "
+        "оголошує compileSdkVersion = 36 та targetSdkVersion = 36 (Android 16, API 36). "
+        "AGP 8.13.0 вимагає наявності SDK платформи що відповідає compileSdkVersion. "
+        "При відсутності SDK 36 Gradle завершується помилкою: "
+        "Failed to find target with hash string 'android-36'."
     ))
     s.append(sp(4))
-    s.append(h2("Нові функції у steps/index.js"))
-    s.append(bullet("renderStepsDayChart(containerId) — async, queryStepLog({days:30}), ECharts SVGRenderer, barMaxWidth:18, markLine з ціллю"))
-    s.append(bullet("disposeStepsDayChart(containerId) — dispose через charts.js WeakMap"))
-    s.append(bullet("openStepsDayModal() — відкриває модалку + рендерить графік"))
-    s.append(bullet("closeStepsDayModal() — dispose + закриває модалку, скидає overflow"))
-    s.append(sp(4))
-    s.append(h2("UI — кнопка + модалка"))
-    s.append(body(
-        "Кнопка «Кроки по днях» додана поруч з «Кроки ↔ Тиск» у flex-обгортці "
-        "(display:flex, gap:6px, flex-wrap:wrap) в блоці активності. "
-        "Стиль iz-action-btn, SVG-іконка календаря (Lucide). "
-        "Модалка #stepsDayModal — bottom-sheet (та сама структура що й scatterModal): "
-        "modal-overlay > modal-sheet > modal-handle + modal-title + #stepsDayChart."
-    ))
-    s.append(sp(4))
-    s.append(h2("Інтеграція в app.js"))
-    s.append(body(
-        "Імпорт: openStepsDayModal, closeStepsDayModal, disposeStepsDayChart. "
-        "ACTIONS: openStepsDayModal → openStepsDayModal(), closeStepsDayModal → closeStepsDayModal(). "
-        "showPage dispose block: disposeStepsDayChart('stepsDayChart') + "
-        "removeClass('show') при навігації між вкладками."
-    ))
+    s.append(h2("Виправлення"))
+    s.append(bullet("platforms;android-35 → platforms;android-36 (відповідає variables.gradle)"))
+    s.append(bullet("build-tools;35.0.0 залишається — сумісний з SDK 36, гарантовано доступний"))
+    s.append(bullet("Node вже був оновлений до 22 у попередній версії android-apk.yml"))
     s.append(sp(4))
     s.append(file_table([
-        ("src/features/steps/index.js", "ОНОВЛЕНО",
-         "+import createChart/disposeChart. "
-         "+renderStepsDayChart, disposeStepsDayChart, openStepsDayModal, closeStepsDayModal (export)."),
-        ("index.html",                  "ОНОВЛЕНО",
-         "Кнопки у flex-обгортці. +#stepsDayModal bottom-sheet modal."),
-        ("src/app.js",                  "ОНОВЛЕНО",
-         "+import openStepsDayModal/closeStepsDayModal/disposeStepsDayChart. "
-         "+ACTIONS. +dispose в showPage block."),
-        ("src/i18n/ui.uk.js",           "ОНОВЛЕНО",
-         "+t-btn-steps-day, t-steps-day-modal-title, t-steps-day-empty."),
-        ("src/i18n/ui.ru.js",           "ОНОВЛЕНО",
-         "+t-btn-steps-day (рос.), t-steps-day-modal-title, t-steps-day-empty."),
+        (".github/workflows/android-apk.yml", "ОНОВЛЕНО",
+         "packages: '...platforms;android-35...' → '...platforms;android-36...'"),
     ]))
     s += [sp(8), hr()]
 
-    # ═══ 3. Архітектурні рішення ══════════════════════════════════════════════
-    s.append(section_box("3", "Архітектурні рішення сесії"))
+    # ═══ 4. Додаткові виправлення ═══════════════════════════════════════════
+    s.append(section_box("4", "Додаткові виправлення якості коду"))
+    s.append(sp(6))
+
+    s.append(h2("vite.config.js — видалено конфліктуючу секцію test"))
+    s.append(body(
+        "vite.config.js містив: test: { environment: 'jsdom' }. "
+        "Авторитетна конфігурація тестів — vitest.config.js (environment: 'node'). "
+        "Дублюючий test-блок у vite.config.js створював потенційний конфлікт "
+        "при визначенні середовища тестів. Видалено повністю — "
+        "vite.config.js тепер чисто конфігурація Vite (dev/build/preview)."
+    ))
+    s.append(sp(6))
+
+    s.append(h2("Root package.json — синхронізація та очищення"))
+    s.append(body(
+        "Capacitor-root ~/workspace/package.json відставав від фактичного стану:"
+    ))
+    s.append(bullet("version: 5.2.0 → 5.3.16 (відповідає inner package.json)"))
+    s.append(bullet("Видалено jspdf: ^4.2.1 — не потрібен для cap sync android, "
+                    "конфліктував з inner (jspdf 2.5.2)"))
+    s.append(bullet("Видалено @capacitor/motion — відсутній у inner package.json"))
+    s.append(bullet("Видалено jsdom, vitest — тести запускаються лише з inner"))
+    s.append(bullet("npm install у ~/workspace/ — оновлено root package-lock.json"))
+    s.append(sp(4))
+
+    s.append(file_table([
+        ("HealthPro-Moie-Zdorovia/vite.config.js", "ОНОВЛЕНО",
+         "Видалено test: { environment: 'jsdom' } — конфліктував з vitest.config.js."),
+        ("package.json (root)",                    "ПЕРЕЗАПИС",
+         "version 5.2.0→5.3.16; видалено jspdf ^4.2.1, @capacitor/motion, jsdom, vitest."),
+    ]))
+    s += [sp(8), hr()]
+
+    # ═══ 5. Архітектурні рішення ════════════════════════════════════════════
+    s.append(section_box("5", "Архітектурні рішення сесії"))
     s.append(sp(6))
     s.append(arch_table([
-        ("Синхронне скидання + async БД",
-         "_checkDayRollover() скидає stepCount=0 синхронно (критично — до будь-яких нових записів). "
-         "Збереження у БД — fire-and-forget (.catch(() => {})). "
-         "Це гарантує що наступний _persistSteps() одразу пише правильну дату."),
-        ("Ранній return у _persistSteps",
-         "Якщо _checkDayRollover() повертає true — _persistSteps() завершується без запису. "
-         "Причина: count (від сервісу) ще може містити 'вчорашнє' значення "
-         "до того як сервіс перезапуститься з initialSteps=0."),
-        ("Java-рівень як другий захист",
-         "Якщо JS-процес вбито Doze/Samsung OEM killer — сервіс живе і рахує. "
-         "При зміні дати в onSensorChanged — самостійно скидається без участі JS. "
-         "JS отримає правильний 0 при наступному connect/getServiceStatus."),
-        ("ECharts SVGRenderer для bar chart",
-         "SVGRenderer обрано (не Canvas) — послідовність: мало точок (<500), "
-         "краща чіткість на HiDPI екранах Samsung, та відповідає патерну iz-trend.js."),
-        ("disposeChart перед render (WeakMap)",
-         "WeakMap у charts.js повертає мертвий інстанс після innerHTML-зміни. "
-         "disposeChart(el) перед кожним renderStepsDayChart — обов'язковий патерн."),
+        ("Alias замість vi.mock",
+         "vi.mock() можна викликати лише у тестових файлах (hoisting). "
+         "resolve.alias у vitest.config.js діє на рівні module resolution — "
+         "перехоплює транзитивні імпорти без зміни жодного тестового файлу. "
+         "Єдиний рядок конфігурації замінює charts.js для всього test suite."),
+        ("Regex vs string alias",
+         "String alias в Vite — це prefix-заміна (як шлях). "
+         "Regex alias матчить проти повного resolved absolute path. "
+         "Regex /\\/src\\/core\\/charts\\.js$/ гарантовано спрацьовує для "
+         "/home/runner/work/.../HealthPro-Moie-Zdorovia/src/core/charts.js "
+         "незалежно від глибини відносного шляху у джерелі."),
+        ("Два незалежні рівні захисту",
+         "alias (рівень 2) + navigator stub (рівень 3) — якщо alias не спрацює "
+         "через оновлення Vitest/Vite що змінює alias behavior, "
+         "navigator stub захистить від ReferenceError для будь-якого "
+         "іншого browser-залежного модуля. Belt and suspenders."),
+        ("build-tools;35.0.0 з SDK 36",
+         "AGP 8.x більше не вимагає точного збігу build-tools з compileSdkVersion. "
+         "build-tools;36.0.0 може бути недоступний у android-actions/setup-android. "
+         "build-tools;35.0.0 гарантовано є і сумісний з compileSdkVersion=36."),
+        ("Root vs Inner package.json",
+         "Root (~/workspace/package.json) — лише для cap sync android: "
+         "@capacitor/cli, @capacitor/core, @capacitor/android, плагіни. "
+         "Жодних web-залежностей (jspdf, echarts, vitest). "
+         "Inner (HealthPro-Moie-Zdorovia/package.json) — Vite + всі web deps. "
+         "Обидва package-lock.json залишаються синхронізованими."),
     ]))
     s += [sp(8), hr()]
 
-    # ═══ 4. Роадмап ═══════════════════════════════════════════════════════════
-    s.append(section_box("4", "Наступні кроки / Роадмап"))
+    # ═══ 6. Роадмап ═════════════════════════════════════════════════════════
+    s.append(section_box("6", "Наступні кроки / Роадмап"))
     s.append(sp(6))
     s.append(proposal_table([
-        ("Безпека",   "AppState listener — блокувати при згортанні в фон (5 хв таймер)",      "Високий"),
-        ("Безпека",   "Lock Screen поверх нативного back-жесту (Capacitor App plugin)",        "Високий"),
-        ("Кроки",     "Середній тижневий/місячний крок — статистика на картці активності",     "Середній"),
-        ("Бекап",     "Автоматичний бекап кожні 7 днів з нотифікацією",                        "Середній"),
-        ("Профіль",   "Вкладки 'Вага' та 'Цукор' (глюкометр)",                                "Низький"),
+        ("CI / Якість",  "Додати GitHub Actions badge у README; перевірити APK artifact після мержу",     "Високий"),
+        ("Архітектура",  "Відокремити getStepCount() від steps/index.js у steps/api.js — "
+                         "щоб health-score.js не тягнув chart залежності транзитивно",                    "Середній"),
+        ("Безпека",      "AppState listener — блокувати при згортанні в фон (5 хв таймер)",               "Високий"),
+        ("Кроки",        "Середній тижневий/місячний крок — статистика на картці активності",             "Середній"),
+        ("Бекап",        "Автоматичний бекап кожні 7 днів з нотифікацією",                               "Середній"),
     ]))
     s += [sp(8), hr()]
 
-    # Підпис
     s.append(Paragraph(
         f"Звіт згенеровано автоматично · HealthPro v{VERSION} · "
         f"{datetime.datetime.now().strftime('%d.%m.%Y %H:%M')}",

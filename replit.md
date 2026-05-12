@@ -123,6 +123,17 @@ HealthPro-Moie-Zdorovia/
 
 ## Changelog
 
+### v5.3.16 (2026-05-12) — Сесія: CI Fix — тести + APK збірка
+
+- **`ci.yml` Node 20 → 22:** GitHub Actions node-version оновлено до LTS 22. Node 20 позначений deprecated у GitHub runners; zrender (ECharts) звертався до `navigator` при старті, якого немає у Node < 22.
+- **`tests/mocks/charts.js` (новий файл):** Стаб-замінник `src/core/charts.js`. Повторює публічний API (`createChart`, `disposeChart`, `resizeAllCharts`, `COLORS`) без будь-яких browser-globals.
+- **`vitest.config.js` — глобальний alias:** `resolve.alias` з regex `/\/src\/core\/charts\.js$/` → перенаправляє будь-який імпорт `charts.js` (прямий або транзитивний) на стаб. Всі 8 тестових файлів, що падали через ланцюжок `health-score.js → steps/index.js → charts.js → zrender → navigator`, тепер проходять без змін вихідного коду.
+- **`tests/setup.js` — navigator стаб:** Другий рівень захисту: `globalThis.navigator = { userAgent: 'node' }` на випадок якщо alias не перехопить інший browser-залежний модуль.
+- **`android-apk.yml` SDK 35 → 36:** `platforms;android-35` виправлено на `platforms;android-36` — відповідає `compileSdkVersion = 36` у `android/variables.gradle` (AGP 8.13.0). `build-tools;35.0.0` залишається (сумісні з SDK 36, стабільніші).
+- **`vite.config.js` — видалено дублікат `test`:** Секція `test: { environment: 'jsdom' }` у `vite.config.js` конфліктувала з авторитетним `vitest.config.js` (environment: 'node'). Видалено.
+- **Root `package.json` — очищено:** Версія 5.2.0 → 5.3.16; видалено `jspdf ^4.2.1` (не потрібен для cap sync), `jsdom`, `vitest` (тести лише у inner), `@capacitor/motion` (не в inner); root lock оновлено.
+- **Тести:** 513/513 ✅ локально (16/16 файлів).
+
 ### v5.3.16 (2026-05-12) — Сесія: Скидання кроків опівночі + Графік по днях
 
 - **`_checkDayRollover()` (JS):** нова функція у `steps/index.js` — при зміні `today()` синхронно скидає `stepCount=0`, зберігає вчорашній підсумок у `steps_log` (idempotent upsert), записує 0 для нового дня, перезапускає Foreground Service з `initialSteps=0`. Викликається з `_persistSteps()`, `restoreSteps()`, та `onResume`-хелс-чеку.
