@@ -1,5 +1,8 @@
 # HealthPro — Персональний цифровий щоденник здоров'я
 
+[![CI](https://github.com/chironkh-dev/HealthPro-Moie-Zdorovia/actions/workflows/ci.yml/badge.svg)](https://github.com/chironkh-dev/HealthPro-Moie-Zdorovia/actions/workflows/ci.yml)
+[![Android APK](https://github.com/chironkh-dev/HealthPro-Moie-Zdorovia/actions/workflows/android-apk.yml/badge.svg)](https://github.com/chironkh-dev/HealthPro-Moie-Zdorovia/actions/workflows/android-apk.yml)
+
 > **Застосунок є допоміжним інструментом і не замінює професійну медичну консультацію.**
 > Усі поради носять виключно інформаційний характер. Для точних замірів використовуйте сертифіковані тонометри.
 

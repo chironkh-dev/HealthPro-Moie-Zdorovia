@@ -28,12 +28,14 @@ import { state } from '../src/core/state.js';
 import { calcHealthScore, getDetailedScores } from '../src/features/analytics/health-score.js';
 
 // ── Mock getStepCount so tests don't touch the sensor/DB layer ─────────────
-vi.mock('../src/features/steps/index.js', () => ({
+// health-score.js imports getStepCount from steps/api.js (architectural split).
+vi.mock('../src/features/steps/api.js', () => ({
   getStepCount: vi.fn().mockReturnValue(0),
+  _setStepCount: vi.fn(),
 }));
 
 // Import the mock AFTER vi.mock so we get the mocked version
-import { getStepCount } from '../src/features/steps/index.js';
+import { getStepCount } from '../src/features/steps/api.js';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 

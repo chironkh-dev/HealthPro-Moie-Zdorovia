@@ -186,3 +186,9 @@ id = "qZgYkys_ZWWWm_dw641Ct"
 uri = "file://HealthPro-Moie-Zdorovia/report/HealthPro_Session_v5.3.16_CI_Fix_Tests_APK_Report.pdf"
 type = "pdf"
 title = "HealthPro v5.3.16 — Звіт сесії: CI Fix Tests + APK"
+
+[[outputs]]
+id = "W8M32aC73h5fGup-JLN9n"
+uri = "file://HealthPro-Moie-Zdorovia/report/HealthPro_Session_v5.3.17_Roadmap_5tasks_Report.pdf"
+type = "pdf"
+title = "Звіт сесії v5.3.17 — Роадмап 5 задач"

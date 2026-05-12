@@ -442,6 +442,13 @@ export const T_RU ={
   'bio-toggle-hint': 'Требует установленного PIN',
   'lock-bio-btn':    'Войти отпечатком пальца',
 
+  // ─── step averages ───
+  'st-week-avg': 'Среднее за неделю',
+  'st-month-avg': 'Среднее за месяц',
+
+  // ─── auto-backup reminder ───
+  'bk-auto-remind': '📦 Прошло 7+ дней без бекапа. Сохраните копию в Профиль → Резервная копия.',
+
   // ─── PIN lock (П1) ───
   'pin-setup-title':'Установить PIN-код',
   'pin-setup-step1':'Введите 4-значный PIN-код',

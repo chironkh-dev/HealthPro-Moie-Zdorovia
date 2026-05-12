@@ -123,6 +123,16 @@ HealthPro-Moie-Zdorovia/
 
 ## Changelog
 
+### v5.3.17 (2026-05-12) — Сесія: Роадмап 5 задач
+
+- **README бейджі (Задача 1):** Додано `[![CI](...)]` та `[![Android APK](...)]` бейджі у `README.md` відразу після заголовка. Репо: `chironkh-dev/HealthPro-Moie-Zdorovia`.
+- **`steps/api.js` (Задача 2 — новий файл):** Архітектурний рефакторинг — виокремлено `_stepCount`, `getStepCount()`, `_setStepCount()` без жодних browser-залежностей. `health-score.js` тепер імпортує `getStepCount` з `steps/api.js` (0 транзитивних deps) замість `steps/index.js` (→ charts → zrender → navigator). `steps/index.js` синхронізує `_setStepCount` у 4 точках: `_persistSteps`, `_checkDayRollover`, `enableSteps`, `restoreSteps`. Три тестові файли оновлено: `vi.mock(steps/api.js)` замість `steps/index.js`. Всі 513/513 тестів ✅.
+- **5-хв таймер блокування (Задача 3):** `platform.js` — новий `onPause()` хелпер (Capacitor App appStateChange). `app.js` — `_bgTimestamp`, `BG_LOCK_TIMEOUT_MS = 5 * 60 * 1000`. `onPause` записує timestamp при згортанні. `onResume` блокує PIN лише якщо `elapsed >= 5 хв`. Cold start → `_bgTimestamp = 0` → `Infinity` → завжди блокує (безпечно).
+- **Середні кроки (Задача 4):** `refreshStepAvg()` / `_renderStepAvg()` у `steps/index.js`. TTL-кеш 5 хвилин для `queryStepLog`. `#stepWeekAvg` та `#stepMonthAvg` у `index.html` під `.step-goal-row`. i18n: `st-week-avg`, `st-month-avg` (uk+ru).
+- **Автобекап нагадування (Задача 5):** `backup.js` — після export: `state.settings.lastBackupDate = today(); saveData()`. `app.js` — `_checkAutoBackupReminder()` при init: якщо 7+ днів → `setTimeout(showToast, 4000)`. i18n: `bk-auto-remind` (uk+ru). `defaultSettings.lastBackupDate: ''` (вже було у `storage.js`).
+- **`package.json`:** версія 5.3.16 → 5.3.17. `npm run version` → `version.gen.js` оновлено.
+- **Тести:** 513/513 ✅ (16/16 файлів).
+
 ### v5.3.16 (2026-05-12) — Сесія: CI Fix — тести + APK збірка
 
 - **`ci.yml` Node 20 → 22:** GitHub Actions node-version оновлено до LTS 22. Node 20 позначений deprecated у GitHub runners; zrender (ECharts) звертався до `navigator` при старті, якого немає у Node < 22.

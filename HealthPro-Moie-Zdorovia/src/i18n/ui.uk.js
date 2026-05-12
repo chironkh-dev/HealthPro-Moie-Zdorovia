@@ -436,6 +436,13 @@ export const T_UK ={
   'bio-toggle-hint': 'Потребує встановленого PIN',
   'lock-bio-btn':    'Увійти відбитком пальця',
 
+  // ─── step averages ───
+  'st-week-avg': 'Середнє за тиждень',
+  'st-month-avg': 'Середнє за місяць',
+
+  // ─── auto-backup reminder ───
+  'bk-auto-remind': '📦 Пройшло 7+ днів без бекапу. Збережіть копію у Профіль → Резервна копія.',
+
   // ─── PIN lock (П1) ───
   'pin-setup-title':'Встановити PIN-код',
   'pin-setup-step1':'Введіть 4-значний PIN-код',

@@ -139,6 +139,8 @@ export async function exportBackup(password) {
   const blob = new Blob([JSON.stringify(pkg)], { type: 'application/octet-stream' });
   platformDownload('healthpro-backup-' + today() + '.hpb', blob, 'application/octet-stream');
   showToast(t('bk-toast-saved'));
+  state.settings.lastBackupDate = today();
+  saveData();
 }
 
 // ── DECRYPT & VERIFY ──────────────────────────────────────────────────────────

@@ -18,6 +18,8 @@
 //   declineStepFg() → enableSteps('active-only')
 
 import { state, saveData, showToast, today, DB } from '../../core/state.js';
+import { _setStepCount, getStepCount } from './api.js';
+export { getStepCount };
 import { saveStepLog as dbSaveStep, queryStepLog } from '../../core/db.js';
 import { createChart, disposeChart } from '../../core/charts.js';
 import {
@@ -53,6 +55,7 @@ function _persistSteps(count) {
   const goal = state.settings?.stepGoal || DEFAULT_STEP_GOAL;
   DB.set('stepCount-' + d, count);                           // localStorage mirror
   dbSaveStep({ date: d, steps: count, goal }).catch(() => {}); // SQLite steps_log
+  _setStepCount(count);                                        // sync to api.js (no charts dep)
 }
 
 // ── Module-level state ──────────────────────────────────────────────────────
@@ -95,6 +98,7 @@ function _checkDayRollover() {
   _lastStepDate = todayStr;
   DB.set('stepLastDate', todayStr);
   stepCount = 0;
+  _setStepCount(0);
 
   // Записуємо 0 для нового дня (щоб в аналітиці був запис навіть якщо 0 кроків)
   DB.set('stepCount-' + todayStr, '0');
@@ -291,7 +295,9 @@ export async function enableSteps(mode) {
     showToast(t('st-mode-active'));
   }
 
+  _setStepCount(stepCount);   // sync module-level stepCount → api.js (no charts dep)
   updateStepUI();
+  refreshStepAvg().catch(() => {});
 }
 
 export function disableSteps() {
@@ -525,6 +531,7 @@ export function updateStepUI() {
   }
 
   if (stepGoalEl) stepGoalEl.textContent = `${t('st-goal-pref')} ${goal.toLocaleString()}`;
+  _renderStepAvg();
 }
 
 // ── Restore on load / app resume ───────────────────────────────────────────
@@ -591,6 +598,8 @@ export async function restoreSteps() {
       stepCount = DB.get('stepCount-' + today(), 0);
     }
   }
+  _setStepCount(stepCount);
+  refreshStepAvg().catch(() => {});
 }
 
 export function saveStepGoal() {
@@ -604,8 +613,34 @@ export function saveStepGoal() {
   updateStepUI();
 }
 
-export function getStepCount() {
-  return stepCount;
+// ── Step averages cache ─────────────────────────────────────────────────────
+let _weekAvg = null;
+let _monthAvg = null;
+let _avgLastRefresh = 0;
+
+/** Refresh weekly/monthly step averages from DB (max once per 5 min). */
+export async function refreshStepAvg() {
+  const now = Date.now();
+  if (now - _avgLastRefresh < 5 * 60 * 1000) { _renderStepAvg(); return; }
+  _avgLastRefresh = now;
+  try {
+    const rows = await queryStepLog({ days: 30 });
+    const todayStr = today();
+    const cutWeek  = new Date(now - 7  * 86400000).toISOString().slice(0, 10);
+    const cutMonth = new Date(now - 30 * 86400000).toISOString().slice(0, 10);
+    const wRows = rows.filter(r => r.date >= cutWeek  && r.date < todayStr);
+    const mRows = rows.filter(r => r.date >= cutMonth && r.date < todayStr);
+    _weekAvg  = wRows.length ? Math.round(wRows.reduce( (s, r) => s + r.steps, 0) / wRows.length)  : null;
+    _monthAvg = mRows.length ? Math.round(mRows.reduce((s, r) => s + r.steps, 0) / mRows.length) : null;
+  } catch { /* noop */ }
+  _renderStepAvg();
+}
+
+function _renderStepAvg() {
+  const wEl = document.getElementById('stepWeekAvg');
+  const mEl = document.getElementById('stepMonthAvg');
+  if (wEl) wEl.textContent = _weekAvg  !== null ? `${t('st-week-avg')}: ${_weekAvg.toLocaleString()}` : '';
+  if (mEl) mEl.textContent = _monthAvg !== null ? `${t('st-month-avg')}: ${_monthAvg.toLocaleString()}` : '';
 }
 
 // ── Steps-by-day bar chart ──────────────────────────────────────────────────

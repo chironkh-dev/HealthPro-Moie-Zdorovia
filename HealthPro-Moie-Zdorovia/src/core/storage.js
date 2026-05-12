@@ -35,6 +35,7 @@ export const defaultSettings = {
   stepGoal: 10000, stepsEnabled: false, stepMode: 'active-only', // see DEFAULT_STEP_GOAL in core/constants.js
   biometricLock: false,
   bpStandard: 'ESC2024',
+  lastBackupDate: '',
 };
 
 const DB_NAME = 'HealthProDB';

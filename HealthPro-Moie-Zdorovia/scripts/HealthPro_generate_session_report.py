@@ -10,8 +10,8 @@ HealthPro — Моє Здоров'я
 # ══════════════════════════════════════════════════════════════════════════════
 # НАЛАШТУВАННЯ ЗВІТУ — редагуй перед кожною сесією
 # ══════════════════════════════════════════════════════════════════════════════
-VERSION     = "5.3.16"               # версія застосунку
-DESCRIPTION = "CI_Fix_Tests_APK"    # коротке уточнення теми сесії (без пробілів)
+VERSION     = "5.3.17"               # версія застосунку
+DESCRIPTION = "Roadmap_5tasks"      # коротке уточнення теми сесії (без пробілів)
 PART        = None                   # номер частини, якщо сесія розбита (1, 2, …) або None
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -257,209 +257,216 @@ def build_story():
 
     # Статистичні плитки
     s += [stats_row([
-        stat_cell("7",  "Файлів змінено",         "CI · Vite · Vitest · package.json"),
-        stat_cell("1",  "Новий файл",              "tests/mocks/charts.js (stub)"),
-        stat_cell("2",  "CI-пайплайни виправлено", "ci.yml (тести) + android-apk.yml (APK)"),
-        stat_cell("513","Тестів проходить",         "16/16 файлів ✓ локально"),
+        stat_cell("14", "Файлів змінено",      "JS · HTML · i18n · тести · docs"),
+        stat_cell("1",  "Новий файл",           "steps/api.js (shared state)"),
+        stat_cell("5",  "Задач виконано",       "з роадмапу v5.3.16 CI Fix"),
+        stat_cell("513","Тестів проходить",     "16/16 файлів ✓"),
     ]), sp(14), hr()]
 
-    # ═══ 1. Проблема: navigator is not defined ═══════════════════════════════
-    s.append(section_box("1", "Причина падіння 8/16 тестів на CI"))
+    # ═══ 1. README badges ════════════════════════════════════════════════════
+    s.append(section_box("1", "Задача 1 — CI/README бейджі"))
     s.append(sp(6))
     s.append(body(
-        "GitHub CI використовував Node 20.20.2 (LTS). У Node до версії 22 глобальна "
-        "змінна navigator (Web API) відсутня. При запуску тестів Vitest імпортує "
-        "src/core/charts.js, який статично імпортує echarts/core, який транзитивно "
-        "завантажує zrender/lib/core/env.js. Рядок 43 цього файлу: "
-        "navigator.userAgent — ReferenceError: navigator is not defined."
+        "До README.md додано два бейджі GitHub Actions у самому початку документа, "
+        "одразу після заголовка. Бейджі відображають поточний стан CI (тести) "
+        "та збірки Android APK у реальному часі."
     ))
     s.append(sp(4))
-    s.append(h2("Транзитивний ланцюжок імпортів (для аналітичних тестів)"))
     s.append(code(
-        "health-score.test.js  →  analytics/health-score.js"
-        "  →  features/steps/index.js  →  src/core/charts.js"
-        "  →  echarts/core  →  zrender/lib/core/env.js:43  →  navigator  →  CRASH"
+        "[![CI](...ci.yml/badge.svg)](actions/workflows/ci.yml)  "
+        "[![Android APK](...android-apk.yml/badge.svg)](actions/workflows/android-apk.yml)"
     ))
     s.append(sp(4))
-    s.append(body(
-        "8 тестових файлів падали з цією помилкою на CI, при цьому локально "
-        "513/513 — тому що Node 24 (Replit/локально) має navigator як глобальний. "
-        "Жоден із цих 8 тестів не тестує графіки — вони тестують чисту логіку "
-        "(health score, BMI, pills, BP thresholds, step counters). "
-        "Проблема — архітектурна: логічні модулі тягнуть browser-залежний charts.js "
-        "через ланцюжок steps/index.js."
-    ))
-    s.append(sp(4))
-    s.append(h2("Список файлів що падали"))
-    for f in [
-        "health-score.test.js", "bmi-score.test.js", "veto-boundary.test.js",
-        "pills-score.test.js", "health-score-i18n.test.js", "bp-pulse-thresholds.test.js",
-        "foreground-step.test.js", "step-fixes.test.js",
-    ]:
-        s.append(bullet(f))
+    s.append(file_table([
+        ("README.md", "ОНОВЛЕНО",
+         "Додано два бейджі GitHub Actions (CI + Android APK) після заголовка h1."),
+    ]))
     s += [sp(8), hr()]
 
-    # ═══ 2. Виправлення: тести ══════════════════════════════════════════════
-    s.append(section_box("2", "Три рівні захисту — виправлення тестів"))
+    # ═══ 2. steps/api.js ════════════════════════════════════════════════════
+    s.append(section_box("2", "Задача 2 — Архітектурний рефакторинг steps/api.js"))
     s.append(sp(6))
-
-    s.append(h2("Рівень 1: Node 20 → 22 (ci.yml)"))
     s.append(body(
-        "node-version: '20' змінено на '22'. Node 22 є LTS з жовтня 2024, "
-        "GitHub вже надсилав deprecation warnings для Node 20. "
-        "Node 22 містить navigator як глобальний (Web API compatibility). "
-        "Це найшвидший фікс, але не архітектурно достатній — "
-        "наступна мажорна версія Node може знову прибрати цей глобал."
+        "Ключова архітектурна проблема: health-score.js імпортував getStepCount() зі "
+        "steps/index.js, який транзитивно тягнув charts.js → ECharts → zrender → "
+        "browser globals (navigator). Це спричиняло падіння тестів на CI. "
+        "Рішення: виокремити чистий стан кроків у steps/api.js без жодних залежностей."
     ))
     s.append(sp(4))
-
-    s.append(h2("Рівень 2: Глобальний alias charts.js у vitest.config.js"))
+    s.append(h2("Новий файл: src/features/steps/api.js"))
     s.append(body(
-        "У vitest.config.js додано resolve.alias з regex find: "
-        "/\\/src\\/core\\/charts\\.js$/ → replacement: tests/mocks/charts.js. "
-        "Vite при regex-алiасі матчить проти абсолютного resolved-шляху модуля. "
-        "Це перехоплює будь-який імпорт charts.js незалежно від глибини відносного шляху. "
-        "Ефект: ЖОДЕН тестовий файл не потребує змін — alias діє глобально."
+        "Мінімальний модуль (4 рядки): зберігає _stepCount, "
+        "експортує getStepCount() та _setStepCount(). "
+        "Нульові залежності — не тягне charts, state, platform, DB."
     ))
+    s.append(sp(4))
+    s.append(h2("Оновлений ланцюжок імпортів"))
     s.append(code(
-        "resolve: { alias: [ {"
-        "  find: /\\/src\\/core\\/charts\\.js$/,"
-        "  replacement: resolve(__dirname, 'tests/mocks/charts.js')"
-        "} ] }"
+        "БУЛО: health-score.js → steps/index.js → charts.js → zrender → navigator  "
+        "СТАЛО: health-score.js → steps/api.js  (0 транзитивних deps)"
     ))
     s.append(sp(4))
-
-    s.append(h2("Рівень 3: navigator stub у tests/setup.js"))
+    s.append(h2("Синхронізація _stepCount у steps/index.js"))
     s.append(body(
-        "До наявного setup.js (localStorage/window/document stubs) додано: "
-        "if (typeof globalThis.navigator === 'undefined') "
-        "{ globalThis.navigator = { userAgent: 'node' }; }. "
-        "Страховка: якщо alias не перехопить інший browser-залежний модуль, "
-        "navigator буде доступний. Незалежний від версії Node."
+        "_setStepCount(count) викликається у чотирьох точках: "
+        "_persistSteps() (кожен крок), _checkDayRollover() (скидання → 0), "
+        "enableSteps() (після завантаження з DB), restoreSteps() (відновлення після перезапуску). "
+        "Тести для activity-score, bmi-activity-combo, stepgoal-bmi-combo оновлено: "
+        "мокають steps/api.js замість steps/index.js."
     ))
     s.append(sp(4))
-
-    s.append(h2("Новий файл: tests/mocks/charts.js"))
-    s.append(body(
-        "Повний стаб charts.js. Повторює весь публічний API: "
-        "createChart() → null, disposeChart() → void, resizeAllCharts() → void, "
-        "COLORS (об'єкт з усіма кольорами). Без жодного рядка ECharts/zrender. "
-        "Виконується миттєво, без browser-globals."
-    ))
-    s.append(sp(4))
-
     s.append(file_table([
-        (".github/workflows/ci.yml",         "ОНОВЛЕНО",
-         "node-version: '20' → '22'. Усуває deprecation warning і navigator відсутність."),
-        ("tests/mocks/charts.js",             "НОВИЙ",
-         "Стаб charts.js: createChart/disposeChart/resizeAllCharts/COLORS без browser globals."),
-        ("vitest.config.js",                  "ПЕРЕЗАПИС",
-         "Додано resolve.alias з regex /\\/src\\/core\\/charts\\.js$/ → mock. "
-         "Глобально замінює charts.js для всіх тестів."),
-        ("tests/setup.js",                    "ОНОВЛЕНО",
-         "+navigator stub: if (typeof globalThis.navigator === 'undefined') { ... }"),
+        ("src/features/steps/api.js",          "НОВИЙ",
+         "_stepCount, getStepCount(), _setStepCount() — без browser залежностей."),
+        ("src/features/steps/index.js",        "ОНОВЛЕНО",
+         "import+export getStepCount з api.js; _setStepCount у 4 місцях sync."),
+        ("src/features/analytics/health-score.js", "ОНОВЛЕНО",
+         "import getStepCount з steps/api.js (розриває chart-ланцюжок)."),
+        ("tests/activity-score.test.js",       "ОНОВЛЕНО",
+         "vi.mock(steps/api.js) замість steps/index.js."),
+        ("tests/bmi-activity-combo.test.js",   "ОНОВЛЕНО",
+         "vi.mock(steps/api.js) замість steps/index.js."),
+        ("tests/stepgoal-bmi-combo.test.js",   "ОНОВЛЕНО",
+         "vi.mock(steps/api.js) замість steps/index.js."),
     ]))
     s += [sp(8), hr()]
 
-    # ═══ 3. Виправлення: APK збірка ════════════════════════════════════════
-    s.append(section_box("3", "Виправлення збірки Android APK"))
+    # ═══ 3. 5-хв таймер блокування ══════════════════════════════════════════
+    s.append(section_box("3", "Задача 3 — 5-хвилинний таймер блокування"))
     s.append(sp(6))
     s.append(body(
-        "android-apk.yml встановлював platforms;android-35, але android/variables.gradle "
-        "оголошує compileSdkVersion = 36 та targetSdkVersion = 36 (Android 16, API 36). "
-        "AGP 8.13.0 вимагає наявності SDK платформи що відповідає compileSdkVersion. "
-        "При відсутності SDK 36 Gradle завершується помилкою: "
-        "Failed to find target with hash string 'android-36'."
+        "До цього блокування PIN активувалося при КОЖНОМУ поверненні з фону, "
+        "навіть якщо користувач перемкнувся на 1 секунду у налаштування WiFi. "
+        "Нова логіка: блокуємо ЛИШЕ якщо у фоні пройшло 5+ хвилин."
     ))
     s.append(sp(4))
-    s.append(h2("Виправлення"))
-    s.append(bullet("platforms;android-35 → platforms;android-36 (відповідає variables.gradle)"))
-    s.append(bullet("build-tools;35.0.0 залишається — сумісний з SDK 36, гарантовано доступний"))
-    s.append(bullet("Node вже був оновлений до 22 у попередній версії android-apk.yml"))
+    s.append(h2("platform.js — новий хелпер onPause()"))
+    s.append(body(
+        "Аналог onResume() для App.addListener('appStateChange', {isActive: false}). "
+        "Викликається при згортанні додатку у фон."
+    ))
+    s.append(sp(4))
+    s.append(h2("app.js — логіка таймера"))
+    s.append(body(
+        "_bgTimestamp (let) зберігає Date.now() при переході у фон (onPause). "
+        "BG_LOCK_TIMEOUT_MS = 5 * 60 * 1000 (5 хвилин). "
+        "onResume перевіряє elapsed = Date.now() - _bgTimestamp >= 5 хв → lockCheck(). "
+        "Якщо _bgTimestamp = 0 (перший запуск) → Infinity → блокуємо завжди (безпечно)."
+    ))
     s.append(sp(4))
     s.append(file_table([
-        (".github/workflows/android-apk.yml", "ОНОВЛЕНО",
-         "packages: '...platforms;android-35...' → '...platforms;android-36...'"),
+        ("src/core/platform.js", "ОНОВЛЕНО",
+         "Новий експорт onPause() — Capacitor App appStateChange {isActive: false}."),
+        ("src/app.js",          "ОНОВЛЕНО",
+         "_bgTimestamp, BG_LOCK_TIMEOUT_MS, onPause handler, onResume з elapsed-check."),
     ]))
     s += [sp(8), hr()]
 
-    # ═══ 4. Додаткові виправлення ═══════════════════════════════════════════
-    s.append(section_box("4", "Додаткові виправлення якості коду"))
+    # ═══ 4. Середні кроки ══════════════════════════════════════════════════
+    s.append(section_box("4", "Задача 4 — Середні кроки (тиждень/місяць)"))
     s.append(sp(6))
-
-    s.append(h2("vite.config.js — видалено конфліктуючу секцію test"))
     s.append(body(
-        "vite.config.js містив: test: { environment: 'jsdom' }. "
-        "Авторитетна конфігурація тестів — vitest.config.js (environment: 'node'). "
-        "Дублюючий test-блок у vite.config.js створював потенційний конфлікт "
-        "при визначенні середовища тестів. Видалено повністю — "
-        "vite.config.js тепер чисто конфігурація Vite (dev/build/preview)."
+        "На картці активності під рядком цілі тепер відображаються два рядки: "
+        "'Середнє за тиждень: X' та 'Середнє за місяць: X'. "
+        "Дані беруться з steps_log за 30 днів (без сьогодні). "
+        "Кеш 5 хвилин — не запитує DB при кожному оновленні UI."
     ))
-    s.append(sp(6))
-
-    s.append(h2("Root package.json — синхронізація та очищення"))
-    s.append(body(
-        "Capacitor-root ~/workspace/package.json відставав від фактичного стану:"
-    ))
-    s.append(bullet("version: 5.2.0 → 5.3.16 (відповідає inner package.json)"))
-    s.append(bullet("Видалено jspdf: ^4.2.1 — не потрібен для cap sync android, "
-                    "конфліктував з inner (jspdf 2.5.2)"))
-    s.append(bullet("Видалено @capacitor/motion — відсутній у inner package.json"))
-    s.append(bullet("Видалено jsdom, vitest — тести запускаються лише з inner"))
-    s.append(bullet("npm install у ~/workspace/ — оновлено root package-lock.json"))
     s.append(sp(4))
-
+    s.append(h2("refreshStepAvg() — нова async функція у steps/index.js"))
+    s.append(body(
+        "queryStepLog({ days: 30 }) → фільтр по діапазону дат → "
+        "wRows (7 днів), mRows (30 днів) → round(sum/length). "
+        "null якщо немає даних (рядок не відображається). "
+        "Викликається з enableSteps(), restoreSteps(), updateStepUI()."
+    ))
+    s.append(sp(4))
+    s.append(h2("index.html — два нових DOM-елементи"))
+    s.append(body(
+        "#stepWeekAvg та #stepMonthAvg — div.step-avg-row під .step-goal-row. "
+        "font-size: 11px, color: var(--text2) — другорядний стиль, не домінує."
+    ))
+    s.append(sp(4))
     s.append(file_table([
-        ("HealthPro-Moie-Zdorovia/vite.config.js", "ОНОВЛЕНО",
-         "Видалено test: { environment: 'jsdom' } — конфліктував з vitest.config.js."),
-        ("package.json (root)",                    "ПЕРЕЗАПИС",
-         "version 5.2.0→5.3.16; видалено jspdf ^4.2.1, @capacitor/motion, jsdom, vitest."),
+        ("src/features/steps/index.js", "ОНОВЛЕНО",
+         "refreshStepAvg(), _renderStepAvg(), _weekAvg, _monthAvg, _avgLastRefresh."),
+        ("index.html",                  "ОНОВЛЕНО",
+         "#stepWeekAvg та #stepMonthAvg у step-ring-info, під step-goal-row."),
+        ("src/i18n/ui.uk.js",           "ОНОВЛЕНО",
+         "st-week-avg, st-month-avg — підписи рядків середніх."),
+        ("src/i18n/ui.ru.js",           "ОНОВЛЕНО",
+         "st-week-avg, st-month-avg — підписи рядків середніх (рос.)."),
     ]))
     s += [sp(8), hr()]
 
-    # ═══ 5. Архітектурні рішення ════════════════════════════════════════════
-    s.append(section_box("5", "Архітектурні рішення сесії"))
+    # ═══ 5. Автобекап 7 днів ═══════════════════════════════════════════════
+    s.append(section_box("5", "Задача 5 — Нагадування про бекап (7 днів)"))
+    s.append(sp(6))
+    s.append(body(
+        "Після кожного успішного експорту backup.js зберігає поточну дату у "
+        "state.settings.lastBackupDate. При наступному старті додатку app.js "
+        "перевіряє скільки днів пройшло. Якщо 7+, через 4 секунди після init "
+        "показує toast-нагадування (тривалість 5 секунд)."
+    ))
+    s.append(sp(4))
+    s.append(h2("Деталі реалізації"))
+    s.append(bullet(
+        "storage.js: defaultSettings.lastBackupDate = '' (вже було на місці з попередньої сесії)."
+    ))
+    s.append(bullet(
+        "backup.js exportBackup(): після platformDownload → state.settings.lastBackupDate = today(); saveData()."
+    ))
+    s.append(bullet(
+        "app.js _checkAutoBackupReminder(): daysSince = Math.floor((now - new Date(lastDate)) / 86400000). "
+        "Якщо >= 7 → setTimeout(() => showToast(t('bk-auto-remind'), 5000), 4000)."
+    ))
+    s.append(bullet(
+        "i18n: bk-auto-remind вже на місці (uk + ru)."
+    ))
+    s.append(sp(4))
+    s.append(file_table([
+        ("src/features/export/backup.js", "ОНОВЛЕНО",
+         "Після export: state.settings.lastBackupDate = today(); saveData()."),
+        ("src/app.js",                    "ОНОВЛЕНО",
+         "_checkAutoBackupReminder() — перевірка при init, toast якщо 7+ днів без бекапу."),
+    ]))
+    s += [sp(8), hr()]
+
+    # ═══ 6. Архітектурні рішення ════════════════════════════════════════════
+    s.append(section_box("6", "Архітектурні рішення сесії"))
     s.append(sp(6))
     s.append(arch_table([
-        ("Alias замість vi.mock",
-         "vi.mock() можна викликати лише у тестових файлах (hoisting). "
-         "resolve.alias у vitest.config.js діє на рівні module resolution — "
-         "перехоплює транзитивні імпорти без зміни жодного тестового файлу. "
-         "Єдиний рядок конфігурації замінює charts.js для всього test suite."),
-        ("Regex vs string alias",
-         "String alias в Vite — це prefix-заміна (як шлях). "
-         "Regex alias матчить проти повного resolved absolute path. "
-         "Regex /\\/src\\/core\\/charts\\.js$/ гарантовано спрацьовує для "
-         "/home/runner/work/.../HealthPro-Moie-Zdorovia/src/core/charts.js "
-         "незалежно від глибини відносного шляху у джерелі."),
-        ("Два незалежні рівні захисту",
-         "alias (рівень 2) + navigator stub (рівень 3) — якщо alias не спрацює "
-         "через оновлення Vitest/Vite що змінює alias behavior, "
-         "navigator stub захистить від ReferenceError для будь-якого "
-         "іншого browser-залежного модуля. Belt and suspenders."),
-        ("build-tools;35.0.0 з SDK 36",
-         "AGP 8.x більше не вимагає точного збігу build-tools з compileSdkVersion. "
-         "build-tools;36.0.0 може бути недоступний у android-actions/setup-android. "
-         "build-tools;35.0.0 гарантовано є і сумісний з compileSdkVersion=36."),
-        ("Root vs Inner package.json",
-         "Root (~/workspace/package.json) — лише для cap sync android: "
-         "@capacitor/cli, @capacitor/core, @capacitor/android, плагіни. "
-         "Жодних web-залежностей (jspdf, echarts, vitest). "
-         "Inner (HealthPro-Moie-Zdorovia/package.json) — Vite + всі web deps. "
-         "Обидва package-lock.json залишаються синхронізованими."),
+        ("steps/api.js — zero-dep shared state",
+         "Патерн: виокремлення чистого стану з модуля що має важкі залежності. "
+         "Результат: health-score.js залежить лише від steps/api.js (0 транзитивних) "
+         "замість steps/index.js (→ charts → zrender → navigator). "
+         "Тести не потребують alias/stub для charts при тестуванні health score."),
+        ("ESM re-export з api.js",
+         "steps/index.js: import { getStepCount } from './api.js'; export { getStepCount }. "
+         "Зворотна сумісність: будь-який код що імпортує getStepCount зі steps/index.js "
+         "продовжує працювати без змін. health-score.js явно вказує steps/api.js."),
+        ("onPause + _bgTimestamp",
+         "Збереження часу у module-level змінній (не localStorage) — достатньо для "
+         "in-process таймера. При cold start _bgTimestamp = 0 → elapsed = Infinity → "
+         "безпечне блокування. При warm resume — точний elapsed."),
+        ("TTL-кеш для step averages",
+         "_avgLastRefresh: number — Date.now() при останньому запиті. "
+         "Якщо now - _avgLastRefresh < 5 хв → використовуємо кешовані _weekAvg/_monthAvg. "
+         "Запобігає зайвим queryStepLog при кожному оновленні крокоміра."),
+        ("toast з затримкою 4с для нагадування",
+         "setTimeout(..., 4000) після init дозволяє UI повністю завантажитися до показу "
+         "нагадування. Уникає race condition з splash screen та першим рендером."),
     ]))
     s += [sp(8), hr()]
 
-    # ═══ 6. Роадмап ═════════════════════════════════════════════════════════
-    s.append(section_box("6", "Наступні кроки / Роадмап"))
+    # ═══ 7. Роадмап ══════════════════════════════════════════════════════════
+    s.append(section_box("7", "Наступні кроки / Роадмап"))
     s.append(sp(6))
     s.append(proposal_table([
-        ("CI / Якість",  "Додати GitHub Actions badge у README; перевірити APK artifact після мержу",     "Високий"),
-        ("Архітектура",  "Відокремити getStepCount() від steps/index.js у steps/api.js — "
-                         "щоб health-score.js не тягнув chart залежності транзитивно",                    "Середній"),
-        ("Безпека",      "AppState listener — блокувати при згортанні в фон (5 хв таймер)",               "Високий"),
-        ("Кроки",        "Середній тижневий/місячний крок — статистика на картці активності",             "Середній"),
-        ("Бекап",        "Автоматичний бекап кожні 7 днів з нотифікацією",                               "Середній"),
+        ("Тести",        "Перевірити APK artifact pipeline після push до GitHub",                          "Високий"),
+        ("Крокомір",     "Дозволити налаштування BG_LOCK_TIMEOUT_MS у Налаштуваннях (1, 5, 15 хв)",       "Середній"),
+        ("Кроки",        "Trend-графік середніх кроків (тижні) у вкладці Аналітика",                      "Середній"),
+        ("Бекап",        "Вибір частоти нагадування (3/7/14 днів) у Налаштуваннях",                       "Низький"),
+        ("PDF звіт",     "Додати середні кроки у розділ Активності лікарського PDF-звіту",                 "Середній"),
     ]))
     s += [sp(8), hr()]
 

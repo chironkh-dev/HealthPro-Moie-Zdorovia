@@ -490,6 +490,31 @@ export function onResume(handler) {
   return () => document.removeEventListener("visibilitychange", onVisibility);
 }
 
+// Fires the handler when the app goes to background (loses focus).
+export function onPause(handler) {
+  if (typeof handler !== "function") return () => {};
+  const app = getPlugin("App");
+  if (app && typeof app.addListener === "function") {
+    try {
+      const h = app.addListener("appStateChange", (s) => {
+        if (s && !s.isActive) handler();
+      });
+      return () => {
+        try {
+          h.remove && h.remove();
+        } catch {}
+      };
+    } catch {
+      /* fall through */
+    }
+  }
+  const onVisibility = () => {
+    if (document.visibilityState === "hidden") handler();
+  };
+  document.addEventListener("visibilitychange", onVisibility);
+  return () => document.removeEventListener("visibilitychange", onVisibility);
+}
+
 // ─── Hardware back button (Android) ────────────────────────────
 // Returns an unsubscribe fn. Web is a no-op (browser handles its own back).
 export function onBackButton(handler) {

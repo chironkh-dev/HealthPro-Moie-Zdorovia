@@ -24,10 +24,12 @@ import { state } from '../src/core/state.js';
 import { calcHealthScore, getDetailedScores } from '../src/features/analytics/health-score.js';
 
 // ── Mock step counter ──────────────────────────────────────────────────────
-vi.mock('../src/features/steps/index.js', () => ({
+// health-score.js imports getStepCount from steps/api.js (architectural split).
+vi.mock('../src/features/steps/api.js', () => ({
   getStepCount: vi.fn().mockReturnValue(0),
+  _setStepCount: vi.fn(),
 }));
-import { getStepCount } from '../src/features/steps/index.js';
+import { getStepCount } from '../src/features/steps/api.js';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 

@@ -8,7 +8,7 @@
 import { state, today } from '../../core/state.js';
 import { DEFAULT_STEP_GOAL } from '../../core/constants.js';
 import { isPillDueToday } from '../meds/index.js';
-import { getStepCount } from '../steps/index.js';
+import { getStepCount } from '../steps/api.js';
 import { calcBMI } from './bmi.js';
 import { t } from '../../i18n/index.js';
 

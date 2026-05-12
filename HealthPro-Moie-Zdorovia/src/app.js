@@ -16,6 +16,7 @@ import {
   minimizeApp,
   checkNotificationPermission,
   onResume,
+  onPause,
 } from "./core/platform.js";
 
 import {
@@ -485,12 +486,26 @@ function init() {
       ro.observe(headerEl);
     }
   });
-  // Блокування при поверненні з фону
-  onResume(() => {
+  // Таймер блокування: фіксуємо час при згортанні
+  onPause(() => {
     if (isPINSet() && state.settings.biometricLock) {
-      lockCheck();
+      _bgTimestamp = Date.now();
     }
   });
+
+  // Блокування при поверненні з фону — тільки якщо пройшло > 5 хв
+  onResume(() => {
+    if (isPINSet() && state.settings.biometricLock) {
+      const elapsed = _bgTimestamp > 0 ? Date.now() - _bgTimestamp : Infinity;
+      if (elapsed >= BG_LOCK_TIMEOUT_MS) {
+        lockCheck();
+      }
+      _bgTimestamp = 0;
+    }
+  });
+
+  // Нагадування про бекап (раз на 7 днів)
+  _checkAutoBackupReminder();
 }
 
 window.addEventListener("resize", () => {
@@ -501,6 +516,12 @@ window.addEventListener("resize", () => {
 // ── Backup state ──────────────────────────────────────────────
 let _backupFileContent = null;
 let _backupOpened = null;
+
+// ── Background lock timer (Задача 3: 5-хв таймер) ─────────────
+// Записуємо мітку часу коли додаток іде у фон.
+// При поверненні — блокуємо тільки якщо пройшло > 5 хв.
+let _bgTimestamp = 0;
+const BG_LOCK_TIMEOUT_MS = 5 * 60 * 1000;
 
 // ── PIN state (П1) ────────────────────────────────────────────
 let _lockPinBuf = "";
@@ -529,8 +550,16 @@ function openPINSetup() {
 // ── Mutex для біометрії (запобігає подвійному виклику) ───────────────────────
 let _bioLockBusy = false;
 
-// ── Показати lockScreen + оновити видимість кнопки відбитка ──────────────────
-// НІКОЛИ не викликає authenticate() автоматично — тільки по тапу користувача.
+// ── Нагадування про автобекап (Задача 5) ─────────────────────
+function _checkAutoBackupReminder() {
+  const lastDate = state.settings.lastBackupDate || '';
+  if (!lastDate) return;
+  const daysSince = Math.floor((Date.now() - new Date(lastDate).getTime()) / 86400000);
+  if (daysSince >= 7) {
+    setTimeout(() => showToast(t('bk-auto-remind'), 5000), 4000);
+  }
+}
+
 function lockCheck() {
   if (!isPINSet()) return;
   const _st = state.settings;
