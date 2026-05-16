@@ -1,12 +1,31 @@
-// Export modal: period chooser + filtered measurement count.
+// Export modal: period chooser + filtered measurement count + report section toggles.
 
 import { state } from '../../core/state.js';
 import { t, tt } from '../../i18n/index.js';
 
 let _expPeriod = 'month';
 
+// PDF-2: які секції включати до звіту (за замовчуванням — всі)
+let _reportSections = {
+  chart:      true,
+  journal:    true,
+  meds:       true,
+  adherence:  true,
+  doctor:     true,
+};
+
 export function getExportPeriod() {
   return _expPeriod;
+}
+
+export function getReportSections() {
+  return { ..._reportSections };
+}
+
+export function toggleReportSection(el) {
+  const section = el?.dataset?.section;
+  if (!section || !(section in _reportSections)) return;
+  _reportSections[section] = el.checked;
 }
 
 export function openExportModal() {
@@ -19,6 +38,11 @@ export function openExportModal() {
   const fromStr = new Date(now - 30 * 864e5).toISOString().slice(0, 10);
   document.getElementById('expDateFrom').value = fromStr;
   document.getElementById('expDateTo').value = toStr;
+  // Відновити стан чекбоксів
+  Object.entries(_reportSections).forEach(([key, val]) => {
+    const cb = document.getElementById(`expS-${key}`);
+    if (cb) cb.checked = val;
+  });
   updateExportCount();
 }
 

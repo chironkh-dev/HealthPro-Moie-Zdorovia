@@ -134,16 +134,16 @@ describe('calcHealthScore()', () => {
     expect(score).toBeLessThanOrEqual(100);
   });
 
-  it('pulse data absent → strict zero (always in denominator, lowers score)', () => {
+  it('pulse data absent → ІЗ-4: excluded from denominator (score improves)', () => {
     addMeasurement(115, 75, null);
     const { score } = calcHealthScore();
-    // Pulse=null → scorePulse returns 0 (strict), included in denominator
-    // BP 40 + Pulse 0 + Pills 20; active max=80; raw=60
-    // finalScore = round(60/80 * 100) = 75
-    expect(score).toBe(75);
-    // d.pulse stored as 0
+    // ІЗ-4: Pulse=null → scorePulse returns null → excluded from denominator
+    // BP 40 + Pills 20; active max=60; raw=60
+    // finalScore = round(60/60 * 100) = 100
+    expect(score).toBe(100);
+    // d.pulse stored as 0 (UI shows '—' via pulseExcluded flag)
     expect(getDetailedScores().pulse).toBe(0);
-    // pulseExcluded flag true → UI still shows '—'
+    // pulseExcluded flag true → UI shows '—'
     expect(getDetailedScores().pulseExcluded).toBe(true);
   });
 

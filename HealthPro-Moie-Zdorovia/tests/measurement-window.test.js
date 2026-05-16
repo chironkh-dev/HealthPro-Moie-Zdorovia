@@ -399,7 +399,7 @@ describe('pulse averaging — only pulse-present measurements are averaged', () 
     expect(details('avgPulse')).toBe(70);
   });
 
-  it('all measurements without pulse → avgPulse=null, pulseExcluded=true, score still 0 (strict)', () => {
+  it('all measurements without pulse → avgPulse=null, pulseExcluded=true, ІЗ-4: excluded from denom', () => {
     // pulse=0 → falsy → excluded from pulsePool → avgPulse=null
     state.measurements = [
       { sys: 115, dia: 75, pulse: 0, time: daysAgo(0) },
@@ -407,9 +407,9 @@ describe('pulse averaging — only pulse-present measurements are averaged', () 
     ];
     expect(details('avgPulse')).toBe(null);
     expect(details('pulseExcluded')).toBe(true);
-    // Pulse score = 0 (strict), still in denominator → max remains 80
-    // raw=40+0+20=60 → score=round(60/80×100)=75
-    expect(score()).toBe(75);
+    // ІЗ-4: Pulse excluded from denominator (same as BMI/activity when absent)
+    // BP40 + Pills20; active max=60; raw=60 → score=round(60/60×100)=100
+    expect(score()).toBe(100);
   });
 
   it('pulse in ok band (average=80) → 10 pts', () => {

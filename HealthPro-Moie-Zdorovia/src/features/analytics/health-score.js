@@ -3,6 +3,7 @@
 //
 // Weights:  BP 40 | Pulse 20 | Pills 20 | BMI 10 | Activity 10
 // Crisis veto Hard Caps: sys≥180||dia≥120→max10 | sys≥160||dia≥100→max25 | sys<85||dia<55→max30
+// ІЗ-4: Pulse absent (null) → excluded from denominator, same as BMI/activity
 
 import { state, today } from '../../core/state.js';
 import { DEFAULT_STEP_GOAL } from '../../core/constants.js';
@@ -108,7 +109,7 @@ function scoreBP(avgSys, avgDia) {
 }
 
 function scorePulse(pulse) {
-  if (pulse == null) return 0; // strict: absent → 0 pts, always in denominator
+  if (pulse == null) return null; // ІЗ-4: absent → exclude from denominator
   const th = getPulseThresholds();
   if (pulse >= th.perfectLo && pulse <= th.perfectHi) return 20;
   if (pulse >= th.okLo      && pulse <= th.okHi)      return 10;
@@ -166,9 +167,10 @@ function scoreActivity() {
  */
 export function calcScoreForDay(sys, dia, pulse) {
   const bp = scoreBP(sys, dia);
-  const ps = scorePulse(pulse); // 0 якщо pulse == null (strict: завжди в знаменнику)
-  const maxPossible = 60;       // BP(40) + Pulse(20)
-  let score = Math.round(((bp + ps) / maxPossible) * 100);
+  const ps = scorePulse(pulse); // null якщо pulse відсутній → ІЗ-4: виключити з знаменника
+  const maxPossible = ps !== null ? 60 : 40; // динамічний знаменник
+  const rawTotal = bp + (ps ?? 0);
+  let score = Math.round((rawTotal / maxPossible) * 100);
   // Hard Cap veto — ті самі пороги що й у calcHealthScore
   if (sys >= 180 || dia >= 120)      score = Math.min(score, 10);
   else if (sys >= 160 || dia >= 100) score = Math.min(score, 25);
@@ -195,9 +197,9 @@ export function calcHealthScore() {
   const avgPulse  = pulsePool.length ? avg(pulsePool.map((m) => m.pulse)) : null;
 
   // ── Raw module scores ──
-  // Pulse always contributes to denominator (strict zero when absent).
+  // ІЗ-4: Pulse excluded from denominator when absent (null) — same as BMI/activity.
   const bpRaw       = scoreBP(avgSys, avgDia);
-  const pulseRaw    = scorePulse(avgPulse);   // 0 if absent (strict check)
+  const pulseRaw    = scorePulse(avgPulse);   // null if absent → excluded from denominator
   const pillsRaw    = scorePills();
   const bmiRaw      = scoreBMI();             // null if no height/weight → excluded
   const activityRaw = scoreActivity();        // null if steps disabled → excluded
@@ -256,7 +258,7 @@ export function calcHealthScore() {
   // ── Store breakdown for UI ──
   currentDetailedScores = {
     bp:           bpRaw       ?? 0,
-    pulse:        pulseRaw,
+    pulse:        pulseRaw ?? 0,
     pills:        pillsRaw    ?? 0,
     bmi:          bmiRaw      ?? 0,
     activity:     activityRaw ?? 0,

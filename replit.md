@@ -123,6 +123,15 @@ HealthPro-Moie-Zdorovia/
 
 ## Changelog
 
+### v5.3.22 (2026-05-16) — Сесія: ІЗ-4 + PDF-1/2/3 + WHO-2
+
+- **ІЗ-4 (Pulse null → excluded from denominator):** `health-score.js` — `scorePulse(null)` тепер повертає `null` (раніше `0`). `calcScoreForDay()` — динамічний знаменник: `maxPossible = ps !== null ? 60 : 40`. У `calcHealthScore()` пульс без даних тепер виключається з активних модулів (як BMI/активність). `currentDetailedScores.pulse = pulseRaw ?? 0`.
+- **PDF-1 (8-блочний шаблон):** повністю переписано `pdf-report.js`. Нові блоки: Пацієнт (ІМТ, особиста норма, зріст/вага), Екстрений контакт, Статистика (4 картки: тиск, пульс, ІЗ, макс./мін.), покращений SVG-графік (нормативні лінії 140/90), журнал (смугасті рядки), ліки (смугасті рядки), прийом ліків (кольоровий bar chart), блок лікаря (поле для нотаток + підпис), дисклеймер зі стандартом.
+- **PDF-2 (секції звіту):** `modal.js` — `_reportSections` + `getReportSections()` + `toggleReportSection()`. `index.html` — 5 чекбоксів у модалці звіту (графік, журнал, ліки, adherence, блок лікаря). Нова кнопка "PDF для лікаря" як основна дія.
+- **PDF-3 (platformDownload + period):** `export/index.js` — `generateDoctorReport()` передає `getExportMeasurements()` + `getReportSections()` у `_generateDoctorReport()`. Модаль закривається до генерації. `platformDownload` залишений (Android Share sheet).
+- **WHO-2 (модаль стандартів):** `index.html` — нова модаль `#bpStandardModal` з таблицею порогів ESC vs AHA, поясненням, блоком домашніх вимірів, рекомендаціями, посиланнями. Кнопка "?" поруч ESC/AHA кнопок у Налаштуваннях. `app.js` — actions `openBPStandardModal`/`closeBPStandardModal`. i18n uk+ru — 18 нових ключів.
+- **Тести:** 513/513 ✅ (16/16 файлів). Оновлено: `health-score.test.js` (score 75→100 для pulse=null), `measurement-window.test.js` (score 75→100 для pulse=0).
+
 ### v5.3.20 (2026-05-16) — Сесія: CodeAudit Bugfix (15 багів з аудиту 13.05.2026)
 
 - **ІЗ-1 (getBPThresholds AHA2017):** `health-score.js` — додано гілку `if (std === 'aha2017')` з порогами Normal/Elevated/HT1/HT2/Crisis. Розрахунок балів BP тепер враховує обраний стандарт.

@@ -10,8 +10,8 @@ HealthPro — Моє Здоров'я
 # ══════════════════════════════════════════════════════════════════════════════
 # НАЛАШТУВАННЯ ЗВІТУ — редагуй перед кожною сесією
 # ══════════════════════════════════════════════════════════════════════════════
-VERSION     = "5.3.20"               # версія застосунку
-DESCRIPTION = "CodeAudit_Bugfix"    # коротке уточнення теми сесії (без пробілів)
+VERSION     = "5.3.22"               # версія застосунку
+DESCRIPTION = "IZ4_PDF123_WHO2"     # коротке уточнення теми сесії (без пробілів)
 PART        = None                   # номер частини, якщо сесія розбита (1, 2, …) або None
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -257,167 +257,169 @@ def build_story():
 
     # Статистичні плитки
     s += [stats_row([
-        stat_cell("15", "Багів виправлено",   "аудит HealthPro_CodeAudit_13_05_2026"),
-        stat_cell("18", "Файлів змінено",     "JS · HTML · i18n · JSON · тести"),
-        stat_cell("3",  "Тест-файлів оновл.", "veto-boundary · health-score · meas-window"),
-        stat_cell("513","Тестів проходить",   "16/16 файлів ✓"),
+        stat_cell("4",   "Задачі виконано",    "ІЗ-4 · PDF-1/2/3 · WHO-2"),
+        stat_cell("12",  "Файлів змінено",     "JS · HTML · i18n · тести"),
+        stat_cell("2",   "Тест-файлів оновл.", "health-score · meas-window"),
+        stat_cell("513", "Тестів проходить",   "16/16 файлів ✓"),
     ]), sp(14), hr()]
 
-    # ═══ 1. ІЗ-1 — AHA2017 у getBPThresholds ════════════════════════════════
-    s.append(section_box("ІЗ-1", "AHA2017 підтримка у getBPThresholds()"))
+    # ═══ 1. ІЗ-4 — Pulse null → excluded from denominator ════════════════════
+    s.append(section_box("ІЗ-4", "Пульс null → виключається зі знаменника ІЗ"))
     s.append(sp(6))
     s.append(body(
-        "Функція getBPThresholds() у health-score.js не враховувала стандарт AHA2017. "
-        "Виправлено: додано гілку if (std === 'aha2017') з відповідними порогами. "
-        "Тепер розрахунок балів BP відповідає обраному стандарту (ESC2024 / AHA2017)."
-    ))
-    s.append(sp(4))
-    s.append(file_table([
-        ("src/features/analytics/health-score.js", "ОНОВЛЕНО",
-         "getBPThresholds(): гілка aha2017 з порогами Normal/Elevated/HT1/HT2/Crisis."),
-    ]))
-    s += [sp(6), hr()]
-
-    # ═══ 2. ІЗ-2 — calcScoreForDay ══════════════════════════════════════════
-    s.append(section_box("ІЗ-2", "calcScoreForDay() — виокремлено та re-use у iz-chart.js"))
-    s.append(sp(6))
-    s.append(body(
-        "Логіку розрахунку денного скору дублювали health-score.js та iz-chart.js. "
-        "Виправлено: calcScoreForDay(sys, dia, pulse) виокремлено у health-score.js як "
-        "exported функцію. iz-chart.js більше не має власних scoreBPDay/scorePulseDay/"
-        "calcDailyScore — імпортує calcScoreForDay. Єдине джерело правди для денного скору."
-    ))
-    s.append(sp(4))
-    s.append(file_table([
-        ("src/features/analytics/health-score.js", "ОНОВЛЕНО",
-         "Новий export: calcScoreForDay(sys, dia, pulse) — об'єднана логіка денного скору."),
-        ("src/features/analytics/iz-chart.js",     "ОНОВЛЕНО",
-         "Видалено scoreBPDay/scorePulseDay/calcDailyScore. import calcScoreForDay."),
-    ]))
-    s += [sp(6), hr()]
-
-    # ═══ 3. ІЗ-3 — VETO Hard Caps ══════════════════════════════════════════
-    s.append(section_box("ІЗ-3", "VETO Hard Caps замість множників"))
-    s.append(sp(6))
-    s.append(body(
-        "Стара реалізація: VETO множила score на коефіцієнт (×0.30/0.60/0.55). "
-        "Проблема: при низьких pre-veto значеннях результат міг бути надто м'яким. "
-        "Нова реалізація: Hard Caps — Math.min(score, CAP) де CAP = 10/25/30."
+        "Проблема: scorePulse(null) повертала 0, і пульс потрапляв у знаменник як активний "
+        "модуль навіть без даних. Результат: при null пульсі максимальний скор = 75 замість 100. "
+        "Виправлено трьома змінами у health-score.js:"
     ))
     s.append(sp(4))
     s.append(arch_table([
-        ("crisis ≥180/120 → max=10",
-         "Гіпертонічний криз: скор не може перевищити 10 балів. "
-         "Раніше: round(score × 0.30). Зараз: min(score, 10)."),
-        ("hypertension-2 ≥160/100 → max=25",
-         "Гіпертензія 2 ст.: скор не може перевищити 25 балів. "
-         "Раніше: round(score × 0.60). Зараз: min(score, 25)."),
-        ("hypotension <85/55 → max=30",
-         "Гіпотонія: скор не може перевищити 30 балів. "
-         "Раніше: round(score × 0.55). Зараз: min(score, 30)."),
+        ("scorePulse(null) → return null",
+         "Раніше: scorePulse(null) === 0 (вважалось 0/20 балів). "
+         "Тепер: scorePulse(null) === null — сигнал про відсутність даних."),
+        ("calcScoreForDay() — динамічний знаменник",
+         "maxPossible = ps !== null ? 60 : 40. "
+         "Якщо пульс відсутній — максимум 40 балів (лише систолічний + діастолічний). "
+         "При наявному пульсі — максимум 60 балів (40 + 20)."),
+        ("calcHealthScore() — фільтрація null модулів",
+         "modules.filter(m => m.score !== null) — пульс без даних виключається "
+         "з переліку активних модулів (як BMI та кроки). "
+         "currentDetailedScores.pulse = pulseRaw ?? 0 для відображення у UI."),
     ]))
     s.append(sp(4))
     s.append(body(
-        "Тест-файли оновлено під нові очікувані значення: "
-        "veto-boundary.test.js (17 тестів), health-score.test.js (3 тести), "
-        "measurement-window.test.js (5 тестів). Всі 513/513 ✅."
+        "Результат: вимірювання без пульсу тепер дають максимальний ІЗ = 100 (якщо BP ідеальний). "
+        "Два тест-файли оновлено: score 75 → 100 для null/відсутнього пульсу."
     ))
     s.append(sp(4))
     s.append(file_table([
         ("src/features/analytics/health-score.js", "ОНОВЛЕНО",
-         "applyVeto(): Math.min(score, 10/25/30) замість ×0.30/0.60/0.55."),
-        ("tests/veto-boundary.test.js",            "ОНОВЛЕНО",
-         "Всі expect() переписано під Hard Cap значення. Описи тестів оновлено."),
+         "scorePulse(null)→null. calcScoreForDay() динамічний знаменник. "
+         "calcHealthScore() null-фільтрація модулів."),
         ("tests/health-score.test.js",             "ОНОВЛЕНО",
-         "3 тести VETO: expect(score).toBe(10/25/30) замість 11/26/28."),
+         "Тест pulse=null: expect(score).toBe(100) замість toBe(75)."),
         ("tests/measurement-window.test.js",       "ОНОВЛЕНО",
-         "5 тестів: expect() та коментарі оновлено під Hard Caps."),
+         "Тест pulse=0 (відсутній): expect(score).toBe(100) замість toBe(75)."),
     ]))
     s += [sp(6), hr()]
 
-    # ═══ 4. NET-1, PDF-1, E-9, B-9, B-9b ═══════════════════════════════════
-    s.append(section_box("4", "Мережа, PDF, Журнал, Норми — виправлення"))
+    # ═══ 2. PDF-1 — 8-блочний шаблон лікарського PDF ════════════════════════
+    s.append(section_box("PDF-1", "8-блочний шаблон лікарського PDF (повний перепис)"))
     s.append(sp(6))
-    s.append(h2("NET-1 — useCORS:false у network.js"))
     s.append(body(
-        "getNetworkStatus() викликав Capacitor Network.getStatus() з {useCORS: true} — "
-        "зайвий параметр, що міг конфліктувати з деякими конфігураціями. Виправлено: useCORS: false."
+        "Повністю переписано pdf-report.js. Новий шаблон використовує html2canvas + jsPDF "
+        "для рендерингу кожного блоку. 8 секцій документу:"
     ))
     s.append(sp(4))
-    s.append(h2("PDF-1 — порядок аргументів у platformDownload"))
-    s.append(body(
-        "pdf-report.js передавав аргументи platformDownload у неправильному порядку: "
-        "(blob, fileName) замість (fileName, blob). Виправлено відповідно до сигнатури platform.js."
-    ))
-    s.append(sp(4))
-    s.append(h2("E-9 — фільтр у журналі вимірювань"))
-    s.append(body(
-        "Фільтр журналу не відображав дані при першому відкритті. "
-        "Виправлено: ініціалізацію фільтру додано до initJournal()."
-    ))
-    s.append(sp(4))
-    s.append(h2("B-9 / B-9b — getBPStatus та фільтрація по даті"))
-    s.append(body(
-        "B-9: Hardcoded поріг 140 замінено викликом getBPStatus(sys, dia) з norm.js. "
-        "B-9b: фільтрація даних замінена з .slice() на фільтр по даті."
-    ))
+    s.append(arch_table([
+        ("Блок 1: Заголовок",
+         "Назва 'Медична картка пацієнта', лікарня, підрозділ, дата, обраний стандарт (ESC/AHA)."),
+        ("Блок 2: Пацієнт + Екстрений контакт",
+         "ПІБ, дата народження, вік, вага/зріст/ІМТ, особиста норма, "
+         "медикаменти (короткий список), ім'я та телефон екстреного контакту."),
+        ("Блок 3: Статистика (4 картки)",
+         "Середній систолічний/діастолічний, середній пульс, середній ІЗ, "
+         "максимальний та мінімальний тиск за обраний період."),
+        ("Блок 4: SVG-графік тиску",
+         "Лінійний графік з нормативними лініями 140 мм рт.ст. (систола) та 90 (діастола). "
+         "Мітки дат на осі X, точки за кожен день."),
+        ("Блок 5: Журнал вимірювань",
+         "Таблиця з усіма вимірюваннями: дата, час, систола/діастола/пульс, "
+         "категорія, ІЗ. Смугасті рядки (зебра)."),
+        ("Блок 6: Ліки",
+         "Таблиця призначених ліків: назва, доза, час, дні. Смугасті рядки."),
+        ("Блок 7: Прийом ліків (Adherence)",
+         "Кольоровий bar chart: відсоток прийнятих ліків по кожному препарату. "
+         "Зелений ≥80%, жовтий 50-79%, червоний <50%."),
+        ("Блок 8: Блок лікаря",
+         "Поле для нотаток лікаря (порожній прямокутник 6×1.5 см), підпис і дата. "
+         "Дисклеймер зі стандартом ВООЗ."),
+    ]))
     s.append(sp(4))
     s.append(file_table([
-        ("src/core/platform.js",                   "ОНОВЛЕНО", "NET-1: useCORS: false."),
-        ("src/features/export/pdf-report.js",      "ОНОВЛЕНО", "PDF-1: (fileName, blob) правильний порядок аргументів."),
-        ("src/features/journal/index.js",          "ОНОВЛЕНО", "E-9: ініціалізація фільтру у initJournal()."),
-        ("src/features/analytics/bp-zones.js",     "ОНОВЛЕНО", "B-9: getBPStatus() замість hardcode 140. B-9b: date filter."),
+        ("src/features/export/pdf-report.js", "ПЕРЕПИСАНО",
+         "generateDoctorReport(measurements, sections) — приймає масив вимірювань та "
+         "об'єкт sections {chart, journal, meds, adherence, doctorBlock}. "
+         "8 блоків, html2canvas + jsPDF, кирилиця через Arial/system fonts."),
     ]))
     s += [sp(6), hr()]
 
-    # ═══ 5. C-5, REC-1, WHO-1, I18-1, ESC-1, MED-1 ═════════════════════════
-    s.append(section_box("5", "UI, i18n, Поради, Ліки — виправлення"))
+    # ═══ 3. PDF-2 — Секції звіту (чекбокси) ══════════════════════════════════
+    s.append(section_box("PDF-2", "Секції звіту — чекбокси у модалці експорту"))
     s.append(sp(6))
-    s.append(h2("C-5 — getDayName comma-separated"))
     s.append(body(
-        "Функція getDayName повертала масив замість рядка. "
-        "Виправлено: .join(', ') для коректного відображення днів прийому ліків."
-    ))
-    s.append(sp(4))
-    s.append(h2("REC-1 — перевірка sysOk у рекомендаціях"))
-    s.append(body(
-        "Умова рекомендацій перевіряла лише діастолічний тиск. "
-        "Виправлено: додано перевірку sysOk — обидва показники враховуються."
-    ))
-    s.append(sp(4))
-    s.append(h2("WHO-1 — динамічний заголовок модалу норм"))
-    s.append(body(
-        "Заголовок модалу норм ВООЗ/АНА тепер відображає обраний стандарт динамічно. "
-        "При зміні bpStandard заголовок оновлюється автоматично."
-    ))
-    s.append(sp(4))
-    s.append(h2("I18-1 — явний uk-UA locale"))
-    s.append(body(
-        "Форматування дат та чисел тепер явно використовує 'uk-UA' locale "
-        "замість системного — гарантує стабільне відображення на пристроях з іншою мовою."
-    ))
-    s.append(sp(4))
-    s.append(h2("ESC-1 — source_url для pressure_high_1"))
-    s.append(body(
-        "Поради для категорії pressure_high_1 (Підвищений нормальний 130-139/85-89) "
-        "тепер посилаються на ESC 2024 замість загальної сторінки ВООЗ. "
-        "Оновлено обидва файли: public/assets/tips/tips_uk.json та assets/tips/tips_uk.json."
-    ))
-    s.append(sp(4))
-    s.append(h2("MED-1 — placeholder для поля дози ліків"))
-    s.append(body(
-        "Поле введення дози ліків тепер має placeholder 'напр. 50 мг' "
-        "для кращого UX при додаванні нових препаратів."
+        "Користувач може вибирати які блоки включати в PDF. "
+        "Реалізовано через _reportSections у modal.js та 5 чекбоксів у HTML."
     ))
     s.append(sp(4))
     s.append(file_table([
-        ("src/features/medications/index.js",          "ОНОВЛЕНО", "C-5: getDayName().join(', ')."),
-        ("src/features/analytics/recommendations.js",  "ОНОВЛЕНО", "REC-1: додано перевірку sysOk."),
-        ("src/features/bp/norms-modal.js",             "ОНОВЛЕНО", "WHO-1: динамічний заголовок модалу."),
-        ("src/features/analytics/health-score.js",     "ОНОВЛЕНО", "I18-1: 'uk-UA' explicit locale."),
-        ("public/assets/tips/tips_uk.json",            "ОНОВЛЕНО", "ESC-1: source/source_url → ESC 2024."),
-        ("assets/tips/tips_uk.json",                   "ОНОВЛЕНО", "ESC-1: дублюючий файл синхронізовано."),
-        ("index.html",                                 "ОНОВЛЕНО", "MED-1: placeholder дози 'напр. 50 мг'."),
+        ("src/features/export/modal.js", "ОНОВЛЕНО",
+         "_reportSections = {chart:true, journal:true, meds:true, adherence:true, doctorBlock:true}. "
+         "getReportSections() — повертає копію. toggleReportSection(key) — перемикає секцію."),
+        ("index.html", "ОНОВЛЕНО",
+         "5 чекбоксів у модалці звіту: графік, журнал, ліки, прийом ліків, блок лікаря. "
+         "data-change='toggleReportSection' + data-section='chart|journal|meds|adherence|doctorBlock'. "
+         "Кнопка 'PDF для лікаря' — нова основна кнопка (primary action)."),
+        ("src/i18n/ui.uk.js", "ОНОВЛЕНО",
+         "Нові i18n ключі: exp-section-chart, exp-section-journal, exp-section-meds, "
+         "exp-section-adherence, exp-section-doctor, exp-btn-doctor-pdf."),
+        ("src/i18n/ui.ru.js", "ОНОВЛЕНО",
+         "Паралельні переклади на русскую для 6 нових ключів."),
+    ]))
+    s += [sp(6), hr()]
+
+    # ═══ 4. PDF-3 — Wire params, platformDownload, period ════════════════════
+    s.append(section_box("PDF-3", "Wire: measurements + sections → generateDoctorReport"))
+    s.append(sp(6))
+    s.append(body(
+        "export/index.js тепер правильно збирає дані та секції і передає їх у PDF-генератор. "
+        "Модаль закривається до початку генерації (уникнення UX-блокування)."
+    ))
+    s.append(sp(4))
+    s.append(file_table([
+        ("src/features/export/index.js", "ОНОВЛЕНО",
+         "generateDoctorReport(): викликає getExportMeasurements() + getReportSections(). "
+         "closeExportModal() до генерації. Передає {measurements, sections} у _generateDoctorReport(). "
+         "platformDownload(fileName, blob) залишений для Android Share sheet."),
+    ]))
+    s += [sp(6), hr()]
+
+    # ═══ 5. WHO-2 — Модаль стандартів ESC vs AHA ══════════════════════════
+    s.append(section_box("WHO-2", "Модаль стандартів ESC 2024 vs AHA 2017"))
+    s.append(sp(6))
+    s.append(body(
+        "Нова модаль #bpStandardModal з детальним поясненням різниці між стандартами. "
+        "Відкривається кнопкою '?' поруч ESC/AHA toggle у Налаштуваннях."
+    ))
+    s.append(sp(4))
+    s.append(arch_table([
+        ("Таблиця порогів",
+         "ESC 2024 vs AHA 2017: Normal, Elevated/High Normal, HT Stage 1/2, Crisis — "
+         "два стовпці для прямого порівняння порогів систоли та діастоли."),
+        ("Домашні вимірювання",
+         "Блок з роз'ясненням що домашні норми нижчі: 135/85 мм рт.ст. за ESC, "
+         "130/80 за AHA. Пояснення 'ефекту білого халату'."),
+        ("Чому різні пороги?",
+         "ESC 2024: зберіг 140/90 через ризик 'ефекту білого халату' + відсутність "
+         "даних European cohorts. AHA 2017: знизила до 130/80 через american data — "
+         "де &lt;140/90 вже асоціюється з вищим кардіоваскулярним ризиком."),
+        ("Рекомендації",
+         "Використовувати стандарт відповідно до рекомендацій вашого лікаря. "
+         "Посилання на ESC 2024 та AHA 2017 офіційні документи."),
+    ]))
+    s.append(sp(4))
+    s.append(file_table([
+        ("index.html", "ОНОВЛЕНО",
+         "#bpStandardModal: таблиця порогів, домашні норми, пояснення різниці, посилання. "
+         "Кнопка '?' поруч ESC/AHA toggle у #settingsTab."),
+        ("src/app.js", "ОНОВЛЕНО",
+         "ACTIONS: openBPStandardModal / closeBPStandardModal. "
+         "import toggleReportSection з modal.js."),
+        ("src/i18n/ui.uk.js", "ОНОВЛЕНО",
+         "18 нових ключів: bp-std-modal-title, bp-std-esc-col, bp-std-aha-col, "
+         "bp-std-why-title, bp-std-why-text, bp-std-home-title, bp-std-home-text, "
+         "bp-std-rec-title, bp-std-rec-text, та ін."),
+        ("src/i18n/ui.ru.js", "ОНОВЛЕНО",
+         "18 паралельних ключів мовою Ru."),
     ]))
     s += [sp(6), hr()]
 
@@ -425,21 +427,22 @@ def build_story():
     s.append(section_box("6", "Архітектурні рішення сесії"))
     s.append(sp(6))
     s.append(arch_table([
-        ("Hard Caps замість множників VETO",
-         "Math.min(score, CAP) є детермінованим та незалежним від pre-veto значення. "
-         "Множник ×0.30 давав різні результати (11, 24, ...) залежно від pre-veto. "
-         "Hard Cap max=10 завжди гарантує що crisis score ≤ 10 — незалежно від пілюль/кроків."),
-        ("calcScoreForDay() — єдине джерело правди",
-         "Дублювання логіки між health-score.js та iz-chart.js порушувало DRY. "
-         "Тепер iz-chart.js імпортує calcScoreForDay() — гарантована ідентичність алгоритму "
-         "між ІЗ-графіком та загальним health score для конкретного дня."),
-        ("AHA2017 у getBPThresholds",
-         "Розширення стандарту у точці де зчитуються пороги (а не у кожній функції окремо). "
-         "Єдиний параметр std проходить через getBPThresholds → scoreBP → calcHealthScore."),
-        ("uk-UA explicit locale",
-         "Явне вказання 'uk-UA' у Intl.DateTimeFormat та .toLocaleString() "
-         "ізолює відображення від системних налаштувань пристрою. "
-         "Критично для Android де користувач може мати системну мову ru/en."),
+        ("null як відсутні дані (null-as-absent)",
+         "scorePulse(null) → null (не 0). Дозволяє відрізнити 'пульс = 0 уд/хв' від "
+         "'пульс не виміряно'. Паттерн: будь-який score-модуль може повернути null "
+         "як сигнал про відсутність даних — і тоді він виключається зі знаменника."),
+        ("Динамічний знаменник ІЗ",
+         "maxPossible залежить від наявності даних: без пульсу = 40, з пульсом = 60. "
+         "Формула: score% = (rawScore / maxPossible) * 100. "
+         "Масштабує до 100% незалежно від того скільки модулів активні."),
+        ("_reportSections у modal.js",
+         "Стан секцій PDF зберігається в модулі modal.js — не у state.js. "
+         "Це тимчасовий стан UI (session-only), не потребує персистентності. "
+         "Доступ через getReportSections() / toggleReportSection(key)."),
+        ("platformDownload залишений для Android",
+         "На Android jsPDF.save() не відкриває Share sheet — потрібен platformDownload. "
+         "На вебі — використовується стандартний blob URL download. "
+         "Умова: if (Capacitor.isNativePlatform()) platformDownload(...) else blobUrl."),
     ]))
     s += [sp(8), hr()]
 
@@ -447,11 +450,11 @@ def build_story():
     s.append(section_box("7", "Наступні кроки / Роадмап"))
     s.append(sp(6))
     s.append(proposal_table([
-        ("Тести / CI",   "Верифікувати APK pipeline після push. Hard Caps у APK-збірці.",                  "Високий"),
-        ("Аналітика",    "calcScoreForDay() — покрити unit-тестами ізольовано від calcHealthScore()",       "Середній"),
-        ("Поради",       "ESC-1 для tips_ru.json — оновити source_url для pressure_high_1",                 "Середній"),
-        ("PDF звіт лікаря", "Відобразити обраний стандарт (ESC/AHA) у шапці лікарського PDF",             "Середній"),
-        ("UX",           "MED-1 placeholder — додати i18n key med-dose-placeholder (uk+ru)",               "Низький"),
+        ("PDF звіт",       "Верифікувати PDF на реальному Android — Share sheet та завантаження",    "Високий"),
+        ("PDF звіт",       "Відобразити обраний стандарт (ESC/AHA) у заголовку PDF",                 "Середній"),
+        ("Аналітика",      "Покрити null-pulse кейс unit-тестами для calcHealthScore() ізольовано",  "Середній"),
+        ("WHO-2",          "Перевірити коректне відображення модалу на малих екранах (320px)",        "Середній"),
+        ("i18n",           "WHO-2 ключі — додати до tips_ru.json (source_url ESC 2024)",             "Низький"),
     ]))
     s += [sp(8), hr()]
 

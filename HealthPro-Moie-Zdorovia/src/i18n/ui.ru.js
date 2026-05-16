@@ -449,6 +449,36 @@ export const T_RU ={
   // ─── auto-backup reminder ───
   'bk-auto-remind': '📦 Прошло 7+ дней без бекапа. Сохраните копию в Профиль → Резервная копия.',
 
+  // ─── WHO-2: BP стандарты modal ───
+  't-bp-std-modal-title':'Стандарты классификации давления',
+  't-bp-std-modal-sub':'Разница между ESC 2024 и AHA 2017',
+  't-bp-std-col-cat':'Категория',
+  't-bp-std-r-opt':'Оптимальное',
+  't-bp-std-r-norm':'Нормальное',
+  't-bp-std-r-highnorm':'Высокая норма',
+  't-bp-std-r-ht1':'Гипертензия 1',
+  't-bp-std-r-ht2':'Гипертензия 2',
+  't-bp-std-r-crisis':'Гипертонический криз',
+  't-bp-std-why-title':'Почему ESC не принял пороги AHA?',
+  't-bp-std-why-text':'ESC 2024 сохранил порог 140/90 из-за эффекта "белого халата" и различий в данных. AHA 2017 снизила порог до 130/80 по американским когортам.',
+  't-bp-std-home-title':'Домашние измерения — норма ниже',
+  't-bp-std-home-text':'Норма при домашнем измерении на 5 мм рт. ст. ниже (<115/75 по ESC).',
+  't-bp-std-rec-title':'Что выбрать?',
+  't-bp-std-rec-text':'ESC 2024 — для Украины и Европы. AHA 2017 — если ваш врач ориентируется на американские источники.',
+  't-bp-std-sources':'Источники: ESC/ESH 2024 · AHA/ACC 2017',
+  't-bp-std-ok':'Понятно',
+  // ─── PDF-2: секции отчёта ───
+  't-exp-sections-lbl':'Разделы отчёта',
+  't-exp-s-chart':'График давления',
+  't-exp-s-journal':'Журнал измерений',
+  't-exp-s-meds':'Лекарства',
+  't-exp-s-adherence':'Приём лекарств',
+  't-exp-s-doctor':'Блок врача',
+  't-exp-pdf-doctor-btn':'PDF для врача',
+  // ─── PDF-1/3: toast messages ───
+  'e-doctor-pdf-prep':'Генерация PDF — подождите...',
+  'e-doctor-pdf-done':'✓ Отчёт готов!',
+  'e-doctor-pdf-error':'Ошибка генерации PDF',
   // ─── PIN lock (П1) ───
   'pin-setup-title':'Установить PIN-код',
   'pin-setup-step1':'Введите 4-значный PIN-код',

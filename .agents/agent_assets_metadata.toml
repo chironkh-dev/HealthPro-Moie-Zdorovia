@@ -198,3 +198,9 @@ id = "xgbXaPQyzTf-n6jPEDdAp"
 uri = "file://HealthPro-Moie-Zdorovia/report/HealthPro_ReportTemplate_Proposal.pdf"
 type = "pdf"
 title = "HealthPro · Шаблон звіту для лікаря (пропозиція)"
+
+[[outputs]]
+id = "nMnc6KFIEU7iVS9FtPwnZ"
+uri = "file://HealthPro-Moie-Zdorovia/report/HealthPro_Session_v5.3.22_IZ4_PDF123_WHO2_Report.pdf"
+type = "pdf"
+title = "Звіт сесії v5.3.22 — ІЗ-4 + PDF-1/2/3 + WHO-2"

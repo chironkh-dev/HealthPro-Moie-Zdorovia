@@ -106,6 +106,7 @@ import {
   printReportPeriod,
   setPDFShowPage,
   generateDoctorReport,
+  toggleReportSection,
   exportBackup,
   openBackupFile,
   restoreBackup,
@@ -677,6 +678,12 @@ const ACTIONS = {
       chevron.style.transform = open ? "rotate(0deg)" : "rotate(180deg)";
   },
   // bp standard switcher
+  openBPStandardModal: () => {
+    document.getElementById('bpStandardModal')?.classList.add('show');
+  },
+  closeBPStandardModal: () => {
+    document.getElementById('bpStandardModal')?.classList.remove('show');
+  },
   setBPStandard: (el) => {
     const std = el.dataset.std;
     if (!std) return;
@@ -874,6 +881,7 @@ const ACTIONS = {
   },
   // doctor PDF report (Task 5)
   generateDoctorReport: () => generateDoctorReport(),
+  toggleReportSection: (el) => toggleReportSection(el),
   // ── PIN lock (П1) + відбиток ──
   toggleBiometric: async (el) => {
     if (el.id === "bioToggle") {
