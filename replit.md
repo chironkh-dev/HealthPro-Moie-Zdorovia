@@ -123,6 +123,25 @@ HealthPro-Moie-Zdorovia/
 
 ## Changelog
 
+### v5.3.20 (2026-05-16) — Сесія: CodeAudit Bugfix (15 багів з аудиту 13.05.2026)
+
+- **ІЗ-1 (getBPThresholds AHA2017):** `health-score.js` — додано гілку `if (std === 'aha2017')` з порогами Normal/Elevated/HT1/HT2/Crisis. Розрахунок балів BP тепер враховує обраний стандарт.
+- **ІЗ-2 (calcScoreForDay):** `health-score.js` — виокремлено та exported `calcScoreForDay(sys, dia, pulse)`. `iz-chart.js` переписано: видалено власні scoreBPDay/scorePulseDay/calcDailyScore, імпортує calcScoreForDay. Єдине джерело правди для денного скору.
+- **ІЗ-3 (VETO Hard Caps):** замінено множники (×0.30/0.60/0.55) на Hard Caps: `crisis→Math.min(score,10)`, `hypertension-2→Math.min(score,25)`, `hypotension→Math.min(score,30)`. 3 тест-файли оновлено під нові значення.
+- **NET-1:** `platform.js` — `useCORS: false` у getNetworkStatus().
+- **PDF-1:** `pdf-report.js` — виправлено порядок аргументів `platformDownload(fileName, blob)`.
+- **E-9:** `journal/index.js` — ініціалізація фільтру у `initJournal()`.
+- **B-9:** `bp-zones.js` — `getBPStatus()` замість hardcoded `140`.
+- **B-9b:** `bp-zones.js` — date filter замість `.slice()`.
+- **C-5:** `medications/index.js` — `getDayName().join(', ')` замість масиву.
+- **REC-1:** `recommendations.js` — додано перевірку `sysOk`.
+- **WHO-1:** `bp/norms-modal.js` — динамічний заголовок модалу норм (ESC/AHA).
+- **I18-1:** `health-score.js` — явний `'uk-UA'` locale у форматуванні.
+- **ESC-1:** `public/assets/tips/tips_uk.json` та `assets/tips/tips_uk.json` — `pressure_high_1` source/source_url → ESC 2024.
+- **MED-1:** `index.html` — placeholder дози ліків `'напр. 50 мг'`.
+- **Тести:** 513/513 ✅ (16/16 файлів). Оновлено: `veto-boundary.test.js`, `health-score.test.js`, `measurement-window.test.js`.
+- **`package.json`:** версія 5.3.19 → 5.3.20. `npm run version` → `version.gen.js` оновлено.
+
 ### v5.3.17 (2026-05-12) — Сесія: Роадмап 5 задач
 
 - **README бейджі (Задача 1):** Додано `[![CI](...)]` та `[![Android APK](...)]` бейджі у `README.md` відразу після заголовка. Репо: `chironkh-dev/HealthPro-Moie-Zdorovia`.

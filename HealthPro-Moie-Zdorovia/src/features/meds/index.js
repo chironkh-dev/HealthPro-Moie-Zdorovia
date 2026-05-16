@@ -42,6 +42,14 @@ export function getDayName(p) {
   if (typeof p === 'string') p = { days: p };
   if (p.days === 'daily') return t('m-day-daily');
   if (p.days === 'date') return p.date ? fmtPillDate(p.date) : t('m-day-date');
+  // C-5: підтримка comma-separated ("tue,thu,sat") → "Вт, Чт, Сб"
+  if (typeof p.days === 'string' && p.days.includes(',')) {
+    return p.days.split(',').map((d) => {
+      const key = `m-day-${d.trim()}`;
+      const out = t(key);
+      return out === key ? d.trim() : out;
+    }).join(', ');
+  }
   const key = `m-day-${p.days}`;
   const out = t(key);
   return out === key ? p.days : out;

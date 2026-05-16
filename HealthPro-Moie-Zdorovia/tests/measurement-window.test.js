@@ -22,9 +22,9 @@
 //   score = round(raw / 80 × 100)
 //
 // Veto multipliers (applied after scaling):
-//   sys≥180 || dia≥120  → ×0.30  (crisis)
-//   sys≥160 || dia≥100  → ×0.60  (hypertension-2)
-//   sys<85  || dia<55   → ×0.55  (hypotension)
+//   sys≥180 || dia≥120  → Hard Cap max=10  (crisis)
+//   sys≥160 || dia≥100  → Hard Cap max=25  (hypertension-2)
+//   sys<85  || dia<55   → Hard Cap max=30  (hypotension)
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { state } from '../src/core/state.js';
@@ -218,29 +218,27 @@ describe('BP averaging — how 7-day mean changes the score band', () => {
     expect(status()).toBe('fair'); // 50-64
   });
 
-  it('7 days of bad BP (170/108) → bad band (5 pts), no veto since last<180/120', () => {
+  it('7 days of bad BP (170/108) → bad band (5 pts), HT-2 Hard Cap applies', () => {
     // sys=170 ≤ 180 (bad.sys); dia=108 ≤ 110 (bad.dia) → 5 pts
-    // measurements[0].sys=170 < 180 AND ≥160 → hypertension-2 veto!
-    // Wait: veto check: sys≥160 || dia≥100 → yes → ×0.60
+    // measurements[0].sys=170 ≥ 160 → hypertension-2 Hard Cap
     // pre-veto raw=5+10+20=35 → pre-veto score=round(35/80×100)=44
-    // after veto: round(44×0.60)=round(26.4)=26
+    // HT-2 Hard Cap: min(44, 25) = 25
     state.measurements = [0, 1, 2, 3, 4, 5, 6].map((d) => m(170, 108, 70, d));
     expect(details('bp')).toBe(5);
     expect(details('isVetoApplied')).toBe(true);
     expect(details('vetoReason')).toBe('hypertension-2');
-    expect(score()).toBe(26);
+    expect(score()).toBe(25);
     expect(status()).toBe('hypertension-2');
   });
 
-  it('7 days of worst BP (185/122) → 0 pts + crisis veto', () => {
+  it('7 days of worst BP (185/122) → 0 pts + crisis Hard Cap', () => {
     // sys=185 > 180 (bad.sys) OR dia=122 > 110 → 0 pts
-    // Actually: bad: sys≤180, dia≤110 → sys=185 > 180 → 0 pts
-    // measurements[0].sys=185 ≥ 180 → crisis veto ×0.30
+    // measurements[0].sys=185 ≥ 180 → crisis Hard Cap
     state.measurements = [0, 1, 2, 3, 4, 5, 6].map((d) => m(185, 122, 70, d));
     expect(details('bp')).toBe(0);
     expect(details('vetoReason')).toBe('hypertensive-crisis');
-    // raw=0+10+20=30 → pre-veto=round(30/80×100)=38 → ×0.30→round(11.25)=11
-    expect(score()).toBe(11);
+    // raw=0+10+20=30 → pre-veto=round(30/80×100)=38 → crisis Hard Cap: min(38, 10) = 10
+    expect(score()).toBe(10);
     expect(status()).toBe('crisis');
   });
 
@@ -278,10 +276,10 @@ describe('veto is based on measurements[0] (newest), NOT on the 7-day average', 
     // avg(dia)=round((125+6×75)/7)=round((125+450)/7)=round(575/7)=round(82.1)=82
     // sys=125≤130(good.sys), dia=82≤85(good.dia) → 35 pts
     // raw=35+10+20=65 → pre-veto=round(65/80×100)=81
-    // Veto: measurements[0].sys=185≥180 → crisis → ×0.30 → round(81×0.30)=round(24.3)=24
+    // crisis Hard Cap: measurements[0].sys=185≥180 → min(81, 10) = 10
     expect(details('isVetoApplied')).toBe(true);
     expect(details('vetoReason')).toBe('hypertensive-crisis');
-    expect(score()).toBe(24);
+    expect(score()).toBe(10);
     expect(status()).toBe('crisis');
   });
 
@@ -306,7 +304,7 @@ describe('veto is based on measurements[0] (newest), NOT on the 7-day average', 
     expect(status()).toBe('poor'); // <50
   });
 
-  it('hypertension-2 veto: measurements[0].sys=162 ≥ 160 → ×0.60', () => {
+  it('hypertension-2 Hard Cap: measurements[0].sys=162 ≥ 160 → max=25', () => {
     state.measurements = [
       m(162, 80, 70, 0), // sys=162 ≥ 160 → hypertension-2
       m(115, 75, 70, 1),
@@ -317,7 +315,7 @@ describe('veto is based on measurements[0] (newest), NOT on the 7-day average', 
     expect(status()).toBe('hypertension-2');
   });
 
-  it('hypertension-2 veto: measurements[0].dia=102 ≥ 100 → ×0.60', () => {
+  it('hypertension-2 Hard Cap: measurements[0].dia=102 ≥ 100 → max=25', () => {
     state.measurements = [
       m(140, 102, 70, 0), // dia=102 ≥ 100 → veto
       m(115, 75,  70, 1),
@@ -326,7 +324,7 @@ describe('veto is based on measurements[0] (newest), NOT on the 7-day average', 
     expect(details('vetoReason')).toBe('hypertension-2');
   });
 
-  it('hypotension veto: measurements[0].sys=80 < 85 → ×0.55', () => {
+  it('hypotension Hard Cap: measurements[0].sys=80 < 85 → max=30', () => {
     state.measurements = [
       m(80, 50, 70, 0), // sys<85 → hypotension veto
       m(115, 75, 70, 1),
@@ -336,7 +334,7 @@ describe('veto is based on measurements[0] (newest), NOT on the 7-day average', 
     expect(status()).toBe('hypotension');
   });
 
-  it('hypotension veto: measurements[0].dia=52 < 55 → ×0.55', () => {
+  it('hypotension Hard Cap: measurements[0].dia=52 < 55 → max=30', () => {
     state.measurements = [
       m(110, 52, 70, 0), // dia<55 → hypotension veto
       m(115, 75, 70, 1),

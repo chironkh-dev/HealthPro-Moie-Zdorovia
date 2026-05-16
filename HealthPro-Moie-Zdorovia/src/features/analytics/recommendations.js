@@ -76,6 +76,10 @@ export function renderRecommendations() {
   else if (aS >= n.sysWarn || aD >= n.diaWarn) recos.push({ t: 'warn', i: 'warn_bp',
     h: L.warnH, s: fmt(L.warnS, { age, note: n.note }), detail: fmt(L.warnD, { sysWarn: n.sysWarn, diaWarn: n.diaWarn }),
     links: [{ l: L.linkMozMeasure, u: L.linkMozMeasureUrl }, { l: L.helsi, u: 'https://helsi.me' }] });
+  // REC-1: тиск вищий за sysOk (персональну/вікову норму) але нижчий за sysWarn → м'яке попередження
+  else if (aS > n.sysOk || aD > n.diaOk) recos.push({ t: 'warn', i: 'warn_bp',
+    h: L.warnH, s: fmt(L.warnS, { age, note: n.note }), detail: fmt(L.warnD, { sysWarn: n.sysOk, diaWarn: n.diaOk }),
+    links: [{ l: L.linkMozMeasure, u: L.linkMozMeasureUrl }, { l: L.helsi, u: 'https://helsi.me' }] });
   else if (aS < 85 || aD < 55) recos.push({ t: 'warn', i: 'low_bp',
     h: L.lowH, s: L.lowS, detail: L.lowD,
     links: [{ l: L.helsi, u: 'https://helsi.me' }] });

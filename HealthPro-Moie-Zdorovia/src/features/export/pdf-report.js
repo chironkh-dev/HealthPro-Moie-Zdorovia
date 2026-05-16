@@ -262,7 +262,7 @@ export async function generateDoctorReport() {
 
     const blob = pdf.output('blob');
     try {
-      await platformDownload(blob, fileName, 'application/pdf');
+      await platformDownload(fileName, blob, 'application/pdf');
     } catch {
       pdf.save(fileName);
     }

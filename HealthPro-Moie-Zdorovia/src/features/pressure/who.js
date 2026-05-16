@@ -32,6 +32,15 @@ export function openWHOInfo() {
   const dict = WHO_INFO_T[state.lang] || WHO_INFO_T.uk;
   const info = dict[who.key];
   if (!info) return;
+  // WHO-1: динамічний заголовок залежно від обраного стандарту
+  const titleEl = document.getElementById('t-who-modal');
+  if (titleEl) {
+    const std = state.settings?.bpStandard || 'ESC2024';
+    titleEl.textContent = std === 'AHA2017'
+      ? 'Класифікація тиску AHA 2017'
+      : 'Класифікація тиску ESC 2024';
+  }
+
   const el = document.getElementById('whoModalContent');
   if (!el) return;
   el.innerHTML = `

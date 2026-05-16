@@ -309,7 +309,9 @@ function init() {
   const d = new Date();
   const headerDate = document.getElementById("headerDate");
   if (headerDate) {
-    headerDate.textContent = d.toLocaleDateString(getLocale(), {
+    // I18-1: явна uk-UA локаль (не залежить від налаштувань браузера)
+    const dateLocale = state.lang === 'ru' ? 'ru-UA' : 'uk-UA';
+    headerDate.textContent = d.toLocaleDateString(dateLocale, {
       weekday: "long",
       day: "numeric",
       month: "long",

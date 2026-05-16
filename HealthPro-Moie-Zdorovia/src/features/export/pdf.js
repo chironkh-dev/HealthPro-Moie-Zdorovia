@@ -191,7 +191,7 @@ export async function exportPDF() {
     await new Promise((r) => setTimeout(r, 300));
     const wrapper = document.getElementById('pdf-wrapper');
     const canvas = await html2canvas(wrapper, {
-      scale: 2, useCORS: true, allowTaint: true,
+      scale: 2, useCORS: false, allowTaint: false,
       backgroundColor: '#ffffff', logging: false,
       width: 750, windowWidth: 830,
     });

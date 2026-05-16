@@ -67,14 +67,14 @@ describe('calcHealthScore()', () => {
     expect(getDetailedScores().bp).toBe(15);
   });
 
-  it('applies crisis veto (×0.3) when sys >= 180', () => {
+  it('applies crisis Hard Cap (max=10) when sys >= 180', () => {
     addMeasurement(185, 110, 70);
     const { score } = calcHealthScore();
     // BP: sys=185 > bad.sys=180 → 0 pts
     // Pulse(70): ok → 10 pts; Pills 20
     // active max=80; raw=30; pre-veto = round(30/80*100) = round(37.5) = 38
-    // Crisis veto ×0.3: round(38 * 0.3) = round(11.4) = 11
-    expect(score).toBe(11);
+    // Crisis Hard Cap: min(38, 10) = 10
+    expect(score).toBe(10);
     expect(getDetailedScores().isVetoApplied).toBe(true);
   });
 
@@ -84,14 +84,14 @@ describe('calcHealthScore()', () => {
     expect(status).toBe('crisis');
   });
 
-  it('applies severe veto (×0.6) for stage-II hypertension (165/105)', () => {
+  it('applies HT-2 Hard Cap (max=25) for stage-II hypertension (165/105)', () => {
     addMeasurement(165, 105, 70);
     const { score } = calcHealthScore();
     // BP: poor={160,100} < 165/105 <= bad={180,110} → 5 pts
     // Pulse(70): ok → 10 pts; Pills 20
     // active max=80; raw=35; pre-veto = round(35/80*100) = round(43.75) = 44
-    // HT-2 veto ×0.6: round(44 * 0.6) = round(26.4) = 26
-    expect(score).toBe(26);
+    // HT-2 Hard Cap: min(44, 25) = 25
+    expect(score).toBe(25);
     expect(getDetailedScores().isVetoApplied).toBe(true);
   });
 
@@ -147,13 +147,13 @@ describe('calcHealthScore()', () => {
     expect(getDetailedScores().pulseExcluded).toBe(true);
   });
 
-  it('applies hypotension veto (×0.55) when sys < 85', () => {
+  it('applies hypotension Hard Cap (max=30) when sys < 85', () => {
     addMeasurement(84, 60, 70);
     const { score, status } = calcHealthScore();
     // scoreBP: 84 < 85 → 10; Pulse: 10; Pills: 20; max=80; raw=40
     // pre-veto = round(40/80*100) = 50
-    // Hypotension ×0.55: round(50 * 0.55) = round(27.5) = 28
-    expect(score).toBe(28);
+    // Hypotension Hard Cap: min(50, 30) = 30
+    expect(score).toBe(30);
     expect(status).toBe('hypotension');
     expect(getDetailedScores().isVetoApplied).toBe(true);
   });

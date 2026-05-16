@@ -1,9 +1,9 @@
-// Boundary-value tests for VETO coefficient switching and the `status` field.
+// Boundary-value tests for VETO Hard Cap switching and the `status` field.
 //
 // Key thresholds (last measurement, not 7-day average):
-//   sys≥180  OR dia≥120 → crisis ×0.30       status='crisis'
-//   sys≥160  OR dia≥100 → hypertension-2 ×0.60  status='hypertension-2'
-//   sys<85   OR dia<55  → hypotension ×0.55      status='hypotension'
+//   sys≥180  OR dia≥120 → crisis   Hard Cap max=10  status='crisis'
+//   sys≥160  OR dia≥100 → HT-2     Hard Cap max=25  status='hypertension-2'
+//   sys<85   OR dia<55  → hypotension Hard Cap max=30 status='hypotension'
 //
 // All tests use default profile (male, age 50) with no personal norms,
 // no pills, no BMI, no activity. Pulse always present (70 bpm) so that
@@ -56,24 +56,6 @@ describe('status field — no veto', () => {
   });
 
   it('returns status=poor for score < 50', () => {
-    // BP 0 (sys>180) without crisis veto would be poor,
-    // but if sys=175 dia=112 → bad band: sys≤180 dia≤110? 112>110 → 0 pts, but no crisis veto
-    // sys=175 dia=108 → bad band: 175≤180 && 108≤110 → 5; pre-veto=round(35/80*100)=44 → poor
-    // No veto: 175<180, 108<120 crisis? No. 175≥160 → HT-2 veto! Use a different case.
-    // sys=155, dia=98, no veto: poor band(15) + pulse ok(10) + pills(20)=45 → 56 → fair...
-    // Let's use: BP=5 (bad band), no veto (sys=178, dia=108 → bad:5, no crisis(178<180,108<120), no ht2(178≥160!) → HT-2!
-    // Hard to get pre-veto 'poor' without triggering a veto since ht2 kicks in at sys≥160.
-    // Use pulse=0 instead of 10:
-    // BP=0(bad, sys=178 → HT-2 veto): nope.
-    // Let's use elevated dia only: sys=120, dia=103 → HT-2 (dia>=100). Skip.
-    // Actually 'poor' (0-49) without veto would require very bad scores on all modules.
-    // With only BP+pulse+pills active (max=80):
-    //   0+0+0=0 → 0 → poor. Trigger: no pulse (0), pills fail, bp=0.
-    // Use: sys=175, dia=108 (bad band → 5 pts), no pills, pulse=0 (absent).
-    // But sys=175 >= 160 → HT-2 veto... Can't avoid.
-    // Conclusion: in practice, score<50 without veto requires all modules to fail.
-    // Test this by using failing pills + low-but-not-vetoed BP:
-    // sys=155, dia=98 → poor(15). Pulse 0 (use absent). Pills 0. max=80; raw=15; 15/80*100=19 → poor!
     state.pills = [{ id: 1, name: 'T', dose: '1', time: '08:00', days: 'daily' }];
     state.pillsTaken = {};
     meas(155, 98, null); // pulse absent → 0 (strict)
@@ -126,27 +108,27 @@ describe('status field — veto cases', () => {
 describe('crisis veto boundary — sys threshold', () => {
   beforeEach(resetState);
 
-  it('sys=180 → crisis veto ×0.30 applied', () => {
+  it('sys=180 → crisis Hard Cap max=10 applied', () => {
     meas(180, 80);
     // BP: 180<=180 && 80<=110 → 5 (bad band); pulse ok=10; pills=20
     // pre-veto = round(35/80*100) = round(43.75) = 44
-    // crisis: round(44*0.30) = round(13.2) = 13
+    // crisis Hard Cap: min(44, 10) = 10
     const { score } = calcHealthScore();
-    expect(score).toBe(13);
+    expect(score).toBe(10);
     expect(getDetailedScores().isVetoApplied).toBe(true);
     expect(getDetailedScores().vetoReason).toBe('hypertensive-crisis');
   });
 
-  it('sys=179 → HT-2 veto ×0.60 (not crisis)', () => {
+  it('sys=179 → HT-2 Hard Cap max=25 (not crisis)', () => {
     meas(179, 80);
     // BP: 179<=180 && 80<=110 → 5; pre-veto=44
-    // HT-2 (sys>=160): round(44*0.60) = round(26.4) = 26
+    // HT-2 Hard Cap: min(44, 25) = 25
     const { score } = calcHealthScore();
-    expect(score).toBe(26);
+    expect(score).toBe(25);
     expect(getDetailedScores().vetoReason).toBe('hypertension-2');
   });
 
-  it('sys=180 score is strictly lower than sys=179 (stronger veto)', () => {
+  it('sys=180 score is strictly lower than sys=179 (stronger cap)', () => {
     meas(180, 80);
     const { score: s180 } = calcHealthScore();
     state.measurements = [{ sys: 179, dia: 80, pulse: 70, time: new Date().toISOString() }];
@@ -160,27 +142,27 @@ describe('crisis veto boundary — sys threshold', () => {
 describe('crisis veto boundary — dia threshold', () => {
   beforeEach(resetState);
 
-  it('dia=120 → crisis veto ×0.30 applied', () => {
+  it('dia=120 → crisis Hard Cap max=10 applied', () => {
     meas(130, 120);
     // BP: 130<=180 && 120<=110? No → falls through all bands → 0
     // pre-veto = round(30/80*100) = round(37.5) = 38
-    // crisis (dia>=120): round(38*0.30) = round(11.4) = 11
+    // crisis Hard Cap: min(38, 10) = 10
     const { score } = calcHealthScore();
-    expect(score).toBe(11);
+    expect(score).toBe(10);
     expect(getDetailedScores().vetoReason).toBe('hypertensive-crisis');
   });
 
-  it('dia=119 → HT-2 veto ×0.60 (not crisis)', () => {
+  it('dia=119 → HT-2 Hard Cap max=25 (not crisis)', () => {
     meas(130, 119);
     // BP: 130<=160 && 119<=100? No. All fail → 0
     // pre-veto = round(30/80*100) = 38
-    // HT-2 (dia>=100): round(38*0.60) = round(22.8) = 23
+    // HT-2 Hard Cap: min(38, 25) = 25
     const { score } = calcHealthScore();
-    expect(score).toBe(23);
+    expect(score).toBe(25);
     expect(getDetailedScores().vetoReason).toBe('hypertension-2');
   });
 
-  it('dia=120 score is strictly lower than dia=119 (stronger veto)', () => {
+  it('dia=120 score is strictly lower than dia=119 (stronger cap)', () => {
     meas(130, 120);
     const { score: s120 } = calcHealthScore();
     state.measurements = [{ sys: 130, dia: 119, pulse: 70, time: new Date().toISOString() }];
@@ -194,13 +176,13 @@ describe('crisis veto boundary — dia threshold', () => {
 describe('hypertension-2 veto boundary — sys threshold', () => {
   beforeEach(resetState);
 
-  it('sys=160 → HT-2 veto ×0.60 applied', () => {
+  it('sys=160 → HT-2 Hard Cap max=25 applied', () => {
     meas(160, 80);
     // BP: 160<=160 && 80<=100 → 15 (poor band); pulse=10; pills=20
     // pre-veto = round(45/80*100) = round(56.25) = 56
-    // HT-2: round(56*0.60) = round(33.6) = 34
+    // HT-2 Hard Cap: min(56, 25) = 25
     const { score } = calcHealthScore();
-    expect(score).toBe(34);
+    expect(score).toBe(25);
     expect(getDetailedScores().vetoReason).toBe('hypertension-2');
   });
 
@@ -212,7 +194,7 @@ describe('hypertension-2 veto boundary — sys threshold', () => {
     expect(getDetailedScores().isVetoApplied).toBe(false);
   });
 
-  it('sys=160 score is strictly lower than sys=159 (veto kicks in)', () => {
+  it('sys=160 score is strictly lower than sys=159 (cap kicks in)', () => {
     meas(160, 80);
     const { score: s160 } = calcHealthScore();
     state.measurements = [{ sys: 159, dia: 80, pulse: 70, time: new Date().toISOString() }];
@@ -226,12 +208,12 @@ describe('hypertension-2 veto boundary — sys threshold', () => {
 describe('hypertension-2 veto boundary — dia threshold', () => {
   beforeEach(resetState);
 
-  it('dia=100 → HT-2 veto ×0.60 applied', () => {
+  it('dia=100 → HT-2 Hard Cap max=25 applied', () => {
     meas(130, 100);
     // BP: 130<=160 && 100<=100 → 15 (poor); pre-veto=56
-    // HT-2 (dia>=100): round(56*0.60) = 34
+    // HT-2 Hard Cap: min(56, 25) = 25
     const { score } = calcHealthScore();
-    expect(score).toBe(34);
+    expect(score).toBe(25);
     expect(getDetailedScores().vetoReason).toBe('hypertension-2');
   });
 
@@ -249,13 +231,13 @@ describe('hypertension-2 veto boundary — dia threshold', () => {
 describe('hypotension veto boundary — sys threshold', () => {
   beforeEach(resetState);
 
-  it('sys=84 → hypotension veto ×0.55 applied', () => {
+  it('sys=84 → hypotension Hard Cap max=30 applied', () => {
     meas(84, 60);
     // scoreBP: 84<85 → 10 (partial, veto applied below)
     // pulse ok=10; pills=20; max=80; raw=40; pre-veto=round(40/80*100)=50
-    // hypotension: round(50*0.55) = round(27.5) = 28
+    // hypotension Hard Cap: min(50, 30) = 30
     const { score } = calcHealthScore();
-    expect(score).toBe(28);
+    expect(score).toBe(30);
     expect(getDetailedScores().vetoReason).toBe('hypotension');
   });
 
@@ -282,13 +264,13 @@ describe('hypotension veto boundary — sys threshold', () => {
 describe('hypotension veto boundary — dia threshold', () => {
   beforeEach(resetState);
 
-  it('dia=54 → hypotension veto ×0.55 applied', () => {
+  it('dia=54 → hypotension Hard Cap max=30 applied', () => {
     meas(100, 54);
     // scoreBP: dia=54 < 55 → 10
     // pre-veto = round(40/80*100) = 50
-    // hypotension: round(50*0.55) = 28
+    // hypotension Hard Cap: min(50, 30) = 30
     const { score } = calcHealthScore();
-    expect(score).toBe(28);
+    expect(score).toBe(30);
     expect(getDetailedScores().vetoReason).toBe('hypotension');
   });
 
@@ -302,30 +284,30 @@ describe('hypotension veto boundary — dia threshold', () => {
   });
 });
 
-// ─── Veto coefficient precision ───────────────────────────────────────────────
+// ─── Hard Cap precision ───────────────────────────────────────────────────────
 
-describe('veto coefficient precision', () => {
+describe('Hard Cap precision', () => {
   beforeEach(resetState);
 
-  it('crisis ×0.30: pre-veto 44 → final 13', () => {
+  it('crisis cap=10: pre-veto 44 → final 10', () => {
     meas(180, 80); // BP=5, pulse=10, pills=20 → pre=44
     const { score } = calcHealthScore();
-    expect(score).toBe(Math.round(44 * 0.30)); // 13
+    expect(score).toBe(Math.min(44, 10)); // 10
   });
 
-  it('HT-2 ×0.60: pre-veto 56 → final 34', () => {
+  it('HT-2 cap=25: pre-veto 56 → final 25', () => {
     meas(160, 80); // BP=15, pulse=10, pills=20 → pre=56
     const { score } = calcHealthScore();
-    expect(score).toBe(Math.round(56 * 0.60)); // 34
+    expect(score).toBe(Math.min(56, 25)); // 25
   });
 
-  it('hypotension ×0.55: pre-veto 50 → final 28', () => {
+  it('hypotension cap=30: pre-veto 50 → final 30', () => {
     meas(84, 60); // BP=10, pulse=10, pills=20 → pre=50
     const { score } = calcHealthScore();
-    expect(score).toBe(Math.round(50 * 0.55)); // 28
+    expect(score).toBe(Math.min(50, 30)); // 30
   });
 
-  it('crisis ×0.30 is weaker multiplier than HT-2 ×0.60 (crisis penalises more)', () => {
+  it('crisis cap=10 is stricter than HT-2 cap=25 (crisis penalises more)', () => {
     meas(180, 80);
     const { score: crisisScore } = calcHealthScore();
     state.measurements = [{ sys: 160, dia: 80, pulse: 70, time: new Date().toISOString() }];
@@ -348,12 +330,11 @@ describe('veto priority ordering', () => {
 
   it('sys=185 & dia=110 → crisis (not HT-2), as crisis is checked first', () => {
     meas(185, 110);
-    const d = getDetailedScores();
     calcHealthScore();
     expect(getDetailedScores().vetoReason).toBe('hypertensive-crisis');
   });
 
-  it('sys=165 & dia=115 → crisis (dia≥120? No. sys≥180? No. sys≥160 → HT-2)', () => {
+  it('sys=165 & dia=115 → HT-2 (no crisis since sys<180 && dia<120)', () => {
     meas(165, 115);
     calcHealthScore();
     // 165<180, 115<120 → no crisis. 165>=160 → HT-2

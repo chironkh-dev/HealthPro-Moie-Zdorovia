@@ -39,8 +39,8 @@ async function renderJournalList() {
 
   const rows = await db.queryMeasurements({ from: _fromDate, to: _toDate, limit: 300, order: 'DESC' });
 
-  // Тип-фільтр (поки лише pressure — майбутні типи можна розширити)
-  const filtered = _typeFilter === 'all' ? rows : rows; // розширити при появі інших типів
+  // Тип-фільтр: 'pressure' — вимірювання тиску (мають поле sys), 'all' — всі записи
+  const filtered = _typeFilter === 'all' ? rows : rows.filter(m => 'sys' in m);
 
   if (countEl) countEl.textContent = filtered.length;
 

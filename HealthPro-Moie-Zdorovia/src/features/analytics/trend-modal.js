@@ -32,7 +32,9 @@ export function openTrendModal() {
     return;
   }
 
-  const last14 = all.slice(0, 14).reverse();
+  // B-9b: фільтр за останні 14 ДНІВ (не 14 вимірів)
+  const cutoff14 = Date.now() - 14 * 86400000;
+  const last14 = all.filter((m) => new Date(m.time).getTime() >= cutoff14).reverse();
   const aS = avg(last14.map((m) => m.sys));
   const aD = avg(last14.map((m) => m.dia));
 
@@ -50,7 +52,7 @@ export function openTrendModal() {
           <div class="b-lbl">${t('a-trend-avg-14')}</div>
           <div class="b-val">${aS || '—'}/${aD || '—'}</div>
         </div>
-        <div class="bento-card bc-${aS && aS < 140 ? 'green' : 'red'}">
+        <div class="bento-card bc-${(aS && aD) ? (() => { const c = getBPStatus(aS, aD).cls; return c === 'badge-ok' ? 'green' : c === 'badge-warn' ? 'amber' : 'red'; })() : 'violet'}">
           <div class="b-lbl">${t('a-trend-status')}</div>
           <div class="b-val sm">${aS && aD ? getBPStatus(aS, aD).label.replace(/[🚨▲⚠✓⬇️]/g, '').trim() : '—'}</div>
         </div>

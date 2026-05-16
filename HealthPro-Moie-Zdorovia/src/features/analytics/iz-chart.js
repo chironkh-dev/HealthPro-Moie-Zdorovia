@@ -4,36 +4,8 @@
 
 import { createChart, disposeChart, COLORS } from '../../core/charts.js';
 import { calcHealthIndexTrend } from '../../core/db.js';
-import { getBPThresholds, getPulseThresholds } from './health-score.js';
+import { calcScoreForDay } from './health-score.js';
 import { t } from '../../i18n/index.js';
-
-// ── Спрощений добовий скор ────────────────────────────────────────────────────
-
-function scoreBPDay(sys, dia) {
-  if (sys < 85 || dia < 55) return 10;
-  const th = getBPThresholds();
-  if (sys <= th.perfect.sys && dia <= th.perfect.dia) return 40;
-  if (sys <= th.good.sys    && dia <= th.good.dia)    return 35;
-  if (sys <= th.fair.sys    && dia <= th.fair.dia)    return 25;
-  if (sys <= th.poor.sys    && dia <= th.poor.dia)    return 15;
-  if (sys <= th.bad.sys     && dia <= th.bad.dia)     return  5;
-  return 0;
-}
-
-function scorePulseDay(pulse) {
-  if (!pulse) return null;
-  const th = getPulseThresholds();
-  if (pulse >= th.perfectLo && pulse <= th.perfectHi) return 20;
-  if (pulse >= th.okLo      && pulse <= th.okHi)      return 10;
-  return 0;
-}
-
-function calcDailyScore(row) {
-  const bp     = scoreBPDay(row.sys, row.dia);
-  const pulse  = scorePulseDay(row.pulse);
-  if (pulse !== null) return Math.round(((bp + pulse) / 60) * 100);
-  return Math.round((bp / 40) * 100);
-}
 
 // ── Форматування дати ─────────────────────────────────────────────────────────
 
@@ -64,7 +36,7 @@ export async function renderIZChart() {
   }
 
   const dates  = trend.map(r => fmtDate(r.date));
-  const scores = trend.map(r => calcDailyScore(r));
+  const scores = trend.map(r => calcScoreForDay(r.sys, r.dia, r.pulse));
 
   // Колір точки залежить від значення
   const pointColors = scores.map(s =>

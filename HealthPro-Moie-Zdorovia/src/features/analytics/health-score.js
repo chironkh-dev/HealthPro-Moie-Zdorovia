@@ -2,8 +2,7 @@
 // Priority: user profile values → age-based AHA/WHO defaults.
 //
 // Weights:  BP 40 | Pulse 20 | Pills 20 | BMI 10 | Activity 10
-// Crisis veto: sys≥180||dia≥120 → ×0.30 | sys≥160||dia≥100 → ×0.60
-// Hypotension veto: sys<85||dia<55 → ×0.55
+// Crisis veto Hard Caps: sys≥180||dia≥120→max10 | sys≥160||dia≥100→max25 | sys<85||dia<55→max30
 
 import { state, today } from '../../core/state.js';
 import { DEFAULT_STEP_GOAL } from '../../core/constants.js';
@@ -39,7 +38,12 @@ export function getBPThresholds() {
       personal: true,
     };
   }
-  // Age-based defaults
+  // ІЗ-1: AHA 2017 — суворіші пороги (ГТ починається від 130/80)
+  const std = state.settings?.bpStandard || 'ESC2024';
+  if (std === 'AHA2017') {
+    return { perfect:{sys:120,dia:80}, good:{sys:130,dia:80}, fair:{sys:140,dia:90}, poor:{sys:160,dia:100}, bad:{sys:180,dia:110} };
+  }
+  // ESC 2024 / age-based defaults
   const age = parseInt(state.settings.age) || 50;
   if (age < 18)  return { perfect:{sys:110,dia:70}, good:{sys:120,dia:78}, fair:{sys:130,dia:85}, poor:{sys:150,dia:95}, bad:{sys:170,dia:108} };
   if (age <= 59) return { perfect:{sys:120,dia:80}, good:{sys:130,dia:85}, fair:{sys:140,dia:90}, poor:{sys:160,dia:100},bad:{sys:180,dia:110} };
@@ -152,6 +156,26 @@ function scoreActivity() {
   return 0;
 }
 
+// ─── Shared daily scorer (ІЗ-2) ─────────────────────────────────────────────
+
+/**
+ * Рахує ІЗ для одного виміру (sys, dia, pulse).
+ * Використовується в iz-chart.js для побудови денного тренду.
+ * Застосовує ті самі thresholds і Hard Cap veto що й calcHealthScore().
+ * Modules: BP(40) + Pulse(20) — pills/BMI/activity недоступні на рівні дня.
+ */
+export function calcScoreForDay(sys, dia, pulse) {
+  const bp = scoreBP(sys, dia);
+  const ps = scorePulse(pulse); // 0 якщо pulse == null (strict: завжди в знаменнику)
+  const maxPossible = 60;       // BP(40) + Pulse(20)
+  let score = Math.round(((bp + ps) / maxPossible) * 100);
+  // Hard Cap veto — ті самі пороги що й у calcHealthScore
+  if (sys >= 180 || dia >= 120)      score = Math.min(score, 10);
+  else if (sys >= 160 || dia >= 100) score = Math.min(score, 25);
+  else if (sys < 85  || dia < 55)    score = Math.min(score, 30);
+  return Math.max(0, Math.min(100, score));
+}
+
 // ─── Main calculation ────────────────────────────────────────────────────────
 
 export function calcHealthScore() {
@@ -201,16 +225,18 @@ export function calcHealthScore() {
   let isVetoApplied  = false;
   let vetoReason     = null;
 
+  // ІЗ-3: Hard Caps замість множників — небезпека відображається незалежно від
+  // "ідеальних" показників інших модулів (ліки, крокомір, BMI).
   if (last.sys >= 180 || last.dia >= 120) {
-    finalScore    = Math.round(finalScore * 0.30);
+    finalScore    = Math.min(finalScore, 10);
     isVetoApplied = true;
     vetoReason    = 'hypertensive-crisis';
   } else if (last.sys >= 160 || last.dia >= 100) {
-    finalScore    = Math.round(finalScore * 0.60);
+    finalScore    = Math.min(finalScore, 25);
     isVetoApplied = true;
     vetoReason    = 'hypertension-2';
   } else if (last.sys < 85 || last.dia < 55) {
-    finalScore    = Math.round(finalScore * 0.55);
+    finalScore    = Math.min(finalScore, 30);
     isVetoApplied = true;
     vetoReason    = 'hypotension';
   }
