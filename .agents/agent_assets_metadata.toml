@@ -192,3 +192,9 @@ id = "W8M32aC73h5fGup-JLN9n"
 uri = "file://HealthPro-Moie-Zdorovia/report/HealthPro_Session_v5.3.17_Roadmap_5tasks_Report.pdf"
 type = "pdf"
 title = "Звіт сесії v5.3.17 — Роадмап 5 задач"
+
+[[outputs]]
+id = "xgbXaPQyzTf-n6jPEDdAp"
+uri = "file://HealthPro-Moie-Zdorovia/report/HealthPro_ReportTemplate_Proposal.pdf"
+type = "pdf"
+title = "HealthPro · Шаблон звіту для лікаря (пропозиція)"
