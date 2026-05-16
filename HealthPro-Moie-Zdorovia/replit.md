@@ -7,11 +7,53 @@
 ```bash
 npm run dev      # Vite dev-сервер, порт 5000
 npm run build    # Продакшн збірка → ../dist/
-npm run test     # Vitest (513 тестів / 16 файлів)
+npm run test     # Vitest
 npm run version  # Генерація src/core/version.gen.js (авто перед build через prebuild)
 ```
 
 Змінні середовища: відсутні.
+
+## Build & Deploy (ОБОВ'ЯЗКОВО читати перед кожною командою)
+
+### Структура репозиторію ("матрьошка")
+```
+~/workspace/                          ← Capacitor root
+  capacitor.config.json               ← єдиний конфіг Capacitor
+  package.json                        ← залежності Capacitor + плагіни
+  android/                            ← Android проєкт
+  dist/                               ← збірка Vite (webDir)
+  HealthPro-Moie-Zdorovia/            ← весь JS/CSS/HTML код
+    package.json                      ← залежності Vite + npm
+    src/                              ← вихідний код
+    vite.config.js                    ← outDir: '../dist'
+```
+
+### Правила (порушення = плагіни не працюють)
+| Команда | Де виконувати |
+|---|---|
+| `npm install <plugin>` | `~/workspace/` І `~/workspace/HealthPro-Moie-Zdorovia/` |
+| `npm run build` | `~/workspace/HealthPro-Moie-Zdorovia/` |
+| `npm run version` | `~/workspace/HealthPro-Moie-Zdorovia/` |
+| `npx cap sync android` | `~/workspace/` |
+| `git add/commit/push` | `~/workspace/` |
+
+### Повний flow (копіювати без змін)
+```bash
+# 1. Новий плагін — ОБИДВІ папки!
+cd ~/workspace && npm install <plugin>
+cd ~/workspace/HealthPro-Moie-Zdorovia && npm install <plugin>
+
+# 2. Змінити код в src/
+
+# 3. Зібрати
+cd ~/workspace/HealthPro-Moie-Zdorovia && npm run build && npm run version
+
+# 4. Синхронізувати
+cd ~/workspace && npx cap sync android
+
+# 5. Push
+git add . && git commit -m "vX.X.X" && git push origin main
+```
 
 ## Stack
 
@@ -43,24 +85,12 @@ HealthPro-Moie-Zdorovia/
       platform.js             — Capacitor-обгортки
     i18n/                     — файли перекладів
     features/                 — модулі функціоналу (тиск, ліки, кроки, аналітика, експорт)
-      pressure/
-        norm.js               — getBPDotClass(), getBPStatus() (ESC2024/AHA2017 standard-aware)
-        who.js                — getWHOCategory() (standard-aware)
-      analytics/
-        index.js              — renderAnalytics() з standard-aware WHO label
-        iz-chart.js           — ІЗ-трендовий графік (bottom-sheet модалка)
-        bp-zones.js           — BarChart розподіл зон, динамічні мітки ESC/AHA
-        scatter.js            — ScatterChart Кроки↔Тиск (bottom-sheet модалка)
-      tips/
-        index.js              — getBPCategory() + updateTipsTitle() standard-aware
-    styles/
-      components.css          — iz-action-btn стилі
-      tips.css                — tips-toggle, tips-body, chevron анімація
+    styles/                   — стилі (базові, макет, компоненти)
+    assets/                   — статичні ресурси (зображення, JSON порад)
   scripts/
     gen-version.js            — скрипт генерації version.gen.js
-  android/app/src/main/java/ua/healthpro/app/ — Android-специфічний код
+  android/app/src/main/java/ua/healthpro/app/ — Android-специфічний код (сервіси)
 ```
-
 **Джерело правди для DB schema:** `src/core/sqlite.js`
 
 ## Architecture decisions
@@ -75,7 +105,6 @@ HealthPro-Moie-Zdorovia/
 - **ECharts tree-shaking:** Використання `echarts/core` та лише необхідних компонентів. SVGRenderer для ліній, CanvasRenderer для scatter. WeakMap для управління інстансами.
 - **manualChunks:** `echarts+zrender` винесено в окремий chunk для кращого кешування.
 - **Офлайн поради:** Верифіковані поради ВООЗ з `assets/tips/tips_uk.json`, без зовнішніх запитів.
-- **Standard-aware (v5.2):** `getBPDotClass()`, `getBPStatus()`, `getWHOCategory()`, `getBPCategory()` перевіряють `state.settings.bpStandard` (ESC2024/AHA2017).
 
 ## Product
 
@@ -90,77 +119,107 @@ HealthPro-Moie-Zdorovia/
 - Вся документація українською.
 - Після кожного великого етапу — PDF-звіт сесії (`reportlab`, DejaVu Sans) та оновлення replit.md.
 - Готовий приймати поради та архітектурні рішення.
+- **Версії додатку генеруються ВРУЧНУ користувачем.** На початку кожної нової сесії — обов'язково запитати у користувача поточний номер версії (наприклад: "Яка поточна версія?") для коректного формування звітів та changelog.
 
 ## Changelog
 
-### v5.2.0 (2026-05-08) — Сесія Part 3
+### v5.3.20 (2026-05-16) — Сесія: CodeAudit Bugfix (15 багів з аудиту 13.05.2026)
 
-- **Task 1 (Tabletki.ua):** `searchPharmacy()` → тільки tabletki.ua; `openDrugWarnModal()` — `<a href>` замінено на `<button data-action="searchTabletki">`, emoji ⚠️ → inline SVG; новий i18n ключ `m-search-source`.
-- **Task 2 (Biometric):** `src/core/biometric.js` — Capacitor BiometricAuth wrapper (web-safe). `#lockScreen` overlay + `.lock-screen` CSS. Toggle у налаштуваннях (секція «Безпека»). `app.js`: lockCheck при init, `toggleBiometric` / `unlockApp` actions. `@aparajita/capacitor-biometric-auth` встановлено.
-- **Task 3 (Adherence):** `src/features/analytics/adherence.js` — ECharts LineChart добової adherence з `state.pillsTaken`. Bento-карта «Прийом ліків» → tap → `#adherenceModal` (bottom-sheet). `renderAdherenceChart` / `disposeAdherenceChart` re-exported з analytics/index.
-- **Task 4 (Notes):** Підтверджено як реалізоване в v5.1 ✅.
-- **Task 5 (PDF Doctor):** `src/features/export/pdf-report.js` — `generateDoctorReport()` (html2canvas + jsPDF). Inline SVG BP chart + adherence bar chart + таблиця вимірів + ліки + дисклеймер. Журнал «Друк» та Налаштування «PDF» → `generateDoctorReport`. `svg2pdf.js` встановлено.
-- **Task 6 (Days-picker):** `select#pillDays` → `.days-picker` (chips-кнопки: Щодня / Пн/Ср/Пт / Вт/Чт/Сб/Нд / Будні / Дата). `selectPillDay(el)` у meds/index.js. CSS: `.days-btn`, `.days-btn.active`.
-- **Task 7 (gen-version):** `scripts/gen-version.js` — PATCH `padStart(3,'0')`, `APP_DATE` DD.MM.YYYY, `APP_BUILD_FULL` `v5.2.000 / 08.05.2026`. `constants.js` — re-export `APP_VERSION`, `APP_DATE`. `npm run version` → `version.gen.js` v5.2.000.
+- **ІЗ-1 (getBPThresholds AHA2017):** `health-score.js` — додано гілку `if (std === 'aha2017')` з порогами Normal/Elevated/HT1/HT2/Crisis. Розрахунок балів BP тепер враховує обраний стандарт.
+- **ІЗ-2 (calcScoreForDay):** `health-score.js` — виокремлено та exported `calcScoreForDay(sys, dia, pulse)`. `iz-chart.js` переписано: видалено власні scoreBPDay/scorePulseDay/calcDailyScore, імпортує calcScoreForDay. Єдине джерело правди для денного скору.
+- **ІЗ-3 (VETO Hard Caps):** замінено множники (×0.30/0.60/0.55) на Hard Caps: `crisis→Math.min(score,10)`, `hypertension-2→Math.min(score,25)`, `hypotension→Math.min(score,30)`. 3 тест-файли оновлено під нові значення.
+- **NET-1:** `platform.js` — `useCORS: false` у getNetworkStatus().
+- **PDF-1:** `pdf-report.js` — виправлено порядок аргументів `platformDownload(fileName, blob)`.
+- **E-9:** `journal/index.js` — ініціалізація фільтру у `initJournal()`.
+- **B-9:** `bp-zones.js` — `getBPStatus()` замість hardcoded `140`.
+- **B-9b:** `bp-zones.js` — date filter замість `.slice()`.
+- **C-5:** `medications/index.js` — `getDayName().join(', ')` замість масиву.
+- **REC-1:** `recommendations.js` — додано перевірку `sysOk`.
+- **WHO-1:** `bp/norms-modal.js` — динамічний заголовок модалу норм (ESC/AHA).
+- **I18-1:** `health-score.js` — явний `'uk-UA'` locale у форматуванні.
+- **ESC-1:** `public/assets/tips/tips_uk.json` та `assets/tips/tips_uk.json` — `pressure_high_1` source/source_url → ESC 2024.
+- **MED-1:** `index.html` — placeholder дози ліків `'напр. 50 мг'`.
+- **Тести:** 513/513 ✅ (16/16 файлів). Оновлено: `veto-boundary.test.js`, `health-score.test.js`, `measurement-window.test.js`.
+- **`package.json`:** версія 5.3.19 → 5.3.20. `npm run version` → `version.gen.js` оновлено.
 
-### v5.3.1 (2026-05-09) — Сесія Part 2 (PIN + Backup bugfix)
-- **П1 — Автономний PIN-замок:** `src/core/pin.js` — `isPINSet/setPIN/verifyPIN/clearPIN` (SHA-256 + salt, localStorage). Замінює Capacitor Biometric Plugin повністю.
-- **Б1 — Файловий пікер:** `accept="*/*"` в `importBackupFile` — відкриває всі типи файлів на Android (не лише .hpb).
-- **Б2/Б4 — Захист backup.js:** `exportBackup(null)` — незашифрований шлях без пароля; `openBackupFile(content,null)` — no-password .hpb читається автоматично; `await sql.init()` guard + defensive state checks у `restoreBackup()`.
-- **Б3 — bpStandard sync:** `init()` синхронізує кнопки `#bp-std-esc/#bp-std-aha` після перезавантаження/відновлення.
-- **Emoji cleanup:** 🔑 ✅ 🔔 ⚠️ → SVG-іконки або видалені з усіх i18n-рядків uk/ru.
-- **Lock Screen → PIN Pad:** Кнопка «Розблокувати» замінена 12-кнопковим PIN-падом (0-9 + backspace + 4 крапки), id `lpd0-lpd3`.
-- **PIN Setup Modal:** `#pinSetupModal` — двокроковий ввід нового PIN (enter+confirm), id `spd0-spd3`.
-- **Backup Export Modal:** Новий toggle `#bkUsePasswordToggle` + `#bkPasswordFields` — пароль стає необов'язковим.
-- **app.js ACTIONS:** `toggleBiometric` → openPINSetup; нові: `lockPinKey/Del`, `pinSetupKey/Del`, `cancelPINSetup`, `toggleBkPassword`; оновлені: `doExportBackup`, `onImportBackupFile`, `doRestoreBackup`.
-- **base.css:** `.pin-dots`, `.pin-dot`, `.pin-pad`, `.pin-btn`, `.pin-btn-del`, `.pin-error`.
+### v5.3.17 (2026-05-12) — Сесія: Роадмап 5 задач
 
-### v5.3.0 (2026-05-08) — Сесія Part 4
-- **Бекап `.hpb` (AES-256-GCM):** `src/features/export/backup.js` — `exportBackup()`, `openBackupFile()`, `restoreBackup()`, `getBackupStats()`. SubtleCrypto без бібліотек, PBKDF2 100k ітерацій, SHA-256 checksum, Schema 2 з SQLite-таблиць.
-- **Формат бекапу:** `healthpro-backup-YYYY-MM-DD.hpb` — зашифрований JSON з полями: `measurements`, `medications`, `med_taken`, `steps_log`, `settings` (з `bpStandard`, `notif`, `measureReminder`, `pillReminder`, `morningTime`, `eveningTime`), `theme`, `lang`. `biometricLock` навмисно виключено.
-- **Підтримка старого формату v4.0:** при імпорті `{ version: '4.0' }` — автоматична трансформація без пароля.
-- **UI бекапу:** секція Налаштувань замінена — кнопка HPB (синя), CSV, Відновити (.hpb/.json). 3 брендованих модалки: export-password, import-password, confirm-restore.
-- **sqlite.js `clearAll()`:** очищення таблиць measurements/medications/med_taken/steps_log перед відновленням.
-- **storage.js defaultSettings:** додано `biometricLock: false` та `bpStandard: 'ESC2024'`.
-- **biometric.js fix:** `checkBiometric()` тепер перевіряє `info?.isAvailable || info?.deviceIsSecure` — тоглер PIN-only пристроїв тепер працює.
-- **i18n:** 33 нових ключі `bk-*` та `bio-err-unavailable` (uk + ru).
-- **app.js:** хардкод `'Біометрія недоступна'` замінено на `t('bio-err-unavailable')`.
+- **README бейджі (Задача 1):** Додано `[![CI](...)]` та `[![Android APK](...)]` бейджі у `README.md` відразу після заголовка. Репо: `chironkh-dev/HealthPro-Moie-Zdorovia`.
+- **`steps/api.js` (Задача 2 — новий файл):** Архітектурний рефакторинг — виокремлено `_stepCount`, `getStepCount()`, `_setStepCount()` без жодних browser-залежностей. `health-score.js` тепер імпортує `getStepCount` з `steps/api.js` (0 транзитивних deps) замість `steps/index.js` (→ charts → zrender → navigator). `steps/index.js` синхронізує `_setStepCount` у 4 точках: `_persistSteps`, `_checkDayRollover`, `enableSteps`, `restoreSteps`. Три тестові файли оновлено: `vi.mock(steps/api.js)` замість `steps/index.js`. Всі 513/513 тестів ✅.
+- **5-хв таймер блокування (Задача 3):** `platform.js` — новий `onPause()` хелпер (Capacitor App appStateChange). `app.js` — `_bgTimestamp`, `BG_LOCK_TIMEOUT_MS = 5 * 60 * 1000`. `onPause` записує timestamp при згортанні. `onResume` блокує PIN лише якщо `elapsed >= 5 хв`. Cold start → `_bgTimestamp = 0` → `Infinity` → завжди блокує (безпечно).
+- **Середні кроки (Задача 4):** `refreshStepAvg()` / `_renderStepAvg()` у `steps/index.js`. TTL-кеш 5 хвилин для `queryStepLog`. `#stepWeekAvg` та `#stepMonthAvg` у `index.html` під `.step-goal-row`. i18n: `st-week-avg`, `st-month-avg` (uk+ru).
+- **Автобекап нагадування (Задача 5):** `backup.js` — після export: `state.settings.lastBackupDate = today(); saveData()`. `app.js` — `_checkAutoBackupReminder()` при init: якщо 7+ днів → `setTimeout(showToast, 4000)`. i18n: `bk-auto-remind` (uk+ru). `defaultSettings.lastBackupDate: ''` (вже було у `storage.js`).
+- **`package.json`:** версія 5.3.16 → 5.3.17. `npm run version` → `version.gen.js` оновлено.
+- **Тести:** 513/513 ✅ (16/16 файлів).
+
+### v5.3.16 (2026-05-12) — Сесія: CI Fix — тести + APK збірка
+
+- **`ci.yml` Node 20 → 22:** GitHub Actions node-version оновлено до LTS 22. Node 20 позначений deprecated у GitHub runners; zrender (ECharts) звертався до `navigator` при старті, якого немає у Node < 22.
+- **`tests/mocks/charts.js` (новий файл):** Стаб-замінник `src/core/charts.js`. Повторює публічний API (`createChart`, `disposeChart`, `resizeAllCharts`, `COLORS`) без будь-яких browser-globals.
+- **`vitest.config.js` — глобальний alias:** `resolve.alias` з regex `/\/src\/core\/charts\.js$/` → перенаправляє будь-який імпорт `charts.js` (прямий або транзитивний) на стаб. Всі 8 тестових файлів, що падали через ланцюжок `health-score.js → steps/index.js → charts.js → zrender → navigator`, тепер проходять без змін вихідного коду.
+- **`tests/setup.js` — navigator стаб:** Другий рівень захисту: `globalThis.navigator = { userAgent: 'node' }` на випадок якщо alias не перехопить інший browser-залежний модуль.
+- **`android-apk.yml` SDK 35 → 36:** `platforms;android-35` виправлено на `platforms;android-36` — відповідає `compileSdkVersion = 36` у `android/variables.gradle` (AGP 8.13.0). `build-tools;35.0.0` залишається (сумісні з SDK 36, стабільніші).
+- **`vite.config.js` — видалено дублікат `test`:** Секція `test: { environment: 'jsdom' }` у `vite.config.js` конфліктувала з авторитетним `vitest.config.js` (environment: 'node'). Видалено.
+- **Root `package.json` — очищено:** Версія 5.2.0 → 5.3.16; видалено `jspdf ^4.2.1` (не потрібен для cap sync), `jsdom`, `vitest` (тести лише у inner), `@capacitor/motion` (не в inner); root lock оновлено.
+- **Тести:** 513/513 ✅ локально (16/16 файлів).
+
+### v5.3.16 (2026-05-12) — Сесія: Скидання кроків опівночі + Графік по днях
+
+- **`_checkDayRollover()` (JS):** нова функція у `steps/index.js` — при зміні `today()` синхронно скидає `stepCount=0`, зберігає вчорашній підсумок у `steps_log` (idempotent upsert), записує 0 для нового дня, перезапускає Foreground Service з `initialSteps=0`. Викликається з `_persistSteps()`, `restoreSteps()`, та `onResume`-хелс-чеку.
+- **`_lastStepDate` (JS):** нова module-level змінна — зберігається у localStorage (`stepLastDate`), ініціалізується при `restoreSteps()`.
+- **`StepCounterService.java`:** додано `currentDate` поле + перевірка зміни дати в `onSensorChanged` — захист на випадок якщо JS-шар вимкнено (сервіс живий вночі): скидає `initialSteps=0`, `currentSteps=0`, `baselineSteps=rawSteps`, бродкастить 0.
+- **Графік «Кроки по днях»:** `renderStepsDayChart()` / `disposeStepsDayChart()` / `openStepsDayModal()` / `closeStepsDayModal()` у `steps/index.js`. ECharts bar chart (SVG) за останні 30 днів — стовпчики зелені (ціль досягнута) або cyan (не досягнута), пунктирна лінія мети, tooltip з датою та кількістю.
+- **Нова кнопка «Кроки по днях»:** поруч з «Кроки ↔ Тиск» у flex-обгортці у блоці активності (`index.html`).
+- **Модалка `#stepsDayModal`:** bottom-sheet, та сама структура що й `scatterModal`.
+- **`app.js`:** імпорт + ACTIONS `openStepsDayModal`/`closeStepsDayModal`, dispose при навігації між вкладками.
+- **i18n uk/ru:** нові ключі `t-btn-steps-day`, `t-steps-day-modal-title`, `t-steps-day-empty`.
+- **Тести:** 513/513 ✅, збірка Vite без помилок.
+
+### v5.3.16 (2026-05-12) — Сесія: Архітектурне виправлення біометрії
+- **`lockCheck()` → синхронна:** прибрано авто-виклик `authenticate()` при старті — головна причина зависання Samsung A24.
+- **Кнопка `#lockBioBtn` на lockScreen:** `authenticate()` тепер викликається ТІЛЬКИ по тапу користувача (згідно з Samsung BiometricPrompt best practices).
+- **Mutex `_bioLockBusy`:** блокує подвійний виклик при швидких повторних тапах.
+- **Timeout 8с:** `Promise.race([authenticate(), timeout(8000)])` — захист від зависання BiometricPrompt.
+- **Delay 400мс:** перед `authenticate()` — Samsung потребує паузу після Activity transitions.
+- **`onResume`:** тепер тільки показує lockScreen (без авто-auth), кнопка відбитка чекає на тап.
+- **i18n uk/ru:** новий ключ `lock-bio-btn` — підпис кнопки відбитка.
+- **`npm install` у `~/workspace/`:** виправлено відсутні залежності Capacitor CLI для `npx cap sync android`.
+
+### v5.3.2 (2026-05-09) — Сесія: Крокомір + Біометрія поверх PIN
+- **ForegroundStepPlugin.java `getSteps()`:** якщо плагін не bound після перезапуску — читає кроки з SharedPrefs (не повертає 0); ініціює `bindService()` якщо `wasRunning=true`.
+- **ForegroundStepPlugin.java `handleOnResume()`:** при поверненні додатку з фону — auto-bind до живого сервісу + реєстрація stepReceiver.
+- **StepCounterService.java `onTaskRemoved()`:** `saveStepState(currentSteps)` як перший рядок — точний знімок кроків перед kill.
+- **biometric.js:** `allowDeviceCredential: false` (тільки відбиток/обличчя, не системний PIN); `checkBiometry().isAvailable` замість `deviceIsSecure`.
+- **AndroidManifest.xml:** додано `USE_BIOMETRIC` + `USE_FINGERPRINT` permissions.
+- **app.js `lockCheck()`:** нова async функція — спочатку `authenticate()` (відбиток), при відмові/помилці → PIN-пад.
+- **app.js `toggleBiometric`:** розрізняє PIN-кнопку (`biometricToggle`) та checkbox відбитка (`bioToggle`); при вимкненні PIN — скидає також `biometricEnabled`.
+- **app.js init:** `checkBiometric().then()` — показує `bioToggleRow` тільки при наявності апаратного відбитка; `lockCheck()` замість прямого показу lockScreen.
+- **index.html:** `bioToggleRow` (прихований за замовчуванням) — рядок налаштування відбитка з checkbox.
+- **i18n uk/ru:** нові ключі `bio-toggle`, `bio-toggle-hint`.
+
+### v5.3.2 (2026-05-09) — Сесія: Toggle Bugfix + Backup Steps
+- **Тогл PIN-замку (biometricToggle):** виправлено клас `.active` → `.on` у всіх 6 місцях `app.js` — тогл тепер коректно відображає стан увімкнено/вимкнено.
+- **Тогл шифрування бекапу (bkUsePasswordToggle):** аналогічне виправлення `.active` → `.on` у `app.js` та `index.html` — тогл у модалці експорту бекапу тепер працює.
+- **backup.js `restoreBackup()`:** `stepsEnabled` тепер скидається в `false` при відновленні бекапу (як і `biometricLock`) — запобігає краші при відновленні на чистому пристрої без дозволів крокоміра.
+- **backup.js `collectData()`:** кроки тепер збираються з `localStorage` (`stepCount-*`) на вебі/без SQLite — дані кроків більше не втрачаються при експорті бекапу.
+- **replit.md:** зафіксовано правило — версії вручну, питати на початку сесії.
+
+### v5.3.1 (2026-05-09) — PIN Lock Backup Bugfix Part 2
+- **П1:** PIN-замок (pin.js, SHA-256, без Capacitor Biometric)
+- **Б1–Б4:** виправлення бекапу (.hpb) на реальному Android
+- **Emoji cleanup:** SVG Lucide-іконки замість Unicode emoji
 
 ### v5.2.0 (2026-05-07) — Сесія Part 2
 - **AHA 2017 підтримка:** `norm.js` — `getBPDotClass()` та `getBPStatus()` враховують `state.settings.bpStandard` (ESC2024 / AHA2017), нові i18n ключі `n-bp-aha-elevated`, `n-bp-aha-ht1`, `n-bp-aha-ht2`.
 - **db.js `countByBPCategory()`** — standard-aware: AHA 2017 категорії маппуються до 5 ESC-слотів.
 - **bp-zones.js** — динамічні мітки ESC/AHA, стандарт-підпис на графіку, фільтрація grade3 для AHA.
 - **izTrendModal + scatterModal** — обидва графіки тепер у bottom-sheet модалках; аналітичні картки стали tap-тригерами (`openIZTrendModal`, `openScatterModal`).
-- **38 unit-тестів** `tests/bp-dot-class.test.js` — покрите `getBPDotClass()` (ESC/AHA/граничні) та `getBPStatus()` (5+6 кейсів). Загальний набір: 513/513.
-- **Реструктурована вкладка «Аналіз»:**
-  - ІЗ-блок → кнопка `iz-action-btn` «Тренд 30 днів»
-  - WHO-картка (full-width) → кнопки «Класифікація» + «Розподіл по зонах»
-  - step-bento → wide + кнопка «Кроки↔Тиск»
-  - Tips → згорнутий блок з chevron-toggle (`toggleTipsBlock`)
-- **Standard-aware WHO/Tips:** `getWHOCategory()`, `getBPCategory()`, `updateTipsTitle()` враховують поточний стандарт.
-- **setBPStandard перерендер:** після зміни ESC/AHA → `renderAnalytics()`, `renderJournal()`, `renderHistory()`.
-- **i18n +8 нових ключів** (uk+ru): `tips-title-aha`, `t-btn-iz-trend`, `t-btn-who-class`, `t-btn-bp-zones`, `t-btn-scatter`, `t-who-cat-aha`, `n-bp-aha-elevated/ht1/ht2`.
-- **CSS:** `iz-action-btn` в `components.css`; `tips-toggle/tips-body/chevron` в `tips.css`; overdue pills червоний фон.
-- **npm run version** → `version.gen.js` оновлено до v5.2.0.
-
-### v5.1.1 (2026-05-06) — BugFix
-- Зникнення графіків після перемикання вкладок — `disposeChart(el)` перед `innerHTML` у `iz-chart.js`, `scatter.js`, `bp-zones.js`.
-- `app.js`: `disposeIZChart()` при виході з вкладки «Аналіз».
-
-### v5.1.0 (2026-05-06)
-- SQLCipher: `getOrCreateKey()` + Android Keystore.
-- ScatterChart Кроки↔Тиск → `analytics/scatter.js`.
-- BarChart розподіл зон ВООЗ → `analytics/bp-zones.js`.
-- Офлайн поради ВООЗ → `features/tips/index.js` + JSON файли.
-- Журнал date-range picker → `features/journal/index.js`.
-- i18n uk/ru +15 нових ключів.
+- **38 unit-тестів** `tests/bp-dot-class.test.js` — покрите `getBPDotClass()` (ESC/AHA/граничні) та `getBPStatus()` (5+6 кейсів). Загальний набір: 513/513 ✅.
+- **npm run version** → `version.gen.js` оновлено до v5.2.0 (d16bb5f).
 
 ## Gotchas
 
-- **PDF шрифти:** Використовувати тільки `DejaVu Sans` через TTFont. У `pdf-report.js` кирилиця рендериться через html2canvas (шрифт браузера) — DejaVu не потрібний у jsPDF.
-- **`days-picker` #pillDays:** Тепер `<div class="days-picker">` — не `<select>`. Значення — `document.querySelector('#pillDays .days-btn.active')?.dataset.days ?? 'daily'`.
-- **`biometric.js`:** Тільки на Android APK. На вебі завжди `false`. Пакет `@aparajita/capacitor-biometric-auth` встановлено для Vite-резолвінгу.
-- **Adherence chart:** `computeDailyAdherence()` — синхронна, без async. Потребує 3+ днів даних у `state.pillsTaken`.
+- **PDF шрифти:** Використовувати тільки `DejaVu Sans` через TTFont.
 - **`version.gen.js`:** Не редагувати вручну, генерується через `npm run version`.
 - **`ic_stat_running.xml`:** Це іконка сповіщення Android, не `ic_stat_steps`.
 - **Сплеш-скрін:** Реалізовано через HTML/CSS анімацію, не Capacitor plugin.
@@ -171,61 +230,24 @@ HealthPro-Moie-Zdorovia/
 - **`migrateV1toV2`:** Ідемпотентна функція, не змінювати логіку.
 - **`_setStateRef(state)`:** Викликається з `app.js` після ініціалізації, до першого використання `db.js`.
 - **SQLCipher на вебі:** Не активний, тестувати лише на APK.
-- **WelcomeScreen в браузері:** localStorage чистий → завжди показується welcome при першому відкритті в dev. Це норма.
-- **`pctNormal` у analytics/index.js:** Рядок 185 — безпечно (null-check), елемент видалений з HTML в v5.2.
 
-## Тести
+## Folders
 
-| Параметр | Значення |
+| Папка | Призначення |
 |---|---|
-| Середовище | `vitest` / `node` (без jsdom) |
-| Файлів тестів | **16** |
-| Всього тестів | **513** |
-| Стан | ✅ всі зелені |
-| Час виконання | ~8.5 с |
-
-## Крокомір — архітектура
-
-### Два режими
-
-| Режим | Клас | Поведінка при вбиванні |
-|---|---|---|
-| `'foreground'` | `StepCounterService` (Android FG Service) | Перезапускається через AlarmManager; BootReceiver після reboot |
-| `'active-only'` | DeviceMotion listener у JS | Зупиняється при закритті вкладки |
-
-### Алгоритм фільтрації кроків
-
-```
-DeviceMotion event (~50 Гц)
-  → лінійне прискорення mag (м/с²)
-  → mag >= 3.0 ? _peakSamples++ : _peakSamples = 0
-  → _peakSamples >= 2 ? _inPeak = true    ← TAP FILTER (~40 мс мін.)
-  → mag < 3.0 && _inPeak ? крок! (якщо debounce 250 мс пройшов)
-```
-
-### Стійкість FG-сервісу
-
-| Сценарій | Захист |
-|---|---|
-| Свайп з Recent Apps | `stopWithTask=false` + `onTaskRemoved` → AlarmManager 2 с |
-| Android Doze | `START_STICKY` + onResume health-check у JS |
-| Reboot пристрою | `BootReceiver` (BOOT_COMPLETED) + SharedPreferences initialSteps |
-| Оновлення APK | `BootReceiver` (MY_PACKAGE_REPLACED) |
-| Samsung Max Power | одноразовий `requestBatteryOptExemption()` після першого старту |
-
-## Поточний спринт — v5.3 (наступне)
-
-- Нотатки до вимірювань (textarea при збереженні)
-- Adherence-трекер ліків (`analytics/adherence.js`)
-- Повторення розкладу ліків (UI для поля `days`)
-- PDF-звіт для лікаря (ECharts SVG → reportlab)
+| `HealthPro-Moie-Zdorovia/report/` | PDF-звіти сесій агента (генеруються скриптом) |
+| `HealthPro-Moie-Zdorovia/task_feedback/` | Завдання від користувача, фідбеки, скріншоти, референсні файли |
+| `attached_assets/` | Тільки CI/yml конфіги середовища Replit |
 
 ## Pointers
 
-- **PDF звіти сесій:** `HealthPro-Moie-Zdorovia/generate_session_report_*.py`
+- **Скрипт звіту сесії:** `HealthPro-Moie-Zdorovia/scripts/HealthPro_generate_session_report.py`
+  - Єдиний шаблон для генерації PDF-звітів сесій. Всі старі скрипти видалено.
+  - Налаштування на початку файлу: `VERSION`, `DESCRIPTION`, `PART` (None або 1, 2, …)
+  - Запуск: `python3 scripts/HealthPro_generate_session_report.py`
+  - Вихідний файл: `report/HealthPro_Session_v{VERSION}_{DESCRIPTION}_{PartN}_Report.pdf`
+- **Папка звітів сесій:** `HealthPro-Moie-Zdorovia/report/` — лише PDF-звіти про виконану роботу агента (звіти сесій розробки). Лікарські PDF-звіти, які генерує сам застосунок, тут не зберігаються.
 - **Android сервіс:** `android/app/src/main/java/ua/healthpro/app/StepCounterService.java`
 - **Версія:** `scripts/gen-version.js` → `src/core/version.gen.js`
 - **DB API:** `src/core/db.js`
 - **Charts API:** `src/core/charts.js`
-- **BP норми (standard-aware):** `src/features/pressure/norm.js`
-- **WHO категорії:** `src/features/pressure/who.js`
