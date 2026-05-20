@@ -30,12 +30,13 @@ export function openWHOInfo() {
   const last = state.measurements[0];
   const who = getWHOCategory(last.sys, last.dia);
   const dict = WHO_INFO_T[state.lang] || WHO_INFO_T.uk;
-  const info = dict[who.key];
+  const std = state.settings?.bpStandard || 'ESC2024';
+  const ahaKey = std === 'AHA2017' ? `aha_${who.key}` : null;
+  const info = (ahaKey && dict[ahaKey]) ? dict[ahaKey] : dict[who.key];
   if (!info) return;
   // WHO-1: динамічний заголовок залежно від обраного стандарту
   const titleEl = document.getElementById('t-who-modal');
   if (titleEl) {
-    const std = state.settings?.bpStandard || 'ESC2024';
     titleEl.textContent = std === 'AHA2017'
       ? 'Класифікація тиску AHA 2017'
       : 'Класифікація тиску ESC 2024';

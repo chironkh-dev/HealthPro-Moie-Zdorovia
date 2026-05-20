@@ -131,11 +131,13 @@ export function renderAnalytics() {
   }
   const whoEl = document.getElementById('whoCategory');
   const whoSubEl = document.getElementById('whoCategorySub');
+  const whoCurrentEl = document.getElementById('t-who-current');
   if (whoEl && whoSubEl && all.length) {
     const who = getWHOCategory(all[0].sys, all[0].dia);
     whoEl.textContent = who.label;
     whoEl.style.color = who.c;
     whoSubEl.textContent = who.sub + t('a-who-tap');
+    if (whoCurrentEl) whoCurrentEl.textContent = t('a-who-current');
   }
 
   // Total

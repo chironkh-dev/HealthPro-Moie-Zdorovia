@@ -187,6 +187,7 @@ export const T_RU ={
   'a-target-bp':'Цель давления <{val}',
   'a-bd-bp':'Давление','a-bd-pulse':'Пульс','a-bd-pills':'Лекарства','a-bd-bmi':'ИМТ','a-bd-activity':'Активность',
   'a-no-data':'нет данных',
+  'a-who-current':'На основе последнего измерения',
   'a-trend-stable':'→ Стабильное','a-trend-down':'↓ Снижается','a-trend-up':'↑ Растёт',
   'a-trend-stable-sub':'Без существенных изменений','a-trend-down-sub':'На {n} мм ниже','a-trend-up-sub':'На {n} мм выше',
   'a-trend-need-5':'нужно 5+ измерений','a-who-tap':' → Нажми для деталей',

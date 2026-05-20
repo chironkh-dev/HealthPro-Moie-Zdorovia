@@ -179,6 +179,7 @@ export const T_UK ={
   'a-target-bp':'Ціль тиску <{val}',
   'a-bd-bp':'Тиск','a-bd-pulse':'Пульс','a-bd-pills':'Ліки','a-bd-bmi':'ІМТ','a-bd-activity':'Активність',
   'a-no-data':'немає даних',
+  'a-who-current':'На основі останнього виміру',
   'a-trend-stable':'→ Стабільний','a-trend-down':'↓ Знижується','a-trend-up':'↑ Зростає',
   'a-trend-stable-sub':'Без суттєвих змін','a-trend-down-sub':'На {n} мм нижче','a-trend-up-sub':'На {n} мм вище',
   'a-trend-need-5':'потрібно 5+ вимірів','a-who-tap':' → Натисни для деталей',
