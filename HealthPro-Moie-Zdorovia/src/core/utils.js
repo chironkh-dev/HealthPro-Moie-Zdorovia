@@ -21,28 +21,37 @@ export function getLocale() {
   return localeFor();
 }
 
-export function formatTime(s) {
-  const d = new Date(s);
-  if (isNaN(d.getTime())) return '';
-  return d.toLocaleTimeString(localeFor(), { hour: '2-digit', minute: '2-digit' });
-}
-
+// ДД.ММ.РРРР
 export function formatDate(s) {
   const d = new Date(s);
   if (isNaN(d.getTime())) return '';
-  return d.toLocaleDateString(localeFor(), { day: 'numeric', month: 'short' });
+  return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
 }
 
-export function formatDateLong(s) {
+// ДД.ММ (скорочено, для графіків/осей)
+export function formatDateShort(s) {
   const d = new Date(s);
   if (isNaN(d.getTime())) return '';
-  return d.toLocaleDateString(localeFor(), { day: '2-digit', month: 'long', year: 'numeric' });
+  return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}`;
 }
 
+// ГГ:ХХ (24-годинний)
+export function formatTime(s) {
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return '';
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+// ДД.ММ.РРРР (зворотна сумісність)
+export function formatDateLong(s) {
+  return formatDate(s);
+}
+
+// ДД.ММ.РРРР ГГ:ХХ
 export function formatDateTime(s) {
   const d = new Date(s);
   if (isNaN(d.getTime())) return '';
-  return `${formatDateLong(s)} ${d.toLocaleTimeString(localeFor(), { hour: '2-digit', minute: '2-digit' })}`;
+  return `${formatDate(s)} ${formatTime(s)}`;
 }
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;

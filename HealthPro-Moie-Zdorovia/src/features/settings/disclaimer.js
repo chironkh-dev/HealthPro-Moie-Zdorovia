@@ -7,7 +7,6 @@ import {
   LEGACY_DISCLAIMER_KEY_PREFIX,
 } from '../../core/constants.js';
 import { t } from '../../i18n/index.js';
-import { getLocale } from '../../core/utils.js';
 import { maybeShowNotifPermModal } from './notif-perm.js';
 
 // Re-export for modules that import DISCLAIMER_VERSION from this file.
@@ -29,9 +28,11 @@ export function isCurrentDisclaimerAccepted() {
 function fmtAcceptDate(iso) {
   try {
     const d = new Date(iso);
-    const loc = getLocale();
-    return d.toLocaleDateString(loc, { day: '2-digit', month: 'long', year: 'numeric' })
-      + ' ' + d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' });
+    const dd = String(d.getDate()).padStart(2,'0');
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const hh = String(d.getHours()).padStart(2,'0');
+    const min = String(d.getMinutes()).padStart(2,'0');
+    return `${dd}.${mm}.${d.getFullYear()} ${hh}:${min}`;
   } catch (e) { return iso; }
 }
 

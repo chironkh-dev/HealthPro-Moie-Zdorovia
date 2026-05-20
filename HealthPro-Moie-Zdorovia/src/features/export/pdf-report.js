@@ -9,7 +9,7 @@ import { jsPDF } from 'jspdf';
 import { state, showToast } from '../../core/state.js';
 import { getBPStatus } from '../pressure/index.js';
 import { t } from '../../i18n/index.js';
-import { getLocale } from '../../core/utils.js';
+import { formatDate, formatTime, formatDateShort } from '../../core/utils.js';
 import { getDayName } from '../meds/index.js';
 import { download as platformDownload } from '../../core/platform.js';
 import { calcHealthScore } from '../analytics/health-score.js';
@@ -52,8 +52,7 @@ function buildBPChartSVG(data) {
   const step = Math.max(1, Math.floor(data.length / 7));
   const xLabels = data.map((m, i) => {
     if (i % step !== 0 && i !== data.length - 1) return '';
-    const d = new Date(m.time);
-    return `<text x="${xS(i).toFixed(1)}" y="${H - 5}" text-anchor="middle" font-size="9" fill="#94a3b8">${d.getDate()}.${String(d.getMonth() + 1).padStart(2, '0')}</text>`;
+    return `<text x="${xS(i).toFixed(1)}" y="${H - 5}" text-anchor="middle" font-size="9" fill="#94a3b8">${formatDateShort(m.time)}</text>`;
   }).join('');
   const normLines = [
     { v: 140, c: '#f97316', lbl: '140' },
@@ -163,8 +162,8 @@ function buildReportHTML({ measurements, sections, settings, dateStr, periodLabe
     const cleanLbl = st.label.replace(/[^\wа-яёіїєА-ЯЁІЇЄ ]/gi, '').trim();
     const bg = idx % 2 === 0 ? '#fff' : '#f8fafc';
     return `<tr style="background:${bg}">
-      <td style="padding:5px 7px">${d.toLocaleDateString(loc)}</td>
-      <td style="padding:5px 7px">${d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' })}</td>
+      <td style="padding:5px 7px">${formatDate(m.time)}</td>
+      <td style="padding:5px 7px">${formatTime(m.time)}</td>
       <td style="padding:5px 7px;font-weight:700">${m.sys}/${m.dia}</td>
       <td style="padding:5px 7px">${m.pulse || '—'}</td>
       <td style="padding:5px 7px;font-size:10px">${cleanLbl}</td>

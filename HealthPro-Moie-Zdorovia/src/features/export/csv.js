@@ -3,7 +3,7 @@
 import { state, saveData, showToast, today } from '../../core/state.js';
 import { getBPStatus } from '../pressure/index.js';
 import { t, tt } from '../../i18n/index.js';
-import { getLocale } from '../../core/utils.js';
+import { formatDate, formatTime } from '../../core/utils.js';
 import { download as platformDownload } from '../../core/platform.js';
 
 export function exportData() {
@@ -25,17 +25,15 @@ export function exportCSV() {
     showToast(t('e-toast-no-data'));
     return;
   }
-  const loc = getLocale();
   const head = [t('e-csv-col-date'), t('e-csv-col-time'), t('e-csv-col-sys'), t('e-csv-col-dia'), t('e-csv-col-pulse'), t('e-csv-col-status'), t('e-csv-col-note')];
   const esc = (v) => {
     const s = String(v ?? '');
     return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   };
   const rows = [head, ...measurements.map((m) => {
-    const d = new Date(m.time);
     return [
-      d.toLocaleDateString(loc),
-      d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' }),
+      formatDate(m.time),
+      formatTime(m.time),
       m.sys, m.dia, m.pulse || '',
       getBPStatus(m.sys, m.dia).label.replace(/[^\wа-яёіїєА-ЯЁІЇЄ \.!]/gi, '').trim(),
       m.note || '',
@@ -48,7 +46,6 @@ export function exportCSV() {
 
 export function exportReportCSV(getExportMeasurements) {
   try {
-    const loc = getLocale();
     const filtered = getExportMeasurements();
     if (!filtered.length) {
       showToast(t('e-toast-no-data-period'));
@@ -60,10 +57,9 @@ export function exportReportCSV(getExportMeasurements) {
       return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
     };
     const rows = [head, ...filtered.map((m) => {
-      const d = new Date(m.time);
       return [
-        d.toLocaleDateString(loc),
-        d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' }),
+        formatDate(m.time),
+        formatTime(m.time),
         m.sys, m.dia, m.pulse || '',
         getBPStatus(m.sys, m.dia).label.replace(/[^\wа-яёіїєА-ЯЁІЇЄ \.!]/gi, '').trim(),
         m.note || '',

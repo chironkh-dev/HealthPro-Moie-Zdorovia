@@ -4,7 +4,7 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { state, showToast, today } from '../../core/state.js';
 import { PDF_LABELS, t, tt } from '../../i18n/index.js';
-import { getLocale } from '../../core/utils.js';
+import { formatDate, formatTime } from '../../core/utils.js';
 import { download as platformDownload } from '../../core/platform.js';
 import { getBPStatus } from '../pressure/index.js';
 import { DRUG_DB, isPillDueToday, fmtPillDate } from '../meds/index.js';
@@ -87,7 +87,7 @@ export async function exportPDF() {
         </div>
         <div style="text-align:right;">
           <div style="font-size:20px;font-weight:800;letter-spacing:-0.3px;">${PDF_L.title}</div>
-          <div style="font-size:12px;color:#64748b;">${PDF_L.date}: ${new Date().toLocaleDateString(PDF_LOCALE, { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+          <div style="font-size:12px;color:#64748b;">${PDF_L.date}: ${formatDate(new Date())}</div>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;background:#f8fafc;border-radius:8px;padding:16px 20px;margin-bottom:22px;border:1px solid #e2e8f0;">
@@ -131,7 +131,7 @@ export async function exportPDF() {
           const rowBorder = isCrisis ? '2px solid #dc2626' : '1px solid #e2e8f0';
           const st = getBPStatus(m.sys, m.dia).label.replace(/[^\wа-яёіїєА-ЯЁІЇЄ ]/g, '').trim();
           return `<tr style="background:${rowBg};">
-            <td style="padding:6px 10px;border-bottom:${rowBorder};color:#475569;">${new Date(m.time).toLocaleString(PDF_LOCALE, { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
+            <td style="padding:6px 10px;border-bottom:${rowBorder};color:#475569;">${formatDate(m.time)} ${formatTime(m.time)}</td>
             <td style="padding:6px 10px;border-bottom:${rowBorder};font-weight:800;color:${color};font-size:13px;">${m.sys}/${m.dia}${isCrisis ? ' ⚠' : ''}  </td>
             <td style="padding:6px 10px;border-bottom:${rowBorder};">${m.pulse || '—'}</td>
             <td style="padding:6px 10px;border-bottom:${rowBorder};color:${color};font-weight:600;">${st}</td>

@@ -666,7 +666,7 @@ export async function renderStepsDayChart(containerId) {
   const chart = createChart(el, 'svg');
   if (!chart) return;
 
-  const dates  = rows.map(r => r.date.slice(5));   // MM-DD
+  const dates  = rows.map(r => r.date.slice(8) + '.' + r.date.slice(5, 7));   // ДД.ММ
   const values = rows.map(r => r.steps);
   const barData = rows.map((r, i) => ({
     value: r.steps,
@@ -699,7 +699,9 @@ export async function renderStepsDayChart(containerId) {
       textStyle: { color: '#e2e8f0', fontSize: 12 },
       formatter: (params) => {
         const p = params[0];
-        return `${rows[p.dataIndex].date}<br><b>${Number(p.value).toLocaleString()}</b> ${t('t-steps')}`;
+        const iso = rows[p.dataIndex].date;
+        const lbl = iso.slice(8) + '.' + iso.slice(5, 7) + '.' + iso.slice(0, 4);
+        return `${lbl}<br><b>${Number(p.value).toLocaleString()}</b> ${t('t-steps')}`;
       },
     },
     series: [{

@@ -7,7 +7,7 @@ import { getBPStatus } from '../pressure/index.js';
 import { getExportMeasurements, getExportPeriod } from './modal.js';
 import { exportPDF } from './pdf.js';
 import { t } from '../../i18n/index.js';
-import { getLocale } from '../../core/utils.js';
+import { formatDate, formatTime } from '../../core/utils.js';
 import { PRINT_T } from '../../i18n/print.i18n.js';
 
 const avg = (arr) => (arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null);
@@ -90,8 +90,8 @@ export function printReportPeriod() {
     const col = statusColors[cleanLbl] || '#334155';
     const lbl = L.statusMap[cleanLbl] || cleanLbl;
     return `<tr>
-      <td>${d.toLocaleDateString(loc)}</td>
-      <td>${d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' })}</td>
+      <td>${formatDate(m.time)}</td>
+      <td>${formatTime(m.time)}</td>
       <td><b>${m.sys}/${m.dia}</b></td>
       <td>${m.pulse || '—'}</td>
       <td style="color:${col};font-weight:600">${lbl}</td>
@@ -166,7 +166,7 @@ export function printReportPeriod() {
     @page{margin:12mm}
   </style></head><body>
   <div class="header">
-    <div><div class="logo">Health<span>Pro</span></div><div class="subtitle">${L.title} · ${L.generated}: ${new Date().toLocaleDateString(loc)}</div></div>
+    <div><div class="logo">Health<span>Pro</span></div><div class="subtitle">${L.title} · ${L.generated}: ${formatDate(new Date())}</div></div>
     <div style="text-align:right;font-size:11px;color:#64748b"><div><b>${name}</b></div><div>${L.age}: ${age}</div><div>${L.phone}: ${settings.phone || '—'}</div></div>
   </div>
   <h2>${L.h_patient}</h2>

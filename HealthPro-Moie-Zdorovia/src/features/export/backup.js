@@ -8,6 +8,7 @@ import { defaultSettings } from '../../core/storage.js';
 import { download as platformDownload } from '../../core/platform.js';
 import { t } from '../../i18n/index.js';
 import { APP_BUILD_FULL } from '../../core/constants.js';
+import { formatDate } from '../../core/utils.js';
 
 const FORMAT    = 'healthpro-backup';
 const BK_VER    = '2.0';
@@ -181,8 +182,8 @@ export function getBackupStats(opened) {
     medications:  isLegacy ? (data.pills || []).length : (data.medications || []).length,
     steps:        isLegacy ? 0 : (data.steps_log || []).length,
     date: meta?.created_at
-      ? new Date(meta.created_at).toLocaleDateString()
-      : (data.exportDate ? new Date(data.exportDate).toLocaleDateString() : '—'),
+      ? formatDate(meta.created_at)
+      : (data.exportDate ? formatDate(data.exportDate) : '—'),
   };
 }
 

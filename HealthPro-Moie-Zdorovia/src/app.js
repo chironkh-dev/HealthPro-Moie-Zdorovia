@@ -312,11 +312,10 @@ function init() {
   if (headerDate) {
     // I18-1: явна uk-UA локаль (не залежить від налаштувань браузера)
     const dateLocale = state.lang === 'ru' ? 'ru-UA' : 'uk-UA';
-    headerDate.textContent = d.toLocaleDateString(dateLocale, {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-    });
+    const weekday = d.toLocaleDateString(dateLocale, { weekday: 'long' });
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    headerDate.textContent = `${weekday}, ${dd}.${mm}.${d.getFullYear()}`;
   }
 
   loadProfileFields();
