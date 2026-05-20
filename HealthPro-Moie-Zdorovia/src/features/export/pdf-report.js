@@ -10,6 +10,7 @@ import { state, showToast } from '../../core/state.js';
 import { getBPStatus } from '../pressure/index.js';
 import { t } from '../../i18n/index.js';
 import { formatDate, formatTime, formatDateShort } from '../../core/utils.js';
+import { PDF_LABELS } from '../../i18n/pdf.js';
 import { getDayName } from '../meds/index.js';
 import { download as platformDownload } from '../../core/platform.js';
 import { calcHealthScore } from '../analytics/health-score.js';
@@ -120,6 +121,7 @@ function statCard(title, value, subtitle, bg, border, textColor) {
 
 // ── Build full 8-block HTML report ───────────────────────────────────────────
 function buildReportHTML({ measurements, sections, settings, dateStr, periodLabel, loc, izScore }) {
+  const PDF_L = PDF_LABELS[state.lang] || PDF_LABELS.uk;
   const name   = settings.name   || '—';
   const age    = settings.age    || '—';
   const phone  = settings.phone  || '';
@@ -134,11 +136,10 @@ function buildReportHTML({ measurements, sections, settings, dateStr, periodLabe
   let bmiStr = '—';
   if (h > 0 && w > 0) {
     const bmiVal = (w / ((h / 100) ** 2)).toFixed(1);
-    let bmiCat = bmiVal < 18.5 ? 'Недовага' : bmiVal < 25 ? 'Норма' : bmiVal < 30 ? 'Надлишок' : 'Ожиріння';
+    const bmiCat = bmiVal < 18.5 ? PDF_L.bmiUnder : bmiVal < 25 ? PDF_L.bmiNormal : bmiVal < 30 ? PDF_L.bmiOver : PDF_L.bmiObese;
     bmiStr = `${bmiVal} (${bmiCat})`;
   }
-  const genderMap = { male: 'Чоловіча', female: 'Жіноча' };
-  const gender = genderMap[settings.gender] || '—';
+  const gender = settings.gender === 'm' ? PDF_L.male : settings.gender === 'f' ? PDF_L.female : '—';
 
   const normalSys = settings.normalSys ? `${settings.normalSys}/${settings.normalDia || '—'}` : '—';
 
@@ -181,7 +182,7 @@ function buildReportHTML({ measurements, sections, settings, dateStr, periodLabe
       <td style="padding:5px 7px">${p.time || '—'}</td>
       <td style="padding:5px 7px;font-size:10px">${getDayName(p)}</td>
     </tr>`;
-  }).join('') || `<tr><td colspan="4" style="padding:10px;color:#94a3b8;text-align:center;font-size:11px">Немає активних призначень</td></tr>`;
+  }).join('') || `<tr><td colspan="4" style="padding:10px;color:#94a3b8;text-align:center;font-size:11px">${PDF_L.noActiveMeds}</td></tr>`;
 
   // Adherence
   const adhData = computeDailyAdherence(30);
@@ -195,63 +196,63 @@ function buildReportHTML({ measurements, sections, settings, dateStr, periodLabe
   <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1e40af;padding-bottom:14px;margin-bottom:20px">
     <div>
       <div style="font-size:24px;font-weight:900;color:#1e40af;letter-spacing:-.5px">Health<span style="color:#dc2626">Pro</span></div>
-      <div style="font-size:13px;font-weight:700;color:#374151;margin-top:2px">Звіт для лікаря</div>
-      <div style="font-size:10px;color:#64748b;margin-top:2px">Стандарт: ${std} · Сформовано: ${dateStr}</div>
+      <div style="font-size:13px;font-weight:700;color:#374151;margin-top:2px">${PDF_L.reportTitle}</div>
+      <div style="font-size:10px;color:#64748b;margin-top:2px">${PDF_L.stdLabel} ${std} · ${PDF_L.formedAt} ${dateStr}</div>
     </div>
     <div style="text-align:right;font-size:11px;color:#64748b;background:#f8fafc;padding:10px 14px;border-radius:8px;border:1px solid #e2e8f0">
       <div style="font-weight:900;font-size:14px;color:#1e293b;margin-bottom:2px">${name}</div>
-      <div>Вік: ${age}${age !== '—' ? ' р.' : ''} · Стать: ${gender}</div>
+      <div>${PDF_L.age}: ${age}${age !== '—' ? ' ' + PDF_L.years : ''} · ${PDF_L.sex}: ${gender}</div>
       ${phone ? `<div>${phone}</div>` : ''}
       ${email ? `<div style="color:#6366f1">${email}</div>` : ''}
-      <div style="margin-top:4px;font-size:10px;color:#94a3b8">Період: ${periodLabel}</div>
+      <div style="margin-top:4px;font-size:10px;color:#94a3b8">${PDF_L.period} ${periodLabel}</div>
     </div>
   </div>
 
   <!-- БЛОК 2: Пацієнт -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
     <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px">
-      <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Дані пацієнта</div>
+      <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${PDF_L.patientData}</div>
       <table style="width:100%;font-size:11px;border-collapse:collapse">
-        <tr><td style="color:#64748b;padding:2px 0;width:50%">Зріст / Вага:</td><td><b>${h ? h + ' см / ' + w + ' кг' : '—'}</b></td></tr>
-        <tr><td style="color:#64748b;padding:2px 0">ІМТ:</td><td><b>${bmiStr}</b></td></tr>
-        <tr><td style="color:#64748b;padding:2px 0">Особиста норма:</td><td><b>${normalSys} мм рт. ст.</b></td></tr>
+        <tr><td style="color:#64748b;padding:2px 0;width:50%">${PDF_L.heightWeight}</td><td><b>${h ? h + ' ' + PDF_L.cm + ' / ' + w + ' ' + PDF_L.kg : '—'}</b></td></tr>
+        <tr><td style="color:#64748b;padding:2px 0">${PDF_L.bmi}:</td><td><b>${bmiStr}</b></td></tr>
+        <tr><td style="color:#64748b;padding:2px 0">${PDF_L.personalNorm}:</td><td><b>${normalSys} ${PDF_L.mmHgUnit}</b></td></tr>
       </table>
     </div>
     <div style="background:#fef2f2;border:1px solid #fee2e2;border-radius:10px;padding:12px">
-      <div style="font-size:10px;font-weight:700;color:#991b1b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Екстрений контакт</div>
+      <div style="font-size:10px;font-weight:700;color:#991b1b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${PDF_L.emergContact}</div>
       ${ePhone || eName ? `
         <div style="font-size:13px;font-weight:700;color:#1e293b">${eName || '—'}</div>
         <div style="font-size:12px;color:#dc2626;margin-top:2px">${ePhone || '—'}</div>
-        <div style="font-size:10px;color:#64748b;margin-top:4px">Сповіщення при тиску ≥ 180/120</div>
-      ` : `<div style="font-size:11px;color:#94a3b8">Не вказано в профілі</div>`}
+        <div style="font-size:10px;color:#64748b;margin-top:4px">${PDF_L.alertBP}</div>
+      ` : `<div style="font-size:11px;color:#94a3b8">${PDF_L.noEmergency}</div>`}
     </div>
   </div>
 
   <!-- БЛОК 3: Статистика -->
   <div style="display:flex;gap:10px;margin-bottom:20px">
-    ${statCard('Середній тиск', `${aS}/${aD}`, 'мм рт. ст.', '#eff6ff', '#bfdbfe', '#1e40af')}
-    ${statCard('Середній пульс', `${aP}`, 'уд/хв', '#f0fdf4', '#bbf7d0', '#166534')}
-    ${statCard('Індекс здоров\'я', izScore !== null ? izScore : '—', 'ІЗ (0–100)', '#faf5ff', '#ddd6fe', '#6d28d9')}
-    ${statCard('Макс./Мін. сист.', `${maxSys}/${minSys}`, `(${measurements.length} вим.)`, '#fefce8', '#fef08a', '#854d0e')}
+    ${statCard(PDF_L.avgBP, `${aS}/${aD}`, PDF_L.mmHgUnit, '#eff6ff', '#bfdbfe', '#1e40af')}
+    ${statCard(PDF_L.avgPulse, `${aP}`, PDF_L.bpmUnit, '#f0fdf4', '#bbf7d0', '#166534')}
+    ${statCard(PDF_L.hi, izScore !== null ? izScore : '—', PDF_L.hiScale, '#faf5ff', '#ddd6fe', '#6d28d9')}
+    ${statCard(PDF_L.maxMinSys, `${maxSys}/${minSys}`, `(${measurements.length} ${PDF_L.measUnit})`, '#fefce8', '#fef08a', '#854d0e')}
   </div>
 
   ${sections.chart !== false ? `
   <!-- БЛОК 4: Графік -->
-  ${sectionTitle('Динаміка тиску — графік по вимірах')}
+  ${sectionTitle(PDF_L.bpChart)}
   <div style="margin-bottom:18px">${buildBPChartSVG(chartData)}</div>
   ` : ''}
 
   ${sections.journal !== false && tableRows ? `
   <!-- БЛОК 5: Журнал вимірів -->
-  ${sectionTitle('Журнал вимірів (останні 30)')}
+  ${sectionTitle(PDF_L.journalTitle)}
   <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:18px">
     <thead><tr style="background:#1e40af;color:#fff">
-      <th style="padding:6px 7px;text-align:left;font-weight:700">Дата</th>
-      <th style="padding:6px 7px;text-align:left;font-weight:700">Час</th>
-      <th style="padding:6px 7px;text-align:left;font-weight:700">Тиск</th>
-      <th style="padding:6px 7px;text-align:left;font-weight:700">Пульс</th>
-      <th style="padding:6px 7px;text-align:left;font-weight:700">Категорія</th>
-      <th style="padding:6px 7px;text-align:left;font-weight:700">Нотатка</th>
+      <th style="padding:6px 7px;text-align:left;font-weight:700">${PDF_L.colDateShort}</th>
+      <th style="padding:6px 7px;text-align:left;font-weight:700">${PDF_L.colTimeShort}</th>
+      <th style="padding:6px 7px;text-align:left;font-weight:700">${PDF_L.colBPShort}</th>
+      <th style="padding:6px 7px;text-align:left;font-weight:700">${PDF_L.colPulse}</th>
+      <th style="padding:6px 7px;text-align:left;font-weight:700">${PDF_L.colCat}</th>
+      <th style="padding:6px 7px;text-align:left;font-weight:700">${PDF_L.colNoteShort}</th>
     </tr></thead>
     <tbody>${tableRows}</tbody>
   </table>
@@ -259,13 +260,13 @@ function buildReportHTML({ measurements, sections, settings, dateStr, periodLabe
 
   ${sections.meds !== false ? `
   <!-- БЛОК 6: Ліки -->
-  ${sectionTitle('Ліки — активні призначення', '#7c3aed')}
+  ${sectionTitle(PDF_L.medsTitle, '#7c3aed')}
   <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:18px">
     <thead><tr style="background:#7c3aed;color:#fff">
-      <th style="padding:6px 7px;text-align:left;font-weight:700">Препарат</th>
-      <th style="padding:6px 7px;text-align:left;font-weight:700">Дозування</th>
-      <th style="padding:6px 7px;text-align:left;font-weight:700">Час</th>
-      <th style="padding:6px 7px;text-align:left;font-weight:700">Розклад</th>
+      <th style="padding:6px 7px;text-align:left;font-weight:700">${PDF_L.drug}</th>
+      <th style="padding:6px 7px;text-align:left;font-weight:700">${PDF_L.dose}</th>
+      <th style="padding:6px 7px;text-align:left;font-weight:700">${PDF_L.timeT}</th>
+      <th style="padding:6px 7px;text-align:left;font-weight:700">${PDF_L.schedule}</th>
     </tr></thead>
     <tbody>${pillRows}</tbody>
   </table>
@@ -274,7 +275,7 @@ function buildReportHTML({ measurements, sections, settings, dateStr, periodLabe
   ${sections.adherence !== false && adhData.length >= 3 ? `
   <!-- БЛОК 7: Прийом ліків -->
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
-    ${sectionTitle('Прийом ліків — 30 днів', '#7c3aed')}
+    ${sectionTitle(PDF_L.adherTitle, '#7c3aed')}
     <div style="background:${adhBg};border-radius:6px;padding:3px 12px;font-size:14px;font-weight:900;color:${adhColor};border:1px solid ${adhColor}33;margin-top:14px">${avgAdh}%</div>
   </div>
   <div style="margin-bottom:18px">${buildAdherenceSVG(adhData)}</div>
@@ -282,20 +283,20 @@ function buildReportHTML({ measurements, sections, settings, dateStr, periodLabe
 
   ${sections.doctor !== false ? `
   <!-- БЛОК 8: Блок лікаря -->
-  ${sectionTitle('Блок лікаря', '#0f766e')}
+  ${sectionTitle(PDF_L.doctorBlock, '#0f766e')}
   <div style="border:1.5px dashed #cbd5e1;border-radius:10px;padding:16px;margin-bottom:18px;background:#f8fafc">
-    <div style="font-size:10px;color:#94a3b8;margin-bottom:8px">Нотатки та висновки лікаря:</div>
+    <div style="font-size:10px;color:#94a3b8;margin-bottom:8px">${PDF_L.doctorNotes}</div>
     <div style="height:60px"></div>
     <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:12px;padding-top:12px;border-top:1px solid #e2e8f0">
-      <div style="font-size:10px;color:#94a3b8">Лікар: _________________________</div>
-      <div style="font-size:10px;color:#94a3b8">Підпис: ________________ Дата: _________</div>
+      <div style="font-size:10px;color:#94a3b8">${PDF_L.doctorSign}</div>
+      <div style="font-size:10px;color:#94a3b8">${PDF_L.signDateLine}</div>
     </div>
   </div>
   ` : ''}
 
   <!-- Дисклеймер — завжди -->
   <div style="background:#fef2f2;border:1px solid #fee2e2;padding:10px 14px;border-radius:8px;font-size:9px;color:#991b1b;line-height:1.7;margin-top:8px">
-    <b>Важливо:</b> Цей звіт має виключно інформаційний характер і не є медичним висновком. Для діагностики та лікування зверніться до лікаря. Показники тиску оцінені відповідно до стандарту ${std}.
+    <b>${PDF_L.important}</b> ${PDF_L.disclaimer} ${std}.
   </div>
 </div>`;
 }
