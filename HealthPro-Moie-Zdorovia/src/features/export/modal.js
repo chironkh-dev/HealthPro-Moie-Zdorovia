@@ -4,6 +4,7 @@ import { state } from '../../core/state.js';
 import { t, tt } from '../../i18n/index.js';
 
 let _expPeriod = 'month';
+let _expFormat = 'pdf';
 
 // PDF-2: які секції включати до звіту (за замовчуванням — всі)
 let _reportSections = {
@@ -16,6 +17,19 @@ let _reportSections = {
 
 export function getExportPeriod() {
   return _expPeriod;
+}
+
+export function getExportFormat() {
+  return _expFormat;
+}
+
+export function selectExportFormat(fmt) {
+  _expFormat = fmt === 'csv' ? 'csv' : 'pdf';
+  document.querySelectorAll('.exp-format-btn').forEach((b) => {
+    b.classList.toggle('active', b.dataset.fmt === _expFormat);
+  });
+  const sections = document.getElementById('expSectionsBlock');
+  if (sections) sections.style.display = _expFormat === 'csv' ? 'none' : '';
 }
 
 export function getReportSections() {
@@ -61,7 +75,7 @@ export function selectExportPeriod(period, el) {
   } else {
     customRange.classList.remove('show');
     const now = new Date();
-    const days = period === 'week' ? 7 : period === '2weeks' ? 14 : 30;
+    const days = period === 'week' ? 7 : period === '2weeks' ? 14 : period === 'quarter' ? 90 : 30;
     const fromStr = new Date(now - days * 864e5).toISOString().slice(0, 10);
     const toStr = now.toISOString().slice(0, 10);
     document.getElementById('expDateFrom').value = fromStr;

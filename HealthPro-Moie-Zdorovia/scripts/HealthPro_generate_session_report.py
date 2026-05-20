@@ -10,8 +10,8 @@ HealthPro — Моє Здоров'я
 # ══════════════════════════════════════════════════════════════════════════════
 # НАЛАШТУВАННЯ ЗВІТУ — редагуй перед кожною сесією
 # ══════════════════════════════════════════════════════════════════════════════
-VERSION     = "5.3.22"               # версія застосунку
-DESCRIPTION = "IZ4_PDF123_WHO2"     # коротке уточнення теми сесії (без пробілів)
+VERSION     = "5.3.24"               # версія застосунку
+DESCRIPTION = "DATE1_PDFi18n_WHOfix_ReportModal"  # коротке уточнення теми сесії (без пробілів)
 PART        = None                   # номер частини, якщо сесія розбита (1, 2, …) або None
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -257,192 +257,187 @@ def build_story():
 
     # Статистичні плитки
     s += [stats_row([
-        stat_cell("4",   "Задачі виконано",    "ІЗ-4 · PDF-1/2/3 · WHO-2"),
-        stat_cell("12",  "Файлів змінено",     "JS · HTML · i18n · тести"),
-        stat_cell("2",   "Тест-файлів оновл.", "health-score · meas-window"),
+        stat_cell("4",   "Блоки виконано",     "DATE-1 · PDF-i18n · WHO-fix · Report-Modal"),
+        stat_cell("10",  "Файлів змінено",     "JS · HTML · i18n · py-звіт"),
+        stat_cell("36",  "Нових i18n ключів",  "pdf.js uk+ru (по 18)"),
         stat_cell("513", "Тестів проходить",   "16/16 файлів ✓"),
     ]), sp(14), hr()]
 
-    # ═══ 1. ІЗ-4 — Pulse null → excluded from denominator ════════════════════
-    s.append(section_box("ІЗ-4", "Пульс null → виключається зі знаменника ІЗ"))
+    # ═══ 1. DATE-1 — Уніфікація форматів дат ════════════════════════════════
+    s.append(section_box("DATE-1", "Уніфікація форматів дат по всьому додатку"))
     s.append(sp(6))
     s.append(body(
-        "Проблема: scorePulse(null) повертала 0, і пульс потрапляв у знаменник як активний "
-        "модуль навіть без даних. Результат: при null пульсі максимальний скор = 75 замість 100. "
-        "Виправлено трьома змінами у health-score.js:"
+        "Проблема: дати відображались у різних форматах (YYYY-MM-DD, DD.MM, DD/MM/YYYY) "
+        "залежно від модуля. Рішення: централізовані helper-функції у core/utils.js "
+        "та уніфікація у 9 файлах. Внутрішні ключі БД залишаються у форматі YYYY-MM-DD."
     ))
     s.append(sp(4))
     s.append(arch_table([
-        ("scorePulse(null) → return null",
-         "Раніше: scorePulse(null) === 0 (вважалось 0/20 балів). "
-         "Тепер: scorePulse(null) === null — сигнал про відсутність даних."),
-        ("calcScoreForDay() — динамічний знаменник",
-         "maxPossible = ps !== null ? 60 : 40. "
-         "Якщо пульс відсутній — максимум 40 балів (лише систолічний + діастолічний). "
-         "При наявному пульсі — максимум 60 балів (40 + 20)."),
-        ("calcHealthScore() — фільтрація null модулів",
-         "modules.filter(m => m.score !== null) — пульс без даних виключається "
-         "з переліку активних модулів (як BMI та кроки). "
-         "currentDetailedScores.pulse = pulseRaw ?? 0 для відображення у UI."),
+        ("formatDate(dateStr) → ДД.ММ.РРРР",
+         "Основний формат для відображення. Вхід: ISO-рядок або Date. "
+         "Вихід: '20.05.2026'. Використовується у заголовках, журналі, PDF."),
+        ("formatDateShort(dateStr) → ДД.ММ",
+         "Короткий формат для компактних місць (осі графіків, tooltip, "
+         "рядки таблиць). Вихід: '20.05'."),
+        ("formatTime(dateStr) → ГГ:ХХ",
+         "24-годинний формат часу. Вихід: '14:35'. "
+         "Замінює toLocaleTimeString() з непередбачуваним locale."),
     ]))
     s.append(sp(4))
-    s.append(body(
-        "Результат: вимірювання без пульсу тепер дають максимальний ІЗ = 100 (якщо BP ідеальний). "
-        "Два тест-файли оновлено: score 75 → 100 для null/відсутнього пульсу."
-    ))
-    s.append(sp(4))
     s.append(file_table([
-        ("src/features/analytics/health-score.js", "ОНОВЛЕНО",
-         "scorePulse(null)→null. calcScoreForDay() динамічний знаменник. "
-         "calcHealthScore() null-фільтрація модулів."),
-        ("tests/health-score.test.js",             "ОНОВЛЕНО",
-         "Тест pulse=null: expect(score).toBe(100) замість toBe(75)."),
-        ("tests/measurement-window.test.js",       "ОНОВЛЕНО",
-         "Тест pulse=0 (відсутній): expect(score).toBe(100) замість toBe(75)."),
+        ("src/core/utils.js",                    "ОНОВЛЕНО",
+         "Нові exports: formatDate, formatDateShort, formatTime."),
+        ("src/app.js",                           "ОНОВЛЕНО",
+         "Заголовок дати у хедері — через formatDate()."),
+        ("src/features/export/csv.js",           "ОНОВЛЕНО",
+         "Дата/час у CSV-рядках — formatDate + formatTime."),
+        ("src/features/export/pdf.js",           "ОНОВЛЕНО",
+         "Дата генерації PDF — formatDate()."),
+        ("src/features/export/print.js",         "ОНОВЛЕНО",
+         "Заголовок друку — formatDate()."),
+        ("src/features/export/pdf-report.js",    "ОНОВЛЕНО",
+         "formedAt, period, colDateShort, colTimeShort — через format*."),
+        ("src/features/export/backup.js",        "ОНОВЛЕНО",
+         "Дата бекапу у назві файлу та вмісті — formatDate()."),
+        ("src/features/settings/disclaimer.js",  "ОНОВЛЕНО",
+         "Дата дисклеймера — formatDate()."),
+        ("src/features/steps/index.js",          "ОНОВЛЕНО",
+         "Графік кроків: мітки осі X → formatDateShort, tooltip → formatDate."),
     ]))
     s += [sp(6), hr()]
 
-    # ═══ 2. PDF-1 — 8-блочний шаблон лікарського PDF ════════════════════════
-    s.append(section_box("PDF-1", "8-блочний шаблон лікарського PDF (повний перепис)"))
+    # ═══ 2. PDF-4 (i18n) — PDF звіт повністю локалізовано ═══════════════════
+    s.append(section_box("PDF-4", "PDF звіт повністю локалізовано (uk/ru)"))
     s.append(sp(6))
     s.append(body(
-        "Повністю переписано pdf-report.js. Новий шаблон використовує html2canvas + jsPDF "
-        "для рендерингу кожного блоку. 8 секцій документу:"
+        "Проблема: pdf-report.js містив 35+ хардкодованих українських рядків — "
+        "звіт завжди генерувався українською незалежно від мови інтерфейсу. "
+        "Рішення: новий файл i18n/pdf.js + PDF_L = PDF_LABELS[state.lang]."
     ))
     s.append(sp(4))
     s.append(arch_table([
-        ("Блок 1: Заголовок",
-         "Назва 'Медична картка пацієнта', лікарня, підрозділ, дата, обраний стандарт (ESC/AHA)."),
-        ("Блок 2: Пацієнт + Екстрений контакт",
-         "ПІБ, дата народження, вік, вага/зріст/ІМТ, особиста норма, "
-         "медикаменти (короткий список), ім'я та телефон екстреного контакту."),
-        ("Блок 3: Статистика (4 картки)",
-         "Середній систолічний/діастолічний, середній пульс, середній ІЗ, "
-         "максимальний та мінімальний тиск за обраний період."),
-        ("Блок 4: SVG-графік тиску",
-         "Лінійний графік з нормативними лініями 140 мм рт.ст. (систола) та 90 (діастола). "
-         "Мітки дат на осі X, точки за кожен день."),
-        ("Блок 5: Журнал вимірювань",
-         "Таблиця з усіма вимірюваннями: дата, час, систола/діастола/пульс, "
-         "категорія, ІЗ. Смугасті рядки (зебра)."),
-        ("Блок 6: Ліки",
-         "Таблиця призначених ліків: назва, доза, час, дні. Смугасті рядки."),
-        ("Блок 7: Прийом ліків (Adherence)",
-         "Кольоровий bar chart: відсоток прийнятих ліків по кожному препарату. "
-         "Зелений ≥80%, жовтий 50-79%, червоний <50%."),
-        ("Блок 8: Блок лікаря",
-         "Поле для нотаток лікаря (порожній прямокутник 6×1.5 см), підпис і дата. "
-         "Дисклеймер зі стандартом ВООЗ."),
+        ("PDF-3: genderMap виправлено",
+         "Стара логіка: genderMap = { male: '...', female: '...' } та key = profile.gender. "
+         "Виправлено: key = profile.gender === 'm' ? PDF_L.male : PDF_L.female. "
+         "Стать тепер відображається коректно в обох мовах."),
+        ("i18n/pdf.js — 36 нових ключів",
+         "По 18 ключів для uk та ru. Охоплюють весь вміст PDF: "
+         "заголовок, блоки, таблиця колонок, категорії ІМТ, одиниці виміру, дисклеймер."),
+        ("const PDF_L = PDF_LABELS[state.lang]",
+         "pdf-report.js читає мову з state.lang при кожному виклику генерації. "
+         "Перемикання uk↔ru одразу відображається у наступному згенерованому PDF."),
     ]))
     s.append(sp(4))
     s.append(file_table([
-        ("src/features/export/pdf-report.js", "ПЕРЕПИСАНО",
-         "generateDoctorReport(measurements, sections) — приймає масив вимірювань та "
-         "об'єкт sections {chart, journal, meds, adherence, doctorBlock}. "
-         "8 блоків, html2canvas + jsPDF, кирилиця через Arial/system fonts."),
+        ("src/i18n/pdf.js",                   "НОВИЙ",
+         "PDF_LABELS = { uk: {...}, ru: {...} }. 36 ключів: reportTitle, stdLabel, "
+         "formedAt, period, patientData, heightWeight, personalNorm, mmHgUnit, "
+         "emergContact, alertBP, noEmergency, avgBP, avgPulse, bpmUnit, hiScale, "
+         "maxMinSys, measUnit, bpChart, journalTitle, colDateShort, colTimeShort, "
+         "colBPShort, colCat, colNoteShort, medsTitle, noActiveMeds, adherTitle, "
+         "doctorBlock, doctorNotes, doctorSign, signDateLine, disclaimer, "
+         "bmiUnder/Normal/Over/Obese."),
+        ("src/features/export/pdf-report.js", "ОНОВЛЕНО",
+         "import PDF_LABELS; const PDF_L = PDF_LABELS[state.lang]. "
+         "37 місць замінено з хардкоду на PDF_L.*. genderMap виправлено."),
     ]))
     s += [sp(6), hr()]
 
-    # ═══ 3. PDF-2 — Секції звіту (чекбокси) ══════════════════════════════════
-    s.append(section_box("PDF-2", "Секції звіту — чекбокси у модалці експорту"))
+    # ═══ 3. WHO-fix — Два виправлення медичних норм ══════════════════════════
+    s.append(section_box("WHO-fix", "Два виправлення медичних норм у i18n"))
     s.append(sp(6))
-    s.append(body(
-        "Користувач може вибирати які блоки включати в PDF. "
-        "Реалізовано через _reportSections у modal.js та 5 чекбоксів у HTML."
-    ))
+    s.append(arch_table([
+        ("WHO-fix-1: 115/75 → ≥135/85",
+         "Ключ t-bp-std-home-text у uk.js та ru.js містив некоректний поріг <115/75. "
+         "Правильне значення за ESC 2024 для домашніх вимірів — ≥135/85 мм рт. ст. "
+         "Виправлено в обох мовах."),
+        ("WHO-fix-2: Elevated → Підвищений/Повышенный",
+         "who.i18n.js: рядок 64 (uk) та 153 (ru) — заголовок категорії "
+         "'Elevated — AHA 2017' залишався англійською. "
+         "UA: 'Підвищений (Elevated) — AHA 2017'. RU: 'Повышенный (Elevated) — AHA 2017'. "
+         "Тіло статті також оновлено відповідними перекладами."),
+    ]))
     s.append(sp(4))
     s.append(file_table([
-        ("src/features/export/modal.js", "ОНОВЛЕНО",
-         "_reportSections = {chart:true, journal:true, meds:true, adherence:true, doctorBlock:true}. "
-         "getReportSections() — повертає копію. toggleReportSection(key) — перемикає секцію."),
-        ("index.html", "ОНОВЛЕНО",
-         "5 чекбоксів у модалці звіту: графік, журнал, ліки, прийом ліків, блок лікаря. "
-         "data-change='toggleReportSection' + data-section='chart|journal|meds|adherence|doctorBlock'. "
-         "Кнопка 'PDF для лікаря' — нова основна кнопка (primary action)."),
-        ("src/i18n/ui.uk.js", "ОНОВЛЕНО",
-         "Нові i18n ключі: exp-section-chart, exp-section-journal, exp-section-meds, "
-         "exp-section-adherence, exp-section-doctor, exp-btn-doctor-pdf."),
-        ("src/i18n/ui.ru.js", "ОНОВЛЕНО",
-         "Паралельні переклади на русскую для 6 нових ключів."),
+        ("src/i18n/ui.uk.js",      "ОНОВЛЕНО", "t-bp-std-home-text: <115/75 → ≥135/85 мм рт.ст."),
+        ("src/i18n/ui.ru.js",      "ОНОВЛЕНО", "t-bp-std-home-text: аналогічне виправлення RU."),
+        ("src/i18n/who.i18n.js",   "ОНОВЛЕНО",
+         "Рядки 64+153: заголовок 'Elevated' перекладено UK+RU. Тіло статті оновлено."),
     ]))
     s += [sp(6), hr()]
 
-    # ═══ 4. PDF-3 — Wire params, platformDownload, period ════════════════════
-    s.append(section_box("PDF-3", "Wire: measurements + sections → generateDoctorReport"))
+    # ═══ 4. Report-Modal (Блок 3) ════════════════════════════════════════════
+    s.append(section_box("Report-Modal", "Модаль звіту: формат PDF/CSV + кнопка 90 днів"))
     s.append(sp(6))
     s.append(body(
-        "export/index.js тепер правильно збирає дані та секції і передає їх у PDF-генератор. "
-        "Модаль закривається до початку генерації (уникнення UX-блокування)."
-    ))
-    s.append(sp(4))
-    s.append(file_table([
-        ("src/features/export/index.js", "ОНОВЛЕНО",
-         "generateDoctorReport(): викликає getExportMeasurements() + getReportSections(). "
-         "closeExportModal() до генерації. Передає {measurements, sections} у _generateDoctorReport(). "
-         "platformDownload(fileName, blob) залишений для Android Share sheet."),
-    ]))
-    s += [sp(6), hr()]
-
-    # ═══ 5. WHO-2 — Модаль стандартів ESC vs AHA ══════════════════════════
-    s.append(section_box("WHO-2", "Модаль стандартів ESC 2024 vs AHA 2017"))
-    s.append(sp(6))
-    s.append(body(
-        "Нова модаль #bpStandardModal з детальним поясненням різниці між стандартами. "
-        "Відкривається кнопкою '?' поруч ESC/AHA toggle у Налаштуваннях."
+        "Модаль експорту розширено: обраний формат (PDF або CSV) визначає що саме "
+        "генерується. Кнопка 90 днів додана поруч з 30/7 днями. "
+        "Standalone-кнопки у журналі та налаштуваннях тепер відкривають модаль (не генерують прямо)."
     ))
     s.append(sp(4))
     s.append(arch_table([
-        ("Таблиця порогів",
-         "ESC 2024 vs AHA 2017: Normal, Elevated/High Normal, HT Stage 1/2, Crisis — "
-         "два стовпці для прямого порівняння порогів систоли та діастоли."),
-        ("Домашні вимірювання",
-         "Блок з роз'ясненням що домашні норми нижчі: 135/85 мм рт.ст. за ESC, "
-         "130/80 за AHA. Пояснення 'ефекту білого халату'."),
-        ("Чому різні пороги?",
-         "ESC 2024: зберіг 140/90 через ризик 'ефекту білого халату' + відсутність "
-         "даних European cohorts. AHA 2017: знизила до 130/80 через american data — "
-         "де &lt;140/90 вже асоціюється з вищим кардіоваскулярним ризиком."),
-        ("Рекомендації",
-         "Використовувати стандарт відповідно до рекомендацій вашого лікаря. "
-         "Посилання на ESC 2024 та AHA 2017 офіційні документи."),
+        ("_expFormat + getExportFormat() + selectExportFormat()",
+         "modal.js: _expFormat = 'pdf' за замовчуванням. "
+         "selectExportFormat(fmt) перемикає active-клас на .exp-format-btn "
+         "та показує/ховає #expSectionsBlock (секції PDF видимі лише при PDF форматі)."),
+        ("generateDoctorReport() — format-aware",
+         "export/index.js: if (getExportFormat() === 'csv') _exportReportCSV(...) "
+         "else _generateDoctorReport(...). Один ентрі-поінт для обох форматів."),
+        ("openExportModal замість прямої генерації",
+         "Кнопки у журналі (#t-journal-print) та налаштуваннях (#t-settings-doc-btn) "
+         "тепер викликають openExportModal — користувач обирає формат/секції до генерації."),
+        ("Кнопка 90 днів (quarter)",
+         "index.html: кнопка expP-quarter. modal.js: selectExportPeriod підтримує 'quarter' = 90 днів."),
     ]))
     s.append(sp(4))
     s.append(file_table([
-        ("index.html", "ОНОВЛЕНО",
-         "#bpStandardModal: таблиця порогів, домашні норми, пояснення різниці, посилання. "
-         "Кнопка '?' поруч ESC/AHA toggle у #settingsTab."),
-        ("src/app.js", "ОНОВЛЕНО",
-         "ACTIONS: openBPStandardModal / closeBPStandardModal. "
-         "import toggleReportSection з modal.js."),
-        ("src/i18n/ui.uk.js", "ОНОВЛЕНО",
-         "18 нових ключів: bp-std-modal-title, bp-std-esc-col, bp-std-aha-col, "
-         "bp-std-why-title, bp-std-why-text, bp-std-home-title, bp-std-home-text, "
-         "bp-std-rec-title, bp-std-rec-text, та ін."),
-        ("src/i18n/ui.ru.js", "ОНОВЛЕНО",
-         "18 паралельних ключів мовою Ru."),
+        ("src/features/export/modal.js",  "ОНОВЛЕНО",
+         "_expFormat, getExportFormat(), selectExportFormat(fmt). "
+         "selectExportPeriod: підтримка 'quarter'. Reset _expFormat='pdf' у openExportModal."),
+        ("src/features/export/index.js",  "ОНОВЛЕНО",
+         "generateDoctorReport(): format-aware dispatch до CSV або PDF генератора."),
+        ("src/app.js",                    "ОНОВЛЕНО",
+         "import selectExportFormat; ACTIONS['selectExportFormat'] = selectExportFormat."),
+        ("index.html",                    "ОНОВЛЕНО",
+         "Кнопка expP-quarter (90 днів). Format selector (PDF/CSV). "
+         "#expSectionsBlock обгортка. Кнопки журналу/налаштувань → openExportModal. "
+         "Закрито </div> для expSectionsBlock."),
+        ("src/i18n/ui.uk.js",             "ОНОВЛЕНО",
+         "t-exp-btn-quarter, t-exp-format-lbl, t-exp-format-pdf, t-exp-format-csv."),
+        ("src/i18n/ui.ru.js",             "ОНОВЛЕНО",
+         "Паралельні 4 ключі RU."),
     ]))
+    s += [sp(6), hr()]
+
+    # ═══ 5. Block 4 — Android Share (вже реалізовано) ════════════════════════
+    s.append(section_box("Block 4", "Android Share — підтверджено реалізацію"))
+    s.append(sp(6))
+    s.append(body(
+        "Аудит platform.js підтвердив: _blobToBase64(), Filesystem.writeFile(), "
+        "Share.share() вже реалізовані та правильно підключені. "
+        "Жодних змін не потребувалось — блок завершено підтвердженням."
+    ))
     s += [sp(6), hr()]
 
     # ═══ 6. Архітектурні рішення ════════════════════════════════════════════
     s.append(section_box("6", "Архітектурні рішення сесії"))
     s.append(sp(6))
     s.append(arch_table([
-        ("null як відсутні дані (null-as-absent)",
-         "scorePulse(null) → null (не 0). Дозволяє відрізнити 'пульс = 0 уд/хв' від "
-         "'пульс не виміряно'. Паттерн: будь-який score-модуль може повернути null "
-         "як сигнал про відсутність даних — і тоді він виключається зі знаменника."),
-        ("Динамічний знаменник ІЗ",
-         "maxPossible залежить від наявності даних: без пульсу = 40, з пульсом = 60. "
-         "Формула: score% = (rawScore / maxPossible) * 100. "
-         "Масштабує до 100% незалежно від того скільки модулів активні."),
-        ("_reportSections у modal.js",
-         "Стан секцій PDF зберігається в модулі modal.js — не у state.js. "
-         "Це тимчасовий стан UI (session-only), не потребує персистентності. "
-         "Доступ через getReportSections() / toggleReportSection(key)."),
-        ("platformDownload залишений для Android",
-         "На Android jsPDF.save() не відкриває Share sheet — потрібен platformDownload. "
-         "На вебі — використовується стандартний blob URL download. "
-         "Умова: if (Capacitor.isNativePlatform()) platformDownload(...) else blobUrl."),
+        ("Централізовані date-helpers у utils.js",
+         "Єдине місце визначення форматів дат. Заміна toLocaleDateString з locale 'uk-UA' "
+         "на детерміністичні formatDate/formatDateShort/formatTime — "
+         "однаковий вивід на будь-якій локалі пристрою."),
+        ("PDF_LABELS — окремий i18n модуль для PDF",
+         "PDF-рядки відокремлено від ui.*.js (там сотні ключів UI). "
+         "pdf.js є компактним (36 ключів) та легко розширюється для нових мов."),
+        ("#expSectionsBlock show/hide",
+         "Секції звіту (чекбокси) показуються лише при PDF форматі. "
+         "При CSV — блок прихований через display:none. "
+         "UX: при перемиканні формату UI одразу адаптується без перезавантаження модалі."),
+        ("openExportModal як єдиний ентрі-поінт для звіту",
+         "Раніше кнопки у 3 місцях викликали generateDoctorReport() прямо. "
+         "Тепер — всі через openExportModal(). "
+         "Дозволяє користувачу обрати формат/секції перед генерацією."),
     ]))
     s += [sp(8), hr()]
 
@@ -450,11 +445,11 @@ def build_story():
     s.append(section_box("7", "Наступні кроки / Роадмап"))
     s.append(sp(6))
     s.append(proposal_table([
-        ("PDF звіт",       "Верифікувати PDF на реальному Android — Share sheet та завантаження",    "Високий"),
-        ("PDF звіт",       "Відобразити обраний стандарт (ESC/AHA) у заголовку PDF",                 "Середній"),
-        ("Аналітика",      "Покрити null-pulse кейс unit-тестами для calcHealthScore() ізольовано",  "Середній"),
-        ("WHO-2",          "Перевірити коректне відображення модалу на малих екранах (320px)",        "Середній"),
-        ("i18n",           "WHO-2 ключі — додати до tips_ru.json (source_url ESC 2024)",             "Низький"),
+        ("PDF звіт",    "Верифікувати PDF+CSV на реальному Android — Share sheet та завантаження",   "Високий"),
+        ("PDF звіт",    "Додати preview PDF у модалці (iframe або canvas) перед завантаженням",       "Середній"),
+        ("Аналітика",   "Графік розподілу категорій BP за місяць (pie/donut) у аналітиці",           "Середній"),
+        ("i18n",        "Перевірити всі нові PDF_L ключі з RU мовою на реальному пристрої",          "Середній"),
+        ("UX",          "Показувати тост-підтвердження після успішного генерування PDF/CSV",          "Низький"),
     ]))
     s += [sp(8), hr()]
 

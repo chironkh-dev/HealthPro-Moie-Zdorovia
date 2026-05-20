@@ -204,3 +204,9 @@ id = "nMnc6KFIEU7iVS9FtPwnZ"
 uri = "file://HealthPro-Moie-Zdorovia/report/HealthPro_Session_v5.3.22_IZ4_PDF123_WHO2_Report.pdf"
 type = "pdf"
 title = "Звіт сесії v5.3.22 — ІЗ-4 + PDF-1/2/3 + WHO-2"
+
+[[outputs]]
+id = "T90f4x3oXWGak3tMdkfTD"
+uri = "file://HealthPro-Moie-Zdorovia/report/HealthPro_Session_v5.3.24_DATE1_PDFi18n_WHOfix_ReportModal_Report.pdf"
+type = "pdf"
+title = "Звіт сесії HealthPro v5.3.24"

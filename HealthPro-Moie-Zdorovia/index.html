@@ -545,9 +545,9 @@
     <div id="journalList"><div class="empty-state"><div class="em"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg></div><p>Немає записів</p></div></div>
 
     <div class="history-actions">
-      <button class="btn btn-outline" data-action="generateDoctorReport">
+      <button class="btn btn-outline" data-action="openExportModal">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-        <span id="t-journal-print">Друк</span>
+        <span id="t-journal-print">Звіт</span>
       </button>
       <button class="btn btn-outline" data-action="clearHistory">
         <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
@@ -716,7 +716,7 @@
         <div class="settings-label" id="t-settings-doc-label">Звіт для лікаря (PDF)</div>
         <div class="settings-sub" id="t-settings-doc-sub">Тиск, ліки, ІЗ — повний офлайн-звіт</div>
       </div>
-      <button class="btn btn-outline btn-sm" data-action="generateDoctorReport" id="t-settings-doc-btn">PDF</button>
+      <button class="btn btn-outline btn-sm" data-action="openExportModal" id="t-settings-doc-btn">Звіт</button>
     </div>
   </div>
 
@@ -865,6 +865,10 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
         <span id="t-exp-btn-month">Місяць</span>
       </button>
+      <button class="exp-period-btn" id="expP-quarter" data-action="selectExportPeriod" data-period="quarter">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
+        <span id="t-exp-btn-quarter">90 днів</span>
+      </button>
       <button class="exp-period-btn" id="expP-custom" data-action="selectExportPeriod" data-period="custom">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         <span id="t-exp-btn-custom">Свій період</span>
@@ -884,8 +888,20 @@
 
     <div class="exp-count" id="expCount">— вимірів</div>
 
+    <!-- Формат виводу -->
+    <div style="margin:10px 0 6px;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px" id="t-exp-format-lbl">Формат виводу</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="exp-format-btn active" data-fmt="pdf" data-action="selectExportFormat" style="flex:1;padding:8px 0;border-radius:8px;font-size:12px;font-weight:700;border:2px solid var(--blue2);background:var(--blue2);color:#fff;cursor:pointer">
+        <span id="t-exp-format-pdf">PDF для лікаря</span>
+      </button>
+      <button class="exp-format-btn" data-fmt="csv" data-action="selectExportFormat" style="flex:1;padding:8px 0;border-radius:8px;font-size:12px;font-weight:700;border:2px solid var(--text3);background:transparent;color:var(--text1);cursor:pointer">
+        <span id="t-exp-format-csv">CSV для Excel</span>
+      </button>
+    </div>
+
     <!-- PDF-2: секції звіту -->
-    <div style="margin:10px 0 6px;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px" id="t-exp-sections-lbl">Розділи звіту</div>
+    <div id="expSectionsBlock">
+    <div style="margin:4px 0 6px;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px" id="t-exp-sections-lbl">Розділи звіту</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;margin-bottom:12px">
       <label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer">
         <input type="checkbox" id="expS-chart" checked data-change="toggleReportSection" data-section="chart">
@@ -908,11 +924,12 @@
         <span id="t-exp-s-doctor">Блок лікаря</span>
       </label>
     </div>
+    </div>
 
     <div class="exp-actions">
       <button class="btn-print" data-action="generateDoctorReport" style="flex:2;background:var(--blue2)">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-        <span id="t-exp-pdf-doctor-btn">PDF для лікаря</span>
+        <span id="t-exp-pdf-doctor-btn">Згенерувати звіт</span>
       </button>
       <button class="btn-print" data-action="printReportPeriod" style="background:var(--text3)">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>

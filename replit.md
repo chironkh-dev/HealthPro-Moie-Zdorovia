@@ -123,6 +123,17 @@ HealthPro-Moie-Zdorovia/
 
 ## Changelog
 
+### v5.3.24 (2026-05-20) — Сесія: DATE-1 + PDF-i18n + WHO-fix + Report-Modal
+
+- **DATE-1 (Уніфікація дат):** `core/utils.js` — нові `formatDate()` (ДД.ММ.РРРР), `formatDateShort()` (ДД.ММ), `formatTime()` (ГГ:ХХ 24-год). Уніфіковано відображення дат у: `app.js` (хедер), `export/csv.js`, `export/pdf.js`, `export/print.js`, `export/pdf-report.js`, `export/backup.js`, `settings/disclaimer.js`, `steps/index.js` (графік кроків + тултіп). YYYY-MM-DD залишається для внутрішніх ключів БД.
+- **PDF-3 (gender bug):** `pdf-report.js` — виправлено `genderMap` з `{ male/female }` → логіка `'m'`/`'f'` + `PDF_L.male`/`PDF_L.female`. Стать пацієнта тепер відображається коректно в обох мовах.
+- **PDF-4 (PDF i18n):** `pdf-report.js` — імпортовано `PDF_LABELS`; `const PDF_L = PDF_LABELS[state.lang]`. Замінено 35+ хардкодованих UA-рядків на `PDF_L.*`. `i18n/pdf.js` — додано 36 нових ключів (uk + ru): `reportTitle`, `stdLabel`, `formedAt`, `period`, `patientData`, `heightWeight`, `personalNorm`, `mmHgUnit`, `emergContact`, `alertBP`, `noEmergency`, `avgBP`, `avgPulse`, `bpmUnit`, `hiScale`, `maxMinSys`, `measUnit`, `bpChart`, `journalTitle`, `colDateShort`, `colTimeShort`, `colBPShort`, `colCat`, `colNoteShort`, `medsTitle`, `noActiveMeds`, `adherTitle`, `doctorBlock`, `doctorNotes`, `doctorSign`, `signDateLine`, `disclaimer`, `bmiUnder/Normal/Over/Obese`. Звіт тепер генерується повністю на мові інтерфейсу (uk/ru).
+- **WHO-fix-1 (115/75):** `i18n/ui.uk.js` + `i18n/ui.ru.js` — ключ `t-bp-std-home-text` виправлено: замість некоректного `<115/75` → правильне формулювання порогу ≥135/85 мм рт. ст. для домашніх вимірів.
+- **WHO-fix-2 (Elevated):** `i18n/who.i18n.js` — заголовок `'Elevated — AHA 2017'` перекладено: UA → `'Підвищений (Elevated) — AHA 2017'`, RU → `'Повышенный (Elevated) — AHA 2017'`. Тіло статті також оновлено.
+- **Report-Modal (Блок 3):** `export/modal.js` — додано `_expFormat`, `getExportFormat()`, `selectExportFormat()` (перемикання PDF/CSV + show/hide секцій). `selectExportPeriod` — підтримка `'quarter'` (90 днів). `export/index.js` — `generateDoctorReport()` читає формат: якщо CSV → викликає `_exportReportCSV`, якщо PDF → `_generateDoctorReport`. `index.html` — кнопка `expP-quarter` (90 днів), format selector (PDF/CSV), обгортка `#expSectionsBlock` для show/hide, кнопки журналу/налаштувань → `openExportModal`. `app.js` — `selectExportFormat` імпортовано та додано в ACTIONS. `i18n` uk+ru — `t-exp-btn-quarter`, `t-exp-format-lbl`, `t-exp-format-pdf`, `t-exp-format-csv`.
+- **Block 4 (Android Share):** `platform.js` — вже реалізовано: `_blobToBase64` + `Filesystem.writeFile` + `Share.share`. Перевірено — повна реалізація присутня.
+- **Тести:** 513/513 ✅ (16/16 файлів).
+
 ### v5.3.22 (2026-05-16) — Сесія: ІЗ-4 + PDF-1/2/3 + WHO-2
 
 - **ІЗ-4 (Pulse null → excluded from denominator):** `health-score.js` — `scorePulse(null)` тепер повертає `null` (раніше `0`). `calcScoreForDay()` — динамічний знаменник: `maxPossible = ps !== null ? 60 : 40`. У `calcHealthScore()` пульс без даних тепер виключається з активних модулів (як BMI/активність). `currentDetailedScores.pulse = pulseRaw ?? 0`.
