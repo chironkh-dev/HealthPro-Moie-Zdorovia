@@ -28,11 +28,11 @@ export function getBPStatus(s, d) {
   const std = state.settings?.bpStandard || 'ESC2024';
 
   if (std === 'AHA2017') {
-    if (s < 120 && d < 80)  return { label: t('n-bp-normal'),        cls: 'badge-ok'   };
-    if (s < 130 && d < 80)  return { label: t('n-bp-aha-elevated'),  cls: 'badge-warn' };
-    if (s < 140 && d < 90)  return { label: t('n-bp-aha-ht1'),       cls: 'badge-warn' };
-    if (s >= 180 || d >= 120) return { label: t('n-bp-crisis'),      cls: 'badge-crit' };
-    return                           { label: t('n-bp-aha-ht2'),      cls: 'badge-bad'  };
+    if (s < 120 && d < 80)              return { label: t('n-bp-normal'),        cls: 'badge-ok'   };
+    if (s >= 120 && s <= 129 && d < 80) return { label: t('n-bp-aha-elevated'),  cls: 'badge-warn' };
+    if (s < 140 && d < 90)              return { label: t('n-bp-aha-ht1'),       cls: 'badge-warn' };
+    if (s >= 180 || d >= 120)           return { label: t('n-bp-crisis'),        cls: 'badge-crit' };
+    return                                      { label: t('n-bp-aha-ht2'),      cls: 'badge-bad'  };
   }
 
   // ESC 2024 (default)
