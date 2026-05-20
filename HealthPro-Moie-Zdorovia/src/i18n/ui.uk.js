@@ -183,7 +183,7 @@ export const T_UK ={
   'a-trend-stable-sub':'Без суттєвих змін','a-trend-down-sub':'На {n} мм нижче','a-trend-up-sub':'На {n} мм вище',
   'a-trend-need-5':'потрібно 5+ вимірів','a-who-tap':' → Натисни для деталей',
   'a-week-prefix':'Тиждень: {n} · Журнал →','a-min-prefix':'мін.',
-  'a-trend-avg-14':'Середній 14 дн.','a-trend-status':'Статус',
+  'a-trend-avg-14':'Середній 7 вим.','a-trend-status':'Статус',
 
   // ─── bmi ───
   'b-cat-very-low':'Виражений дефіцит','b-impact-very-low':'Ризик гіпотонії та серцевих проблем',

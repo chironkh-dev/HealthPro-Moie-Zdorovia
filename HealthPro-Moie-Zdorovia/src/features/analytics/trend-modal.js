@@ -1,4 +1,4 @@
-// 14-денний модальний графік тиску — ECharts SVGRenderer.
+// 7-вимірний модальний графік тиску — ECharts SVGRenderer.
 // sys (червона лінія) + dia (синя лінія), tooltip, markLine норми.
 
 import { state } from '../../core/state.js';
@@ -32,11 +32,10 @@ export function openTrendModal() {
     return;
   }
 
-  // B-9b: фільтр за останні 14 ДНІВ (не 14 вимірів)
-  const cutoff14 = Date.now() - 14 * 86400000;
-  const last14 = all.filter((m) => new Date(m.time).getTime() >= cutoff14).reverse();
-  const aS = avg(last14.map((m) => m.sys));
-  const aD = avg(last14.map((m) => m.dia));
+  // UX-2: ті самі 7 останніх вимірів що і блок на головному екрані
+  const last7 = all.slice(0, 7);
+  const aS = avg(last7.map((m) => m.sys));
+  const aD = avg(last7.map((m) => m.dia));
 
   if (statsEl) {
     const td = calcLocalTrend(all);
@@ -69,7 +68,7 @@ export function openTrendModal() {
     if (!el || !all.length) return;
     _modalChartEl = el;
 
-    const data = all.slice(0, 20).reverse();
+    const data = all.slice(0, 7).reverse(); // UX-2: 7 останніх, від старого до нового
     if (data.length < 2) return;
 
     const dates  = data.map((d) => formatDate(d.time));

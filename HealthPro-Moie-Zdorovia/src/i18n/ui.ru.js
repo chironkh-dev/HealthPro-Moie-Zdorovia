@@ -191,7 +191,7 @@ export const T_RU ={
   'a-trend-stable-sub':'Без существенных изменений','a-trend-down-sub':'На {n} мм ниже','a-trend-up-sub':'На {n} мм выше',
   'a-trend-need-5':'нужно 5+ измерений','a-who-tap':' → Нажми для деталей',
   'a-week-prefix':'Неделя: {n} · Журнал →','a-min-prefix':'мин.',
-  'a-trend-avg-14':'Среднее 14 дн.','a-trend-status':'Статус',
+  'a-trend-avg-14':'Среднее 7 изм.','a-trend-status':'Статус',
 
   // ─── bmi ───
   'b-cat-very-low':'Выраженный дефицит','b-impact-very-low':'Риск гипотонии и сердечных проблем',
