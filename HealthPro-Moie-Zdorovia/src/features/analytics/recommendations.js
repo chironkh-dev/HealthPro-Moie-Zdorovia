@@ -5,6 +5,9 @@ import { getBPNorm } from '../pressure/index.js';
 import { isPillDueToday } from '../meds/index.js';
 import { calcBMI } from './bmi.js';
 import { RECO_T } from '../../i18n/recommendations.i18n.js';
+import { getBPThresholds } from './health-score.js';
+import { getBPStatus } from '../pressure/norm.js';
+import { t } from '../../i18n/index.js';
 
 const avg = (arr) => (arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null);
 const fmt = (s, vars = {}) => {
@@ -83,9 +86,26 @@ export function renderRecommendations() {
   else if (aS < 85 || aD < 55) recos.push({ t: 'warn', i: 'low_bp',
     h: L.lowH, s: L.lowS, detail: L.lowD,
     links: [{ l: L.helsi, u: 'https://helsi.me' }] });
-  else recos.push({ t: 'ok', i: 'ok_bp',
-    h: L.okH, s: fmt(L.okS, { sys: aS, dia: aD, note: n.note }), detail: L.okD,
-    links: [{ l: L.okLink, u: L.okLinkUrl }] });
+  else {
+    const thresholds = getBPThresholds();
+    const isPersonal = thresholds.personal === true;
+    let recH, recS;
+    if (isPersonal) {
+      const stdStatus = getBPStatus(aS, aD).label;
+      const std = state.settings?.bpStandard || 'ESC2024';
+      const stdLabel = std === 'AHA2017' ? 'AHA 2017' : 'ESC 2024';
+      const ns = settings.normalSys || '—';
+      const nd = settings.normalDia || '—';
+      recH = t('rec-ok-personal-h');
+      recS = fmt(t('rec-ok-personal-s'), { bp: `${aS}/${aD}`, norm: `${ns}/${nd}`, std: stdLabel, status: stdStatus });
+    } else {
+      recH = L.okH;
+      recS = fmt(L.okS, { sys: aS, dia: aD, note: n.note });
+    }
+    recos.push({ t: 'ok', i: 'ok_bp',
+      h: recH, s: recS, detail: L.okD,
+      links: [{ l: L.okLink, u: L.okLinkUrl }] });
+  }
 
   if (age >= 60) recos.push({ t: 'info', i: 'age',
     h: fmt(L.ageH, { age }), s: n.note, detail: fmt(L.ageD, { sysWarn: n.sysWarn, diaWarn: n.diaWarn }),

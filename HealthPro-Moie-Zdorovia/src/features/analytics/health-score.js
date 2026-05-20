@@ -11,6 +11,7 @@ import { isPillDueToday } from '../meds/index.js';
 import { getStepCount } from '../steps/api.js';
 import { calcBMI } from './bmi.js';
 import { t } from '../../i18n/index.js';
+import { getBPStatus } from '../pressure/norm.js';
 
 const avg = (arr) =>
   arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null;
@@ -325,6 +326,21 @@ export function toggleHealthTooltip() {
     if (normEl) {
       normEl.textContent    = d.bpPersonal ? t('hs-norm-personal') : t('hs-norm-standard');
       normEl.style.display  = 'block';
+    }
+
+    // IZ-warn: особиста норма — примітка в тултіпі (тільки коли активна)
+    const noteEl = document.getElementById('iz-personal-note');
+    if (noteEl) {
+      if (d.bpPersonal === true) {
+        const std = state.settings?.bpStandard || 'ESC2024';
+        const stdLabel = std === 'AHA2017' ? 'AHA 2017' : 'ESC 2024';
+        noteEl.textContent = t('hs-personal-note')
+          .replace('{std}', stdLabel)
+          .replace('{status}', getBPStatus(d.avgSys, d.avgDia).label);
+        noteEl.style.display = 'block';
+      } else {
+        noteEl.style.display = 'none';
+      }
     }
   }
   el.classList.toggle('show');
