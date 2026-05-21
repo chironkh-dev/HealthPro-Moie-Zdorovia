@@ -123,6 +123,16 @@ HealthPro-Moie-Zdorovia/
 
 ## Changelog
 
+### v5.3.29 (2026-05-21) — Сесія: SQLCipher шифрування БД ✅ підтверджено на пристрої
+
+- **SQLCipher працює:** `xxd` показує хаотичні байти — база зашифрована на реальному Samsung пристрої.
+- **Не додавати `net.zetetic:android-database-sqlcipher` в `build.gradle`** — він вже вбудований у `@capacitor-community/sqlite`. Дублікат = `mergeDebugNativeLibs FAILED`.
+- **`createConnection` mode:** передавати `'secret'`, НЕ сам ключ. Ключ встановлюється окремо через `setEncryptionSecret(encKey)` до `createConnection`.
+- **`changeEncryptionSecret(dbName, newKey, oldKey)`** — новий ключ першим, старий другим. Для незашифрованої бази `oldKey = ''`.
+- **Міграція існуючих баз:** автоматична — спроба відкрити як зашифровану, при невдачі відкриває без шифрування і мігрує.
+- **`retrieveConnection` потребує `open()`** — додано `await dbHandle.open()` після `retrieveConnection`.
+- **Debug APK підпис:** при зміні машини збірки підпис змінюється → встановлення поверх неможливе → бекап `.hpb` → видалити → встановити.
+
 ### v5.3.26 (2026-05-21) — Сесія: Report-Modal Bugfix (14 пунктів відгуку)
 
 - **ROOT BUG (getLocale):** `pdf-report.js` — видалено виклик `getLocale()` (функція не існувала → ReferenceError → PDF не генерувався). Видалено параметр `loc` з `buildReportHTML`.
@@ -264,6 +274,9 @@ HealthPro-Moie-Zdorovia/
 - **`migrateV1toV2`:** Ідемпотентна функція, не змінювати логіку.
 - **`_setStateRef(state)`:** Викликається з `app.js` після ініціалізації, до першого використання `db.js`.
 - **SQLCipher на вебі:** Не активний, тестувати лише на APK.
+- **SQLCipher mode:** `createConnection(..., true, 'secret', ...)` — передавати рядок `'secret'`, не сам ключ.
+- **SQLCipher дублікат:** НЕ додавати `net.zetetic` в `build.gradle` — бібліотека вже вбудована у `@capacitor-community/sqlite`. Дублікат = `mergeDebugNativeLibs FAILED`.
+- **`changeEncryptionSecret` порядок:** `(dbName, newKey, oldKey)` — новий ключ першим, старий другим.
 
 ## Folders
 
