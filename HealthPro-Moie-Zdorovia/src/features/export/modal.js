@@ -9,6 +9,7 @@ let _expFormat = 'pdf';
 // PDF-2: які секції включати до звіту (за замовчуванням — всі)
 let _reportSections = {
   chart:      true,
+  pulse:      true,
   journal:    true,
   meds:       true,
   adherence:  true,

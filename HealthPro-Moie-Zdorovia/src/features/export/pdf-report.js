@@ -37,13 +37,14 @@ function computeDailyAdherence(days = 30) {
 }
 
 // ── Block: BP Chart SVG ───────────────────────────────────────────────────────
-function buildBPChartSVG(data) {
+function buildBPChartSVG(data, showPulse) {
   if (!data || data.length < 2) {
     return `<div style="text-align:center;color:#94a3b8;font-size:12px;padding:20px;background:#f8fafc;border-radius:8px">Недостатньо даних для графіка (мін. 2 виміри)</div>`;
   }
   const W = 700, H = 170, ml = 40, mr = 12, mt = 14, mb = 34;
   const cw = W - ml - mr, ch = H - mt - mb;
-  const vals = [...data.map((m) => m.sys), ...data.map((m) => m.dia)];
+  const pulseVals = showPulse ? data.map((m) => m.pulse).filter(Boolean) : [];
+  const vals = [...data.map((m) => m.sys), ...data.map((m) => m.dia), ...pulseVals];
   const minV = Math.max(0, Math.min(...vals) - 12);
   const maxV = Math.max(...vals) + 12;
   const yS = (v) => mt + ch - ((v - minV) / (maxV - minV)) * ch;
@@ -65,17 +66,27 @@ function buildBPChartSVG(data) {
     return `<line x1="${ml}" y1="${y.toFixed(1)}" x2="${W - mr}" y2="${y.toFixed(1)}" stroke="${c}" stroke-width="1" stroke-dasharray="5,3" opacity=".45"/>
     <text x="${ml - 4}" y="${(y + 3).toFixed(1)}" text-anchor="end" font-size="8" fill="${c}">${lbl}</text>`;
   }).join('');
+  const pulseWithIdx = showPulse ? data.reduce((acc, m, i) => { if (m.pulse) acc.push({ i, p: m.pulse }); return acc; }, []) : [];
+  const pulseSvg = pulseWithIdx.length >= 2
+    ? `<path d="${pulseWithIdx.map(({ i, p }, j) => `${j === 0 ? 'M' : 'L'}${xS(i).toFixed(1)},${yS(p).toFixed(1)}`).join(' ')}" fill="none" stroke="#f97316" stroke-width="1.8" stroke-dasharray="5,3" stroke-linejoin="round"/>
+    ${pulseWithIdx.map(({ i, p }) => `<circle cx="${xS(i).toFixed(1)}" cy="${yS(p).toFixed(1)}" r="2.5" fill="#f97316"/>`).join('')}`
+    : '';
+  const pulseLegend = pulseWithIdx.length >= 2
+    ? `<circle cx="${ml + 250}" cy="${mt + 9}" r="5" fill="#f97316"/><text x="${ml + 260}" y="${mt + 13}" font-size="10" fill="#f97316" font-weight="700">Пульс</text>`
+    : '';
   return `<svg width="100%" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="display:block">
     <rect width="${W}" height="${H}" fill="#f8fafc" rx="8"/>
     ${nLinesHtml}
     <path d="${sysPath}" fill="none" stroke="#1e40af" stroke-width="2.5" stroke-linejoin="round"/>
     <path d="${diaPath}" fill="none" stroke="#dc2626" stroke-width="2" stroke-linejoin="round"/>
+    ${pulseSvg}
     ${data.map((m, i) => `<circle cx="${xS(i).toFixed(1)}" cy="${yS(m.sys).toFixed(1)}" r="3.5" fill="#1e40af"/><circle cx="${xS(i).toFixed(1)}" cy="${yS(m.dia).toFixed(1)}" r="3" fill="#dc2626"/>`).join('')}
     ${xLabels}
     <circle cx="${ml + 16}" cy="${mt + 9}" r="5" fill="#1e40af"/>
     <text x="${ml + 26}" y="${mt + 13}" font-size="10" fill="#1e40af" font-weight="700">Систолічний</text>
     <circle cx="${ml + 130}" cy="${mt + 9}" r="5" fill="#dc2626"/>
     <text x="${ml + 140}" y="${mt + 13}" font-size="10" fill="#dc2626" font-weight="700">Діастолічний</text>
+    ${pulseLegend}
   </svg>`;
 }
 
@@ -107,7 +118,7 @@ function buildAdherenceSVG(adhData) {
 
 // ── Helper: section heading ───────────────────────────────────────────────────
 function sectionTitle(label, color = '#1e40af') {
-  return `<div style="font-size:13px;font-weight:700;border-left:4px solid ${color};padding-left:10px;margin:18px 0 8px">${label}</div>`;
+  return `<div class="pdf-section-head" style="font-size:13px;font-weight:700;border-left:4px solid ${color};padding-left:10px;margin:18px 0 8px">${label}</div>`;
 }
 
 // ── Helper: stat card ─────────────────────────────────────────────────────────
@@ -194,10 +205,13 @@ function buildReportHTML({ measurements, sections, settings, dateStr, periodLabe
 
   <!-- БЛОК 1: Шапка -->
   <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1e40af;padding-bottom:14px;margin-bottom:20px">
-    <div>
-      <div style="font-size:24px;font-weight:900;color:#1e40af;letter-spacing:-.5px">Health<span style="color:#dc2626">Pro</span></div>
-      <div style="font-size:13px;font-weight:700;color:#374151;margin-top:2px">${PDF_L.reportTitle}</div>
-      <div style="font-size:10px;color:#64748b;margin-top:2px">${PDF_L.stdLabel} ${std} · ${PDF_L.formedAt} ${dateStr}</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <svg width="42" height="42" viewBox="0 0 42 42" xmlns="http://www.w3.org/2000/svg"><rect width="42" height="42" rx="10" fill="#1e40af"/><path d="M4 21h7l3-9 5 18 4-11 3 6h12" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div>
+        <div style="font-size:24px;font-weight:900;color:#1e40af;letter-spacing:-.5px">Health<span style="color:#dc2626">Pro</span></div>
+        <div style="font-size:13px;font-weight:700;color:#374151;margin-top:2px">${PDF_L.reportTitle}</div>
+        <div style="font-size:10px;color:#64748b;margin-top:2px">${PDF_L.stdLabel} ${std} · ${PDF_L.formedAt} ${dateStr}</div>
+      </div>
     </div>
     <div style="text-align:right;font-size:11px;color:#64748b;background:#f8fafc;padding:10px 14px;border-radius:8px;border:1px solid #e2e8f0">
       <div style="font-weight:900;font-size:14px;color:#1e293b;margin-bottom:2px">${name}</div>
@@ -239,7 +253,7 @@ function buildReportHTML({ measurements, sections, settings, dateStr, periodLabe
   ${sections.chart !== false ? `
   <!-- БЛОК 4: Графік -->
   ${sectionTitle(PDF_L.bpChart)}
-  <div style="margin-bottom:18px">${buildBPChartSVG(chartData)}</div>
+  <div style="margin-bottom:18px">${buildBPChartSVG(chartData, sections.pulse !== false)}</div>
   ` : ''}
 
   ${sections.journal !== false && tableRows ? `
@@ -326,24 +340,51 @@ async function _buildPDFBlob(measurements, sections) {
 
   try {
     await new Promise((r) => setTimeout(r, 350));
-    const canvas = await html2canvas(container.firstElementChild, {
+    const firstChild = container.firstElementChild;
+    // Measure section head positions before canvas capture
+    const containerRect = firstChild.getBoundingClientRect();
+    const sectionHeads  = Array.from(firstChild.querySelectorAll('.pdf-section-head'));
+
+    const canvas = await html2canvas(firstChild, {
       scale: 1.6, useCORS: false, backgroundColor: '#ffffff', logging: false, allowTaint: true,
     });
-    const imgData  = canvas.toDataURL('image/jpeg', 0.93);
-    const pdf      = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    const pageW    = pdf.internal.pageSize.getWidth();
-    const pageH    = pdf.internal.pageSize.getHeight();
-    const imgH     = (canvas.height / canvas.width) * pageW;
-    let position   = 0;
-    let heightLeft = imgH;
-    pdf.addImage(imgData, 'JPEG', 0, position, pageW, imgH);
-    heightLeft -= pageH;
-    while (heightLeft > 0) {
-      position -= pageH;
-      pdf.addPage();
-      pdf.addImage(imgData, 'JPEG', 0, position, pageW, imgH);
-      heightLeft -= pageH;
+
+    const imgData = canvas.toDataURL('image/jpeg', 0.93);
+    const pdf     = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageW   = pdf.internal.pageSize.getWidth();
+    const pageH   = pdf.internal.pageSize.getHeight();
+    const imgH    = (canvas.height / canvas.width) * pageW;
+
+    // Convert section positions from DOM pixels → PDF mm
+    const pxToMm  = pageW / canvas.width / 1.6;
+    const sectionMm = sectionHeads.map((el) => {
+      return (el.getBoundingClientRect().top - containerRect.top) * pxToMm;
+    });
+
+    const GUARD = 22; // mm — if section title falls within last GUARD mm of page → push to next page
+    let pos = 0; // mm offset in big image (top of current page viewport)
+    let firstPage = true;
+
+    while (pos < imgH - 1) {
+      if (!firstPage) pdf.addPage();
+      firstPage = false;
+      pdf.addImage(imgData, 'JPEG', 0, -pos, pageW, imgH);
+
+      const pageEnd  = pos + pageH;
+      // Find section that starts in the danger zone (last GUARD mm of page)
+      const dangling = sectionMm.find((sy) => sy > pageEnd - GUARD && sy < pageEnd && sy > pos + 10);
+
+      if (dangling) {
+        // White-out the area from dangling section to page bottom
+        const coverY = dangling - pos;
+        pdf.setFillColor(255, 255, 255);
+        pdf.rect(0, coverY, pageW, pageH - coverY + 1, 'F');
+        pos = dangling;
+      } else {
+        pos = pageEnd;
+      }
     }
+
     return { blob: pdf.output('blob'), filename: fileName };
   } finally {
     document.body.removeChild(container);

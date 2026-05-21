@@ -130,7 +130,9 @@ export function validateDosageAmount(dose, drug) {
 // ─── CRUD ───
 export function addPill() {
   const name = document.getElementById('pillName').value.trim();
-  const dose = document.getElementById('pillDose').value.trim();
+  const doseNum  = document.getElementById('pillDose').value.trim();
+  const doseUnit = document.getElementById('pillUnit')?.value || 'мг';
+  const dose     = doseNum ? `${doseNum} ${doseUnit}` : '';
   const time = document.getElementById('pillTime').value;
   const days = document.querySelector('#pillDays .days-btn.active')?.dataset.days ?? 'daily';
   const date = document.getElementById('pillDate').value;

@@ -485,12 +485,27 @@
     <div id="allPillsList"></div>
   </div>
 
-  <div class="card">
+  <div class="card" style="position:relative">
+    <button data-action="openDrugWarnModal" style="position:absolute;top:12px;right:12px;background:none;border:none;cursor:pointer;padding:0;line-height:0" title="Застереження">
+      <svg width="28" height="28" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" fill="#ef4444"/><line x1="12" y1="9" x2="12" y2="13" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="17" r="1" fill="#fff"/></svg>
+    </button>
     <div class="card-title"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span id="t-add-pill">Додати препарат</span></div>
     <div class="input-group"><label class="input-label" id="t-pill-name">Назва препарату *</label><input type="text" class="text-input" id="pillName" placeholder="Еналаприл" data-input="checkDrugName"></div>
     <div id="pillNameWarn" style="display:none;margin-bottom:8px"></div>
     <div class="form-row">
-      <div class="input-group"><label class="input-label" id="t-pill-dose">Дозування *</label><input type="text" class="text-input" id="pillDose" placeholder="напр. 50 мг"></div>
+      <div class="input-group">
+        <label class="input-label" id="t-pill-dose">Дозування *</label>
+        <div style="display:flex;gap:6px;align-items:stretch">
+          <input type="text" class="text-input" id="pillDose" placeholder="50" style="flex:1;min-width:0">
+          <select id="pillUnit" class="text-input" style="width:72px;padding:8px 4px;flex-shrink:0">
+            <option value="мг">мг</option>
+            <option value="мкг">мкг</option>
+            <option value="мл">мл</option>
+            <option value="шт.">шт.</option>
+            <option value="крап.">крап.</option>
+          </select>
+        </div>
+      </div>
       <div class="input-group"><label class="input-label" id="t-pill-time">Час прийому</label><input type="time" class="text-input" id="pillTime" value="08:00"></div>
     </div>
     <div class="form-row">
@@ -506,7 +521,7 @@
       </div>
       <div class="input-group"><label class="input-label" id="t-pill-date">Дата</label><input type="date" class="text-input" id="pillDate" disabled></div>
     </div>
-    <button class="btn btn-violet" data-action="addPill">
+    <button class="btn btn-blue" data-action="addPill">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
       <span id="t-add-pill-btn">Додати препарат</span>
     </button>
@@ -514,9 +529,6 @@
     <div class="section-lbl" id="t-pharmacy">Пошук в аптеках</div>
     <div class="pharmacy-row">
       <button class="pharmacy-btn" data-action="searchPharmacy" data-pharmacy="tabletki">Tabletki.ua</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:6px;margin-top:8px">
-      <button class="btn btn-outline btn-sm" data-action="openDrugWarnModal" id="t-discl-btn" style="font-size:12px;padding:5px 12px">? Застереження</button>
     </div>
   </div>
 </div>
@@ -724,7 +736,6 @@
   <div class="card">
     <div class="card-title"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span id="t-backup">Резервна копія</span></div>
     <div class="settings-row"><div><div class="settings-label" id="bk-export-lbl">Зберегти бекап</div><div class="settings-sub" id="bk-export-sub">Зашифрований .hpb — всі дані</div></div><button class="btn btn-blue btn-sm" data-action="openBackupExportModal">HPB</button></div>
-    <div class="settings-row"><div><div class="settings-label" id="t-exp-csv">Експорт CSV</div><div class="settings-sub" id="t-exp-csv-sub">Для Excel / лікаря</div></div><button class="btn btn-outline btn-sm" data-action="exportCSV">CSV</button></div>
     <div class="settings-row"><div><div class="settings-label" id="bk-import-lbl">Відновити бекап</div><div class="settings-sub" id="bk-import-sub">Відновити з .hpb або .json файлу</div></div><label style="cursor:pointer"><input type="file" id="importBackupFile" accept="*/*" style="display:none" data-change="onImportBackupFile"><span class="btn btn-outline btn-sm" style="display:inline-flex" id="bk-import-btn">Відновити</span></label></div>
   </div>
 
@@ -912,6 +923,10 @@
         <span id="t-exp-s-chart">Графік тиску</span>
       </label>
       <label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer">
+        <input type="checkbox" id="expS-pulse" checked data-change="toggleReportSection" data-section="pulse">
+        <span id="t-exp-s-pulse">Пульс на графіку</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer">
         <input type="checkbox" id="expS-journal" checked data-change="toggleReportSection" data-section="journal">
         <span id="t-exp-s-journal">Журнал вимірів</span>
       </label>
@@ -931,12 +946,12 @@
     </div>
 
     <div class="exp-actions">
-      <button class="btn-print" data-action="generateDoctorReport" style="flex:3;background:var(--blue2)">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <button class="btn btn-blue" data-action="generateDoctorReport" style="flex:3">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         <span id="t-exp-generate-btn">Зберегти звіт</span>
       </button>
-      <button class="btn-print" data-action="shareReport" style="flex:2;background:var(--green2,#059669)">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      <button class="btn btn-blue" data-action="shareReport" style="flex:2;background:linear-gradient(135deg,#059669,#047857);box-shadow:0 4px 16px rgba(5,150,105,.3)">
+        <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
         <span id="t-exp-share-btn">Поділитись</span>
       </button>
     </div>

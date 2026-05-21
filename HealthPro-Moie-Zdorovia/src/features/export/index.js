@@ -4,7 +4,7 @@ import { exportPDF as _exportPDF } from './pdf.js';
 import { printReportPeriod as _printReportPeriod } from './print.js';
 import { getExportMeasurements as _getExportMeasurements, closeExportModal as _closeExportModal, getReportSections as _getReportSections, getExportFormat as _getExportFormat } from './modal.js';
 import { generateDoctorReport as _generateDoctorReport, generateReportBlob as _generateReportBlob } from './pdf-report.js';
-import { share as _platformShare } from '../../core/platform.js';
+import { download as _platformDownload } from '../../core/platform.js';
 import { state, showToast } from '../../core/state.js';
 import { t } from '../../i18n/index.js';
 
@@ -69,14 +69,7 @@ export async function shareReport() {
       // PDF share: generate blob then share (not just download)
       const result = await _generateReportBlob(measurements, sections);
       if (result && result.blob && result.filename) {
-        const s = state.settings || {};
-        await _platformShare({
-          title: result.filename,
-          text: `HealthPro — ${s.name || ''} — ${result.filename}`,
-          url: result.filename,
-          dialogTitle: t('t-exp-share-dialog') || 'Надіслати звіт лікарю',
-          files: [result.blob],
-        });
+        await _platformDownload(result.filename, result.blob, 'application/pdf');
         showToast(t('e-share-report-done') || '✓ Звіт відправлено!');
       } else {
         await _generateDoctorReport(measurements, sections);
