@@ -107,6 +107,7 @@ import {
   printReportPeriod,
   setPDFShowPage,
   generateDoctorReport,
+  shareReport,
   toggleReportSection,
   exportBackup,
   openBackupFile,
@@ -882,6 +883,7 @@ const ACTIONS = {
   },
   // doctor PDF report (Task 5)
   generateDoctorReport: () => generateDoctorReport(),
+  shareReport: () => shareReport(),
   toggleReportSection: (el) => toggleReportSection(el),
   // ── PIN lock (П1) + відбиток ──
   toggleBiometric: async (el) => {

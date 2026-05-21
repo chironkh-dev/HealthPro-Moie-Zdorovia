@@ -120,7 +120,7 @@ function statCard(title, value, subtitle, bg, border, textColor) {
 }
 
 // ── Build full 8-block HTML report ───────────────────────────────────────────
-function buildReportHTML({ measurements, sections, settings, dateStr, periodLabel, loc, izScore }) {
+function buildReportHTML({ measurements, sections, settings, dateStr, periodLabel, izScore }) {
   const PDF_L = PDF_LABELS[state.lang] || PDF_LABELS.uk;
   const name   = settings.name   || '—';
   const age    = settings.age    || '—';
@@ -295,45 +295,30 @@ function buildReportHTML({ measurements, sections, settings, dateStr, periodLabe
   ` : ''}
 
   <!-- Дисклеймер — завжди -->
-  <div style="background:#fef2f2;border:1px solid #fee2e2;padding:10px 14px;border-radius:8px;font-size:9px;color:#991b1b;line-height:1.7;margin-top:8px">
-    <b>${PDF_L.important}</b> ${PDF_L.disclaimer} ${std}.
+  <div style="background:#fef2f2;border:1px solid #fee2e2;padding:12px 16px;border-radius:8px;font-size:9.5px;color:#7f1d1d;line-height:1.75;margin-top:8px">
+    <b style="color:#991b1b">${PDF_L.important}</b> ${PDF_L.disclaimer} <b>${std}</b>${PDF_L.disclaimerTail}
   </div>
 </div>`;
 }
 
-// ── Main export ───────────────────────────────────────────────────────────────
-export async function generateDoctorReport(measurements, sections = {}) {
-  if (!measurements || !measurements.length) {
-    showToast(t('j-no-data') || 'Немає даних за вибраний період');
-    return;
-  }
-
-  showToast(t('e-doctor-pdf-prep') || 'Генерація PDF...', 6000);
-
-  const loc      = getLocale();
+// ── Shared PDF rendering core ─────────────────────────────────────────────────
+async function _buildPDFBlob(measurements, sections) {
   const settings = state.settings || {};
-
-  // Period label from date range
-  const sorted = measurements.slice().sort((a, b) => new Date(a.time) - new Date(b.time));
+  const sorted   = measurements.slice().sort((a, b) => new Date(a.time) - new Date(b.time));
   const dateFrom = new Date(sorted[0].time);
   const dateTo   = new Date(sorted[sorted.length - 1].time);
-  const fmt = (d) => `${d.getDate().toString().padStart(2, '0')}.${(d.getMonth() + 1).toString().padStart(2, '0')}.${d.getFullYear()}`;
+  const fmt      = (d) => `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
   const periodLabel = `${fmt(dateFrom)} – ${fmt(dateTo)}`;
-
   const now = new Date();
   const pad = (n) => String(n).padStart(2, '0');
-  const dateStr  = `${pad(now.getDate())}.${pad(now.getMonth() + 1)}.${now.getFullYear()}`;
-  const fileName = `HealthPro_Doctor_${todayISO()}.pdf`;
+  const dateStr     = `${pad(now.getDate())}.${pad(now.getMonth() + 1)}.${now.getFullYear()}`;
+  const patientSafe = (settings.name || '').replace(/[^a-zA-Zа-яА-ЯіІєЄїЇ0-9]/g, '_').slice(0, 20) || 'report';
+  const fileName    = `HealthPro_${patientSafe}_${todayISO()}.pdf`;
 
-  // IZ score — re-use current calcHealthScore (uses state.measurements)
   let izScore = null;
-  try {
-    const hs = calcHealthScore();
-    izScore = hs?.score ?? null;
-  } catch { /* noop */ }
+  try { const hs = calcHealthScore(); izScore = hs?.score ?? null; } catch { /* noop */ }
 
-  const html = buildReportHTML({ measurements, sections, settings, dateStr, periodLabel, loc, izScore });
-
+  const html      = buildReportHTML({ measurements, sections, settings, dateStr, periodLabel, izScore });
   const container = document.createElement('div');
   container.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;';
   container.innerHTML = html;
@@ -341,46 +326,59 @@ export async function generateDoctorReport(measurements, sections = {}) {
 
   try {
     await new Promise((r) => setTimeout(r, 350));
-
     const canvas = await html2canvas(container.firstElementChild, {
-      scale: 1.6,
-      useCORS: false,
-      backgroundColor: '#ffffff',
-      logging: false,
-      allowTaint: true,
+      scale: 1.6, useCORS: false, backgroundColor: '#ffffff', logging: false, allowTaint: true,
     });
-
-    const imgData = canvas.toDataURL('image/jpeg', 0.93);
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    const pageW = pdf.internal.pageSize.getWidth();
-    const pageH = pdf.internal.pageSize.getHeight();
-    const imgH  = (canvas.height / canvas.width) * pageW;
-
-    let position  = 0;
+    const imgData  = canvas.toDataURL('image/jpeg', 0.93);
+    const pdf      = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageW    = pdf.internal.pageSize.getWidth();
+    const pageH    = pdf.internal.pageSize.getHeight();
+    const imgH     = (canvas.height / canvas.width) * pageW;
+    let position   = 0;
     let heightLeft = imgH;
-
     pdf.addImage(imgData, 'JPEG', 0, position, pageW, imgH);
     heightLeft -= pageH;
-
     while (heightLeft > 0) {
       position -= pageH;
       pdf.addPage();
       pdf.addImage(imgData, 'JPEG', 0, position, pageW, imgH);
       heightLeft -= pageH;
     }
+    return { blob: pdf.output('blob'), filename: fileName };
+  } finally {
+    document.body.removeChild(container);
+  }
+}
 
-    const blob = pdf.output('blob');
+// ── Main export: generate + download ─────────────────────────────────────────
+export async function generateDoctorReport(measurements, sections = {}) {
+  if (!measurements || !measurements.length) {
+    showToast(t('j-no-data') || 'Немає даних за вибраний період');
+    return;
+  }
+  showToast(t('e-doctor-pdf-prep') || 'Генерація PDF...', 6000);
+  try {
+    const { blob, filename } = await _buildPDFBlob(measurements, sections);
     try {
-      await platformDownload(fileName, blob, 'application/pdf');
+      await platformDownload(filename, blob, 'application/pdf');
     } catch {
-      pdf.save(fileName);
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      pdf.save(filename);
     }
-
     showToast(t('e-doctor-pdf-done') || 'Звіт готовий!');
   } catch (e) {
     console.error('[pdf-report]', e);
     showToast(t('e-doctor-pdf-error') || 'Помилка генерації PDF');
-  } finally {
-    document.body.removeChild(container);
+  }
+}
+
+// ── Share export: generate + return blob for sharing ─────────────────────────
+export async function generateReportBlob(measurements, sections = {}) {
+  if (!measurements || !measurements.length) return null;
+  try {
+    return await _buildPDFBlob(measurements, sections);
+  } catch (e) {
+    console.error('[generateReportBlob]', e);
+    return null;
   }
 }

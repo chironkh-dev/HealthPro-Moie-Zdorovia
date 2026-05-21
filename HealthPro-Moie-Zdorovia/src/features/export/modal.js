@@ -25,8 +25,12 @@ export function getExportFormat() {
 
 export function selectExportFormat(fmt) {
   _expFormat = fmt === 'csv' ? 'csv' : 'pdf';
-  document.querySelectorAll('.exp-format-btn').forEach((b) => {
-    b.classList.toggle('active', b.dataset.fmt === _expFormat);
+  document.querySelectorAll('.exp-fmt-btn').forEach((b) => {
+    const isActive = b.dataset.fmt === _expFormat;
+    b.style.background   = isActive ? 'var(--blue2)' : 'var(--bg2, #f1f5f9)';
+    b.style.color        = isActive ? '#fff' : 'var(--text1)';
+    b.style.borderColor  = isActive ? 'var(--blue2)' : 'var(--border, #e2e8f0)';
+    b.style.fontWeight   = isActive ? '700' : '500';
   });
   const sections = document.getElementById('expSectionsBlock');
   if (sections) sections.style.display = _expFormat === 'csv' ? 'none' : '';
@@ -57,6 +61,8 @@ export function openExportModal() {
     const cb = document.getElementById(`expS-${key}`);
     if (cb) cb.checked = val;
   });
+  // Ініціалізувати стан кнопок формату
+  selectExportFormat(_expFormat);
   updateExportCount();
 }
 

@@ -123,6 +123,20 @@ HealthPro-Moie-Zdorovia/
 
 ## Changelog
 
+### v5.3.26 (2026-05-21) — Сесія: Report-Modal Bugfix (14 пунктів відгуку)
+
+- **ROOT BUG (getLocale):** `pdf-report.js` — видалено виклик `getLocale()` (функція не існувала → ReferenceError → PDF не генерувався). Видалено параметр `loc` з `buildReportHTML`.
+- **PDF-filename:** ім'я файлу тепер `HealthPro_<ПІБ>_<дата>.pdf` замість `HealthPro_Doctor_<дата>.pdf`.
+- **PDF-refactor:** виділено `_buildPDFBlob()` — спільна основа для `generateDoctorReport()` (завантаження) та нового `generateReportBlob()` (для поширення).
+- **PDF-disclaimer:** `i18n/pdf.js` — повний disclaimer з `disclaimerTail` (uk + ru): попередження, стандарт, рекомендація лікаря, копірайт.
+- **Format-кнопки:** `index.html` — компактний pill-toggle "PDF" / "CSV" в один рядок. `modal.js` — `selectExportFormat()` оновлює inline-стилі безпосередньо (не через CSS-клас). `openExportModal()` — ініціалізує стилі кнопок при відкритті.
+- **Actions-кнопки:** `index.html` — 2 кнопки: [⬇ Зберегти звіт] (синя) та [↗ Поділитись] (зелена) замість 3.
+- **shareReport:** `export/index.js` + `app.js` — нова функція: генерує blob → `platform.share()`. На Android — Share Sheet (email включно). Fallback: стандартне завантаження.
+- **CSV-fullcontent:** `csv.js` — `exportReportCSV()` повна переробка: 4 секції (дані пацієнта, виміри тиску, ліки, прийом ліків 30 днів). Ім'я файлу: `HealthPro_<ПІБ>_<від>_<до>.csv`.
+- **i18n:** uk + ru — нові ключі для generate/share/CSV-секцій; видалено дублікати `e-doctor-pdf-*`.
+- **AndroidManifest:** `WRITE_EXTERNAL_STORAGE` (maxSdk=28) + `READ_EXTERNAL_STORAGE` (maxSdk=32).
+- **Тести:** 513/513 ✅ (16/16 файлів). Збірка Vite — ✅.
+
 ### v5.3.24 (2026-05-20) — Сесія: DATE-1 + PDF-i18n + WHO-fix + Report-Modal
 
 - **DATE-1 (Уніфікація дат):** `core/utils.js` — нові `formatDate()` (ДД.ММ.РРРР), `formatDateShort()` (ДД.ММ), `formatTime()` (ГГ:ХХ 24-год). Уніфіковано відображення дат у: `app.js` (хедер), `export/csv.js`, `export/pdf.js`, `export/print.js`, `export/pdf-report.js`, `export/backup.js`, `settings/disclaimer.js`, `steps/index.js` (графік кроків + тултіп). YYYY-MM-DD залишається для внутрішніх ключів БД.

@@ -3,7 +3,10 @@ import { exportReportCSV as _exportReportCSV } from './csv.js';
 import { exportPDF as _exportPDF } from './pdf.js';
 import { printReportPeriod as _printReportPeriod } from './print.js';
 import { getExportMeasurements as _getExportMeasurements, closeExportModal as _closeExportModal, getReportSections as _getReportSections, getExportFormat as _getExportFormat } from './modal.js';
-import { generateDoctorReport as _generateDoctorReport } from './pdf-report.js';
+import { generateDoctorReport as _generateDoctorReport, generateReportBlob as _generateReportBlob } from './pdf-report.js';
+import { share as _platformShare } from '../../core/platform.js';
+import { state, showToast } from '../../core/state.js';
+import { t } from '../../i18n/index.js';
 
 export { exportData, exportCSV, importData } from './csv.js';
 export { exportBackup, openBackupFile, restoreBackup, getBackupStats } from './backup.js';
@@ -50,5 +53,41 @@ export async function generateDoctorReport() {
     }
   } catch (e) {
     console.error('[generateDoctorReport]', e);
+  }
+}
+
+export async function shareReport() {
+  const format       = _getExportFormat();
+  const measurements = _getExportMeasurements();
+  const sections     = _getReportSections();
+  _closeExportModal();
+  try {
+    if (format === 'csv') {
+      // CSV share: generate then share via native share sheet
+      _exportReportCSV(() => measurements);
+    } else {
+      // PDF share: generate blob then share (not just download)
+      const result = await _generateReportBlob(measurements, sections);
+      if (result && result.blob && result.filename) {
+        const s = state.settings || {};
+        await _platformShare({
+          title: result.filename,
+          text: `HealthPro — ${s.name || ''} — ${result.filename}`,
+          url: result.filename,
+          dialogTitle: t('t-exp-share-dialog') || 'Надіслати звіт лікарю',
+          files: [result.blob],
+        });
+        showToast(t('e-share-report-done') || '✓ Звіт відправлено!');
+      } else {
+        await _generateDoctorReport(measurements, sections);
+      }
+    }
+  } catch (e) {
+    console.error('[shareReport]', e);
+    // fallback to normal download
+    try {
+      if (format === 'pdf') await _generateDoctorReport(measurements, sections);
+      else _exportReportCSV(() => measurements);
+    } catch { /* ignore */ }
   }
 }

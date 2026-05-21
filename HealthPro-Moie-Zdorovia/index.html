@@ -889,14 +889,18 @@
     <div class="exp-count" id="expCount">— вимірів</div>
 
     <!-- Формат виводу -->
-    <div style="margin:10px 0 6px;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px" id="t-exp-format-lbl">Формат виводу</div>
-    <div style="display:flex;gap:8px;margin-bottom:12px">
-      <button class="exp-format-btn active" data-fmt="pdf" data-action="selectExportFormat" style="flex:1;padding:8px 0;border-radius:8px;font-size:12px;font-weight:700;border:2px solid var(--blue2);background:var(--blue2);color:#fff;cursor:pointer">
-        <span id="t-exp-format-pdf">PDF для лікаря</span>
-      </button>
-      <button class="exp-format-btn" data-fmt="csv" data-action="selectExportFormat" style="flex:1;padding:8px 0;border-radius:8px;font-size:12px;font-weight:700;border:2px solid var(--text3);background:transparent;color:var(--text1);cursor:pointer">
-        <span id="t-exp-format-csv">CSV для Excel</span>
-      </button>
+    <div style="display:flex;align-items:center;gap:10px;margin:10px 0 12px">
+      <span id="t-exp-format-lbl" style="font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Формат</span>
+      <div style="display:flex;gap:6px">
+        <button class="exp-fmt-btn" data-fmt="pdf" data-action="selectExportFormat"
+          style="padding:5px 18px;border-radius:20px;font-size:12px;font-weight:700;border:2px solid var(--blue2);background:var(--blue2);color:#fff;cursor:pointer;transition:all .15s">
+          <span id="t-exp-format-pdf">PDF</span>
+        </button>
+        <button class="exp-fmt-btn" data-fmt="csv" data-action="selectExportFormat"
+          style="padding:5px 18px;border-radius:20px;font-size:12px;font-weight:500;border:2px solid var(--border,#e2e8f0);background:var(--bg2,#f1f5f9);color:var(--text1);cursor:pointer;transition:all .15s">
+          <span id="t-exp-format-csv">CSV</span>
+        </button>
+      </div>
     </div>
 
     <!-- PDF-2: секції звіту -->
@@ -927,17 +931,13 @@
     </div>
 
     <div class="exp-actions">
-      <button class="btn-print" data-action="generateDoctorReport" style="flex:2;background:var(--blue2)">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-        <span id="t-exp-pdf-doctor-btn">Згенерувати звіт</span>
-      </button>
-      <button class="btn-print" data-action="printReportPeriod" style="background:var(--text3)">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-        <span id="t-exp-print-btn">Друк</span>
-      </button>
-      <button class="btn-csv-exp" data-action="exportReportCSV">
+      <button class="btn-print" data-action="generateDoctorReport" style="flex:3;background:var(--blue2)">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        <span id="t-exp-csv-btn">CSV</span>
+        <span id="t-exp-generate-btn">Зберегти звіт</span>
+      </button>
+      <button class="btn-print" data-action="shareReport" style="flex:2;background:var(--green2,#059669)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        <span id="t-exp-share-btn">Поділитись</span>
       </button>
     </div>
   </div>
