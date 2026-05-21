@@ -163,7 +163,7 @@ export async function init() {
       try {
         // Спроба відкрити як зашифровану (нові або вже мігровані)
         dbHandle = await sqliteConnection.createConnection(
-          DB_NAME, true, encKey, DB_VERSION, false
+          DB_NAME, true, 'secret', DB_VERSION, false
         );
         await dbHandle.open();
       } catch (e1) {
@@ -175,7 +175,7 @@ export async function init() {
           );
           await dbHandle.open();
           // Зашифрувати існуючу базу
-          await sqliteConnection.changeEncryptionSecret(DB_NAME, '', encKey);
+          await sqliteConnection.changeEncryptionSecret(DB_NAME, encKey, '');
           console.log('[SQLCipher] Migration to encrypted: OK');
         } catch (e2) {
           console.error('[SQLCipher] Migration failed:', e2?.message);
