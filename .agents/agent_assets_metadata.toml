@@ -210,3 +210,9 @@ id = "T90f4x3oXWGak3tMdkfTD"
 uri = "file://HealthPro-Moie-Zdorovia/report/HealthPro_Session_v5.3.24_DATE1_PDFi18n_WHOfix_ReportModal_Report.pdf"
 type = "pdf"
 title = "Звіт сесії HealthPro v5.3.24"
+
+[[outputs]]
+id = "oAXIwE93KvQCI6BbuEW9U"
+uri = "file://HealthPro-Moie-Zdorovia/scripts/HealthPro_session_5.3.29_UI_Bugfix_10_punktiv.pdf"
+type = "pdf"
+title = "Звіт сесії v5.3.29 · UI Bugfix 10 пунктів"
