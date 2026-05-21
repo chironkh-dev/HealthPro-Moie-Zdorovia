@@ -154,6 +154,8 @@ HealthPro-Moie-Zdorovia
 │   └── sw.js
 ├── scripts
 │   ├── HealthPro_generate_session_report.py
+│   ├── HealthPro_session_5.3.29_UI_Bugfix_10_punktiv.pdf
+│   ├── HealthPro_session_report_5329_UIBugfix.py
 │   └── gen-version.js
 ├── src
 │   ├── core
